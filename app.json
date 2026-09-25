@@ -11,6 +11,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -25,10 +26,12 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
+      ["expo-image-picker", { "photosPermission": "Choose a profile photo stored only on this device.", "cameraPermission": false, "microphonePermission": false }],
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#FBF8F3",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }

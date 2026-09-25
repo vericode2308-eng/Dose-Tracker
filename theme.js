@@ -48,6 +48,7 @@ const theme = {
     small: 8,
     medium: 12,
     large: 16,
+    card: 20,
     pill: 999,
   },
   spacing: {
@@ -61,7 +62,7 @@ const theme = {
   },
   components: {
     // Inferred assignments from the examples, not explicit measurements.
-    card: { borderRadius: 16 },
+    card: { borderRadius: 20 },
     button: { borderRadius: 12 },
     compactAction: { borderRadius: 999 },
   },
