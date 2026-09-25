@@ -1,0 +1,106 @@
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useState, type ComponentProps } from 'react';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useMedicines, type Medicine } from './context';
+
+const NAVY = '#071629';
+const RECORDS = [
+  { date: 'Tue, 25 Sep 2024', time: '8:05 AM' },
+  { date: 'Mon, 24 Sep 2024', time: '8:02 AM' },
+  { date: 'Sun, 23 Sep 2024', time: '7:58 AM' },
+];
+type Icon = ComponentProps<typeof Feather>['name'];
+type Panel = 'options' | 'edit' | 'refill' | 'archive' | 'delete' | number | null;
+
+function MetadataRow({ icon, label, value }: { icon: Icon | 'infinity' | 'pill'; label: string; value?: string }) {
+  return <View className="min-h-[29px] flex-row items-center gap-4">
+    {icon === 'infinity' || icon === 'pill' ? <MaterialCommunityIcons name={icon} size={19} color={NAVY} /> : <Feather name={icon} size={17} color={NAVY} />}
+    <Text className="flex-1 text-[14px] leading-5 text-[#536073]">{label}</Text>
+    {value && <Text className="text-right text-[14px] leading-5 text-[#536073]">{value}</Text>}
+  </View>;
+}
+
+function Action({ icon, title, onPress, dark = false, danger = false }: { icon?: Icon; title: string; onPress: () => void; dark?: boolean; danger?: boolean }) {
+  const color = dark ? '#FFFFFF' : danger ? '#DD0606' : NAVY;
+  return <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress} className={`min-h-11 flex-1 flex-row items-center justify-center gap-2.5 rounded-[15px] border px-2 active:opacity-70 ${dark ? 'border-[#071629] bg-[#071629]' : danger ? 'border-[#FFC5C5] bg-[#FFEAEA]' : 'border-[#E3E5E9] bg-white'}`}>
+    {icon && <Feather name={icon} size={19} color={color} />}<Text className="text-[14px] font-medium" style={{ color }}>{title}</Text>
+  </Pressable>;
+}
+
+export default function MedicineDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { medicines, setMedicines } = useMedicines();
+  const medicine = medicines.find(m => m.id === id);
+  const [panel, setPanel] = useState<Panel>(null);
+  const [quantity, setQuantity] = useState('30');
+  const [draftName, setDraftName] = useState('');
+  const [draftDosage, setDraftDosage] = useState('');
+  const [draftNotes, setDraftNotes] = useState('');
+  const [error, setError] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const close = () => { setPanel(null); setError(''); };
+  const update = (patch: Partial<Medicine>) => setMedicines(items => items.map(m => m.id === id ? { ...m, ...patch } : m));
+  function edit() {
+    if (!medicine) return;
+    setDraftName(medicine.name); setDraftDosage(medicine.dosage); setDraftNotes(medicine.notes ?? ''); setPanel('edit');
+  }
+  if (!medicine) return <SafeAreaView className="flex-1 items-center justify-center gap-5 bg-[#FBF8F3] p-6"><Text className="text-xl text-[#071629]">Medicine not found</Text><View className="h-11 w-full"><Action title="Back to Medicines" onPress={() => router.dismissTo('/medicines')} /></View></SafeAreaView>;
+  const lowStock = medicine.stock !== undefined && medicine.stock <= 10;
+  const records = medicine.id === 'lisinopril' ? RECORDS : [];
+
+  return <SafeAreaView className="flex-1 bg-[#FBF8F3]" edges={['top']}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 14 }}>
+      <View className="mb-2 flex-row items-center gap-3">
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to Medicines" onPress={() => router.dismissTo('/medicines')} className="h-11 w-11 items-center justify-center"><Feather name="arrow-left" size={24} color={NAVY} /></Pressable>
+        <Text accessibilityRole="header" numberOfLines={1} className="flex-1 text-[20px] font-semibold tracking-[-0.5px] text-[#071629]">{medicine.name}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Edit medicine" onPress={edit} className="h-11 w-9 items-center justify-center"><Feather name="edit-2" size={22} color={NAVY} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Medicine options" onPress={() => setPanel('options')} className="h-11 w-8 items-center justify-center"><Feather name="more-vertical" size={23} color={NAVY} /></Pressable>
+      </View>
+
+      <View className="rounded-[24px] bg-white p-3.5">
+        <View className="mb-2 flex-row items-start gap-3.5">
+          <View className="h-[55px] w-[55px] items-center justify-center rounded-full" style={{ backgroundColor: medicine.color }}><MaterialCommunityIcons name="pill" size={32} color="white" /></View>
+          <View className="min-w-0 flex-1"><View className="flex-row flex-wrap items-center justify-between gap-1"><Text className="text-[20px] font-semibold leading-6 tracking-[-0.5px] text-[#071629]">{medicine.name}</Text>{medicine.tag && <View accessibilityLabel={`Take ${medicine.tag.toLowerCase()}`} className="rounded-full bg-[#E3EFFF] px-3 py-1"><Text className="text-[12px] font-medium text-[#005CF5]">{medicine.tag}</Text></View>}</View><Text className="mt-0.5 text-[14px] leading-5 text-[#536073]">{medicine.dosage}</Text>{medicine.purpose && <View className="mt-1 flex-row items-center gap-2"><MaterialCommunityIcons name="heart-pulse" size={16} color={NAVY} /><Text className="text-[12px] text-[#536073]">{medicine.purpose}</Text></View>}</View>
+        </View>
+        {medicine.status !== 'Active' && <Text accessibilityLiveRegion="polite" className="mb-2 rounded-xl bg-[#F1EEEA] p-2 text-sm text-[#536073]">{medicine.status}</Text>}
+        <MetadataRow icon="calendar" label={medicine.time ? `Daily at ${medicine.time}` : 'As needed'} />
+        <MetadataRow icon="pill" label="Dose amount" value="1 tablet" />
+        <MetadataRow icon="calendar" label="Started" value="10 Jul 2026" />
+        <MetadataRow icon="infinity" label="No end date" />
+        <MetadataRow icon="archive" label="Stock remaining" value={medicine.stock === undefined ? 'Not tracked' : `${medicine.stock} tablets`} />
+        {lowStock && <View accessibilityRole="alert" className="mb-2 mt-2 min-h-[52px] flex-row items-center gap-4 rounded-[14px] bg-[#FFEAEA] px-3 py-2"><View className="h-7 w-7 items-center justify-center rounded-full bg-[#E11717]"><Text className="text-xl font-bold leading-6 text-white">!</Text></View><View><Text className="text-[16px] font-semibold text-[#D90000]">Low stock</Text><Text className="mt-0.5 text-[12px] text-[#D90000]">Only {medicine.stock} tablets remaining.</Text></View></View>}
+        <Pressable accessibilityRole="button" onPress={() => { setQuantity('30'); setPanel('refill'); }} className={`${lowStock ? '' : 'mt-3'} min-h-11 flex-row items-center justify-center gap-3 rounded-full bg-[#071629] active:opacity-70`}><Feather name="archive" size={19} color="white" /><Text className="text-[16px] font-medium text-white">Log Refill</Text></Pressable>
+      </View>
+
+      <View className="mt-3 flex-row items-center gap-4 rounded-[22px] bg-white px-4 py-2.5"><Feather name="file-text" size={23} color={NAVY} /><View className="flex-1"><Text className="text-[14px] font-medium text-[#071629]">Notes</Text><Text className="mt-0.5 text-[12px] leading-[18px] text-[#536073]">{medicine.notes || 'No notes added.'}</Text></View></View>
+
+      <View className="mt-3 rounded-[24px] bg-white px-4 pb-1 pt-3">
+        <View className="mb-1 flex-row flex-wrap items-center justify-between gap-1"><Text accessibilityRole="header" className="text-[16px] font-semibold tracking-[-0.4px] text-[#071629]">Recent Dose Records</Text><Pressable accessibilityRole="button" accessibilityLabel="See all in History" hitSlop={10} onPress={() => router.push('/history')} className="min-h-6 flex-row items-center gap-1.5"><Text className="text-[12px] font-medium text-[#0065FF]">See all in History</Text><Feather name="arrow-right" size={19} color="#0065FF" /></Pressable></View>
+        {records.map((record, index) => <Pressable key={record.date} accessibilityRole="button" accessibilityLabel={`Dose record, ${record.date}, ${record.time}`} onPress={() => setPanel(index)} className={`min-h-[46px] flex-row items-center gap-3 py-1 ${index ? 'border-t border-[#E9EBED]' : ''}`}><View className="h-[27px] w-[27px] items-center justify-center rounded-full bg-[#50B85E]"><Feather name="check" size={20} color="white" /></View><View className="flex-1"><Text className="text-[13px] leading-[18px] text-[#071629]">{record.date}</Text><Text className="text-[12px] leading-[18px] text-[#536073]">{record.time} (on time)</Text></View><View className="border-l border-[#F0F1F3] pl-3"><Text className="text-[12px] text-[#536073]">1 tablet</Text></View><Feather name="chevron-right" size={20} color={NAVY} /></Pressable>)}
+        {!records.length && <Text className="py-5 text-sm text-[#536073]">No recent dose records.</Text>}
+      </View>
+
+      <View className="mt-2.5 flex-row gap-2"><Action icon="edit-2" title="Edit" onPress={edit} /><Action icon={medicine.status === 'Paused' ? 'play' : 'pause'} title={medicine.status === 'Paused' ? 'Resume' : 'Pause'} onPress={() => { update({ status: medicine.status === 'Paused' ? 'Active' : 'Paused' }); setFeedback(medicine.status === 'Paused' ? 'Medicine resumed.' : 'Medicine paused.'); }} /><Action icon="archive" title={medicine.status === 'Archived' ? 'Restore' : 'Archive'} onPress={() => medicine.status === 'Archived' ? update({ status: 'Active' }) : setPanel('archive')} /></View>
+      <View className="mt-2"><Action icon="trash-2" title="Delete Medicine" danger onPress={() => setPanel('delete')} /></View>
+      {!!feedback && <Text accessibilityLiveRegion="polite" className="mt-3 text-center text-sm text-[#176A4C]">{feedback}</Text>}
+    </ScrollView>
+
+    <Modal visible={panel !== null} transparent animationType="slide" onRequestClose={close}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end bg-black/30">
+        <SafeAreaView edges={['bottom']} className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px] bg-[#FBF8F3]">
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
+            <View className="mb-4 flex-row items-center justify-between"><Text className="flex-1 text-[22px] font-semibold text-[#071629]">{panel === 'refill' ? 'Log Refill' : panel === 'edit' ? 'Edit Medicine' : panel === 'archive' ? 'Archive Medicine?' : panel === 'delete' ? 'Delete Medicine?' : typeof panel === 'number' ? 'Dose record' : 'Medicine options'}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 items-center justify-center rounded-full bg-white"><Feather name="x" size={22} color={NAVY} /></Pressable></View>
+            {panel === 'refill' && <><Text className="mb-3 text-base text-[#536073]">How many tablets did you add?</Text><TextInput accessibilityLabel="Tablets added" keyboardType="number-pad" value={quantity} onChangeText={setQuantity} className="mb-4 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save refill" dark onPress={() => { const amount = Number(quantity); if (!/^\d+$/.test(quantity) || !Number.isSafeInteger(amount) || amount < 1 || amount > 10000) { setError('Enter a whole number between 1 and 10,000.'); return; } update({ stock: (medicine.stock ?? 0) + amount }); setFeedback(`${amount} tablets added to stock.`); close(); }} /></>}
+            {panel === 'edit' && <><TextInput accessibilityLabel="Medicine name" value={draftName} onChangeText={setDraftName} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Dosage" value={draftDosage} onChangeText={setDraftDosage} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Notes" multiline value={draftNotes} onChangeText={setDraftNotes} placeholder="Notes" className="mb-4 min-h-20 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save changes" dark onPress={() => { if (!draftName.trim() || !draftDosage.trim()) { setError('Enter a medicine name and dosage.'); return; } update({ name: draftName.trim(), dosage: draftDosage.trim(), notes: draftNotes.trim() }); close(); setFeedback('Medicine updated.'); }} /></>}
+            {(panel === 'archive' || panel === 'delete') && <><Text className="mb-5 text-base leading-6 text-[#536073]">{panel === 'archive' ? `${medicine.name} will move to Archived. You can restore it later.` : `Remove ${medicine.name} from this demo? Reloading the app restores the sample data.`}</Text><View className="flex-row gap-3"><Action title="Cancel" onPress={close} /><Action title={panel === 'archive' ? 'Confirm archive' : 'Confirm delete'} danger={panel === 'delete'} dark={panel === 'archive'} onPress={() => { if (panel === 'archive') { update({ status: 'Archived' }); close(); setFeedback('Medicine archived.'); } else { close(); router.dismissTo('/medicines'); setMedicines(items => items.filter(m => m.id !== id)); } }} /></View></>}
+            {panel === 'options' && <View className="gap-3"><Action title="Edit medicine" icon="edit-2" onPress={edit} /><Action title="Log refill" icon="archive" onPress={() => setPanel('refill')} /><Action title="View dose history" icon="clock" onPress={() => { close(); router.push('/history'); }} /></View>}
+            {typeof panel === 'number' && <View className="gap-3 rounded-2xl bg-white p-5"><Text className="text-lg font-semibold text-[#071629]">{medicine.name}</Text><Text className="text-base text-[#536073]">{records[panel]?.date}</Text><Text className="text-base text-[#536073]">{records[panel]?.time} · Taken on time</Text><Text className="text-base text-[#536073]">Dose: 1 tablet</Text></View>}
+            {!!error && <Text accessibilityRole="alert" className="mt-3 text-sm text-[#D90000]">{error}</Text>}
+          </ScrollView>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </Modal>
+  </SafeAreaView>;
+}
