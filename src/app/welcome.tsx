@@ -6,7 +6,7 @@ import { Button, Feature, Page, PrivacyNote, ReferenceArt, styles } from '@/feat
 export default function WelcomeScreen() {
   const router = useRouter();
   const { data } = useOnboarding();
-  if (data.completed) return <Redirect href="/ready" />;
+  if (data.completed) return <Redirect href="/" />;
   return <Page>
     <View style={{ paddingTop: 30, paddingHorizontal: 16, marginBottom: 20 }}>
       <Text accessibilityRole="header" style={[styles.title, { textAlign: 'center', fontSize: 32, lineHeight: 40 }]}>DoseTracker</Text>

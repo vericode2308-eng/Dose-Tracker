@@ -14,7 +14,7 @@ export default function ReadyScreen() {
     if (lock.current) return;
     lock.current = true;
     setBusy(true);
-    try { await save({ completed: true }); router.replace('/ready'); }
+    try { await save({ completed: true }); router.replace('/'); }
     catch { setError('Setup couldn’t be saved. Please try again.'); }
     finally { lock.current = false; setBusy(false); }
   }
