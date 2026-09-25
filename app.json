@@ -27,7 +27,14 @@
     "plugins": [
       "expo-router",
       "expo-notifications",
-      ["expo-image-picker", { "photosPermission": "Choose a profile photo stored only on this device.", "cameraPermission": false, "microphonePermission": false }],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a profile photo stored only on this device.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -35,7 +42,8 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
