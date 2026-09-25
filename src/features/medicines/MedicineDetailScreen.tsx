@@ -47,7 +47,7 @@ export default function MedicineDetailScreen() {
     setDraftName(medicine.name); setDraftDosage(medicine.dosage); setDraftNotes(medicine.notes ?? ''); setPanel('edit');
   }
   if (!medicine) return <SafeAreaView className="flex-1 items-center justify-center gap-5 bg-[#FBF8F3] p-6"><Text className="text-xl text-[#071629]">Medicine not found</Text><View className="h-11 w-full"><Action title="Back to Medicines" onPress={() => router.dismissTo('/medicines')} /></View></SafeAreaView>;
-  const lowStock = medicine.stock !== undefined && medicine.stock <= 10;
+  const lowStock = medicine.stock !== undefined && medicine.stock <= (medicine.stockThreshold ?? 10);
   const records = medicine.id === 'lisinopril' ? RECORDS : [];
 
   return <SafeAreaView className="flex-1 bg-[#FBF8F3]" edges={['top']}>
@@ -65,11 +65,11 @@ export default function MedicineDetailScreen() {
           <View className="min-w-0 flex-1"><View className="flex-row flex-wrap items-center justify-between gap-1"><Text className="text-[20px] font-semibold leading-6 tracking-[-0.5px] text-[#071629]">{medicine.name}</Text>{medicine.tag && <View accessibilityLabel={`Take ${medicine.tag.toLowerCase()}`} className="rounded-full bg-[#E3EFFF] px-3 py-1"><Text className="text-[12px] font-medium text-[#005CF5]">{medicine.tag}</Text></View>}</View><Text className="mt-0.5 text-[14px] leading-5 text-[#536073]">{medicine.dosage}</Text>{medicine.purpose && <View className="mt-1 flex-row items-center gap-2"><MaterialCommunityIcons name="heart-pulse" size={16} color={NAVY} /><Text className="text-[12px] text-[#536073]">{medicine.purpose}</Text></View>}</View>
         </View>
         {medicine.status !== 'Active' && <Text accessibilityLiveRegion="polite" className="mb-2 rounded-xl bg-[#F1EEEA] p-2 text-sm text-[#536073]">{medicine.status}</Text>}
-        <MetadataRow icon="calendar" label={medicine.time ? `Daily at ${medicine.time}` : 'As needed'} />
-        <MetadataRow icon="pill" label="Dose amount" value="1 tablet" />
-        <MetadataRow icon="calendar" label="Started" value="10 Jul 2026" />
-        <MetadataRow icon="infinity" label="No end date" />
-        <MetadataRow icon="archive" label="Stock remaining" value={medicine.stock === undefined ? 'Not tracked' : `${medicine.stock} tablets`} />
+        <MetadataRow icon="calendar" label={medicine.schedule ?? (medicine.time ? `Daily at ${medicine.time}` : 'As needed')} />
+        <MetadataRow icon="pill" label="Dose amount" value={medicine.doseAmount ?? '1 tablet'} />
+        <MetadataRow icon="calendar" label="Started" value={medicine.startDate ?? '10 Jul 2026'} />
+        <MetadataRow icon="infinity" label={medicine.duration ?? 'No end date'} />
+        <MetadataRow icon="archive" label="Stock remaining" value={medicine.stock === undefined ? 'Not tracked' : `${medicine.stock} ${medicine.form?.toLowerCase() ?? 'tablet'}${medicine.stock === 1 ? '' : 's'}`} />
         {lowStock && <View accessibilityRole="alert" className="mb-2 mt-2 min-h-[52px] flex-row items-center gap-4 rounded-[14px] bg-[#FFEAEA] px-3 py-2"><View className="h-7 w-7 items-center justify-center rounded-full bg-[#E11717]"><Text className="text-xl font-bold leading-6 text-white">!</Text></View><View><Text className="text-[16px] font-semibold text-[#D90000]">Low stock</Text><Text className="mt-0.5 text-[12px] text-[#D90000]">Only {medicine.stock} tablets remaining.</Text></View></View>}
         <Pressable accessibilityRole="button" onPress={() => { setQuantity('30'); setPanel('refill'); }} className={`${lowStock ? '' : 'mt-3'} min-h-11 flex-row items-center justify-center gap-3 rounded-full bg-[#071629] active:opacity-70`}><Feather name="archive" size={19} color="white" /><Text className="text-[16px] font-medium text-white">Log Refill</Text></Pressable>
       </View>

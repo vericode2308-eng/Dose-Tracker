@@ -9,6 +9,7 @@ import { Button, ErrorMessage, Icon, Page, StepHeader, styles } from '@/features
 export default function ProfileScreen() {
   const router = useRouter();
   const { data, save } = useOnboarding();
+  const editing = data.completed;
   const [profile, setProfile] = useState(data.profile || EMPTY_PROFILE);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -28,7 +29,8 @@ export default function ProfileScreen() {
     try {
       const photoUri = skip ? null : await keepPhoto(profile.photoUri);
       await save({ profile: skip ? null : { ...profile, name: profile.name.trim(), dateOfBirth: profile.dateOfBirth.trim(), photoUri } });
-      router.push('/notifications');
+      if (editing) router.replace('/settings');
+      else router.push('/notifications');
     } catch { setError('Your profile couldn’t be saved on this device. Please try again.'); }
     finally { saving.current = false; setBusy(false); }
   }
@@ -43,10 +45,10 @@ export default function ProfileScreen() {
     finally { setPhotoBusy(false); }
   }
   return <Page>
-    <StepHeader step={1} />
+    {!editing && <StepHeader step={1} />}
     <View style={{ paddingHorizontal: 6, marginBottom: 16 }}>
-      <Text accessibilityRole="header" style={styles.title}>Create your first profile</Text>
-      <Text style={styles.subtitle}>Let’s set up a profile. You can add more family members later.</Text>
+      <Text accessibilityRole="header" style={styles.title}>{editing ? 'Edit profile' : 'Create your first profile'}</Text>
+      <Text style={styles.subtitle}>{editing ? 'Update your profile details saved on this device.' : 'Let’s set up a profile. You can add more family members later.'}</Text>
     </View>
     <View style={[styles.card, { padding: 14, gap: 14 }]}>
       <View>
@@ -93,8 +95,8 @@ export default function ProfileScreen() {
     </View>
     <ErrorMessage message={error} />
     <View style={styles.footer}>
-      <Button title="Continue" busy={busy || photoBusy} onPress={() => void proceed()} />
-      <Button title="Not now" secondary busy={busy || photoBusy} onPress={() => void proceed(true)} />
+      <Button title={editing ? 'Save changes' : 'Continue'} busy={busy || photoBusy} onPress={() => void proceed()} />
+      {!editing && <Button title="Not now" secondary busy={busy || photoBusy} onPress={() => void proceed(true)} />}
     </View>
   </Page>;
 }

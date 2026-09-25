@@ -13,6 +13,14 @@ export type Medicine = {
   status: 'Active' | 'Paused' | 'Archived';
   purpose?: string;
   notes?: string;
+  form?: string;
+  strength?: string;
+  doseAmount?: string;
+  schedule?: string;
+  startDate?: string;
+  duration?: string;
+  stockThreshold?: number;
+  instructions?: string;
 };
 
 const INITIAL_MEDICINES: Medicine[] = [

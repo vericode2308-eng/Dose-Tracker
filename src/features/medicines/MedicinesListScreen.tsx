@@ -38,26 +38,16 @@ function MedicineCard({ medicine: m, onPress }: { medicine: Medicine; onPress: (
 }
 
 export default function MedicinesListScreen() {
-  const { medicines, setMedicines } = useMedicines();
+  const { medicines } = useMedicines();
   const [filter, setFilter] = useState<Filter>('Active');
   const [query, setQuery] = useState('');
   const [profile, setProfile] = useState('Anatol Belik');
-  const [sheet, setSheet] = useState<'profiles' | 'add' | Medicine | null>(null);
-  const [name, setName] = useState('');
-  const [dosage, setDosage] = useState('');
-  const [error, setError] = useState('');
+  const [sheet, setSheet] = useState<'profiles' | Medicine | null>(null);
   const profileMedicines = profile === 'Anatol Belik' ? medicines : [];
   // The reference counts scheduled medicines separately, but includes PRN in the Active list.
   const count = (value: Filter) => profileMedicines.filter(m => value === 'As needed' ? !m.time && m.status === 'Active' : m.status === value && (value !== 'Active' || !!m.time)).length;
   const visible = profileMedicines.filter(m => (filter === 'As needed' ? !m.time && m.status === 'Active' : m.status === filter) && `${m.name} ${m.dosage}`.toLowerCase().includes(query.trim().toLowerCase()));
-  const close = () => { setSheet(null); setError(''); };
-
-  function addMedicine() {
-    if (!name.trim() || !dosage.trim()) { setError('Enter a medicine name and dosage.'); return; }
-    if (medicines.some(m => m.name.toLowerCase() === name.trim().toLowerCase())) { setError('This medicine is already in your list.'); return; }
-    setMedicines(items => [...items, { id: `demo-${Date.now()}`, name: name.trim(), dosage: dosage.trim(), time: '9:00 PM', next: 'Today', color: '#3297FF', status: 'Active' }]);
-    setProfile('Anatol Belik'); setFilter('Active'); setQuery(''); setName(''); setDosage(''); close();
-  }
+  const close = () => setSheet(null);
 
   return <SafeAreaView className="flex-1 bg-[#FBF8F3]" edges={['top']}>
     <FlatList data={visible} keyExtractor={m => m.id} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}
@@ -69,7 +59,7 @@ export default function MedicinesListScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingBottom: 12 }}>
           {FILTERS.map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: filter === value }} accessibilityLabel={`${value} (${count(value)})`} onPress={() => setFilter(value)} className={`min-h-[38px] items-center justify-center rounded-full border px-[9px] ${filter === value ? 'border-[#071629] bg-[#071629]' : 'border-[#E0E3E8] bg-white'}`}><Text className={`text-[12px] ${filter === value ? 'text-white' : 'text-[#24354D]'}`}>{value} ({count(value)})</Text></Pressable>)}
         </ScrollView>
-        <Pressable accessibilityRole="button" onPress={() => setSheet('add')} className="mb-3 min-h-11 flex-row items-center justify-center gap-4 rounded-full bg-[#071629] active:opacity-80"><Feather name="plus" size={23} color="white" /><Text className="text-[17px] font-medium text-white">Add Medicine</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/add-medicine')} className="mb-3 min-h-11 flex-row items-center justify-center gap-4 rounded-full bg-[#071629] active:opacity-80"><Feather name="plus" size={23} color="white" /><Text className="text-[17px] font-medium text-white">Add Medicine</Text></Pressable>
       </>}
       ListEmptyComponent={<View className="items-center rounded-[22px] bg-white px-6 py-10"><Feather name="inbox" size={28} color="#8390A0" /><Text className="mt-3 text-base font-medium text-[#071629]">{query ? 'No matching medicines' : `No ${filter.toLowerCase()} medicines`}</Text><Text className="mt-2 text-center text-sm text-[#536073]">{query ? 'Try a different name or dosage.' : `There are no medicines in this category for ${profile}.`}</Text></View>}
     />
@@ -77,9 +67,8 @@ export default function MedicinesListScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end bg-black/30">
         <SafeAreaView edges={['bottom']} className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px] bg-[#FBF8F3]">
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
-            <View className="mb-4 flex-row items-center justify-between"><Text className="flex-1 text-[22px] font-semibold text-[#071629]">{sheet === 'profiles' ? 'Choose profile' : sheet === 'add' ? 'Add Medicine' : sheet?.name}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 items-center justify-center rounded-full bg-white"><Feather name="x" size={22} color={NAVY} /></Pressable></View>
+            <View className="mb-4 flex-row items-center justify-between"><Text className="flex-1 text-[22px] font-semibold text-[#071629]">{sheet === 'profiles' ? 'Choose profile' : sheet?.name}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 items-center justify-center rounded-full bg-white"><Feather name="x" size={22} color={NAVY} /></Pressable></View>
             {sheet === 'profiles' && ['Anatol Belik', 'Maya', 'Dad'].map(p => <Pressable key={p} accessibilityRole="button" onPress={() => { setProfile(p); close(); }} className="mb-3 flex-row items-center justify-between rounded-2xl bg-white p-4"><Text className="text-base text-[#071629]">{p}</Text>{profile === p && <Feather name="check" size={20} color="#00A878" />}</Pressable>)}
-            {sheet === 'add' && <><Text className="mb-4 text-sm text-[#536073]">Add a sample medicine to Anatol’s list.</Text><TextInput accessibilityLabel="Medicine name" placeholder="Medicine name" value={name} onChangeText={setName} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Dosage" placeholder="Dosage, e.g. 10 mg tablet" value={dosage} onChangeText={setDosage} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" />{!!error && <Text accessibilityRole="alert" className="mb-3 text-sm text-red-600">{error}</Text>}<Pressable accessibilityRole="button" onPress={addMedicine} className="items-center rounded-full bg-[#071629] p-4"><Text className="text-base font-medium text-white">Save medicine</Text></Pressable></>}
             {typeof sheet === 'object' && sheet && <View className="gap-3 rounded-[22px] bg-white p-5"><CapsuleIcon medicine={sheet} /><Text className="text-base text-[#536073]">{sheet.dosage}</Text><Text className="text-base text-[#536073]">{sheet.time ? `Daily at ${sheet.time}` : 'As needed'}</Text>{sheet.tag && <Text className="text-base text-[#005CF5]">{sheet.tag}</Text>}{sheet.stock !== undefined && <Text className="text-base text-[#D90008]">{sheet.stock} tablets left</Text>}</View>}
           </ScrollView>
         </SafeAreaView>
