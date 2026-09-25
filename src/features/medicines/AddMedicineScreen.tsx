@@ -1,8 +1,9 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState, type ComponentProps } from 'react';
+import { useRef, useState, type ComponentProps } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useOnboarding } from '@/features/onboarding/context';
 import { useMedicines } from './context';
 
 const NAVY = '#102238';
@@ -20,6 +21,30 @@ const FREQUENCIES = [
 const COLORS = [{ name: 'Teal', value: '#079D9D' }, { name: 'Blue', value: '#3297FF' }, { name: 'Orange', value: '#FFA72E' }, { name: 'Purple', value: '#8845FA' }];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const isPositiveNumber = (value: string) => /^\d+(?:\.\d+)?$/.test(value.trim()) && Number(value) > 0;
+const isWholeNumber = (value: string) => /^\d+$/.test(value.trim()) && Number.isSafeInteger(Number(value));
+function parseDate(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
+}
+function dateAfterDays(value: string, days: number): string {
+  const date = parseDate(value);
+  if (!date) return '';
+  date.setDate(date.getDate() + days - 1);
+  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function nextTimes(value: string, hours: number): string {
+  const match = /^(0?[1-9]|1[0-2]):([0-5]\d) (AM|PM)$/.exec(value);
+  if (!match || !Number.isInteger(hours) || hours < 1) return '';
+  const start = (Number(match[1]) % 12) + (match[3] === 'PM' ? 12 : 0);
+  return [0, 1, 2].map(index => {
+    const total = start * 60 + Number(match[2]) + index * hours * 60;
+    const hour = Math.floor(total / 60) % 24;
+    return `${hour % 12 || 12}:${String(total % 60).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
+  }).join(', ');
+}
 
 function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false }: { label: string; value: string; onChangeText: (value: string) => void; placeholder?: string; keyboardType?: 'default' | 'number-pad' | 'decimal-pad'; multiline?: boolean }) {
   return <View className="mb-3 rounded-[20px] border border-[#E8EAF0] bg-white px-4 py-3">
@@ -47,6 +72,8 @@ function ReviewRow({ icon, label, value, sub }: { icon: ComponentProps<typeof Fe
 
 export default function AddMedicineScreen() {
   const { medicines, setMedicines } = useMedicines();
+  const { data } = useOnboarding();
+  const saving = useRef(false);
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [strength, setStrength] = useState('');
@@ -75,13 +102,20 @@ export default function AddMedicineScreen() {
   const schedule = frequency === 'Every N hours' ? `Every ${interval} hours` : frequency === 'Every N days' ? `Every ${interval} days` : frequency === 'Selected weekdays' ? weekdays.join(', ') : frequency;
   const durationLabel = durationType === 'For a number of days' ? `For ${duration} days` : durationType === 'End date' ? `Until ${endDate}` : 'Ongoing';
   function next() {
-    if (step === 0 && (!name.trim() || !strength.trim() || !Number.isFinite(Number(strength)) || Number(strength) <= 0)) { setError('Enter a medicine name and a valid strength.'); return; }
+    if (step === 0 && (!name.trim() || !isPositiveNumber(strength))) { setError('Enter a medicine name and a valid strength.'); return; }
     if (step === 0 && medicines.some(m => m.name.toLowerCase() === name.trim().toLowerCase())) { setError('This medicine is already in your list.'); return; }
-    if (step === 1 && ((frequency === 'Selected weekdays' && !weekdays.length) || ((frequency === 'Every N days' || frequency === 'Every N hours') && (!Number.isSafeInteger(Number(interval)) || Number(interval) < 1)) || !Number.isFinite(Number(amount)) || Number(amount) <= 0 || (durationType === 'For a number of days' && (!Number.isSafeInteger(Number(duration)) || Number(duration) < 1)) || (durationType === 'End date' && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{1,2}:\d{2} (AM|PM)$/.test(startTime))) { setError('Check the schedule, date, time, and dose amount.'); return; }
-    if (step === 2 && trackStock && (!Number.isSafeInteger(Number(stock)) || Number(stock) < 0 || !Number.isSafeInteger(Number(threshold)) || Number(threshold) < 0)) { setError('Enter valid whole numbers for stock and the warning level.'); return; }
+    if (step === 1 && frequency === 'Selected weekdays' && !weekdays.length) { setError('Select at least one weekday.'); return; }
+    if (step === 1 && (frequency === 'Every N days' || frequency === 'Every N hours') && (!isWholeNumber(interval) || Number(interval) < 1)) { setError('Enter a valid repeat interval.'); return; }
+    if (step === 1 && !isPositiveNumber(amount)) { setError('Enter a valid dose amount.'); return; }
+    if (step === 1 && (!parseDate(startDate) || (frequency !== 'As needed' && !/^(0?[1-9]|1[0-2]):[0-5]\d (AM|PM)$/.test(startTime)))) { setError('Enter a valid start date and time.'); return; }
+    if (step === 1 && durationType === 'For a number of days' && (!isWholeNumber(duration) || Number(duration) < 1)) { setError('Enter a valid course duration.'); return; }
+    if (step === 1 && durationType === 'End date' && (!parseDate(endDate) || endDate < startDate)) { setError('Choose an end date on or after the start date.'); return; }
+    if (step === 2 && trackStock && (!isWholeNumber(stock) || !isWholeNumber(threshold))) { setError('Enter valid whole numbers for stock and the warning level.'); return; }
     setError(''); setStep(value => Math.min(value + 1, 3));
   }
   function save() {
+    if (saving.current) return;
+    saving.current = true;
     setMedicines(items => [...items, { id: `medicine-${Date.now()}`, name: name.trim(), dosage: `${strength.trim()} ${strengthUnit} ${unit}`, strength: `${strength.trim()} ${strengthUnit}`, form, doseAmount: `${amount} ${Number(amount) === 1 ? unit : plural}`, schedule, startDate, duration: durationLabel, time: frequency === 'As needed' ? undefined : startTime, next: frequency === 'As needed' ? undefined : 'Today', purpose: purpose.trim() || undefined, instructions: instructions.trim() || undefined, notes: notes.trim() || undefined, stock: trackStock ? Number(stock) : undefined, stockThreshold: trackStock ? Number(threshold) : undefined, color: color.value, status: 'Active' }]);
     router.dismissTo('/medicines');
   }

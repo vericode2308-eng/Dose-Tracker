@@ -14,3 +14,7 @@ export async function readOnboarding(): Promise<OnboardingData> {
 export async function writeOnboarding(data: OnboardingData): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
+
+export async function clearOnboarding(): Promise<void> {
+  await AsyncStorage.removeItem(STORAGE_KEY);
+}

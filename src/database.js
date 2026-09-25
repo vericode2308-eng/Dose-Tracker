@@ -129,6 +129,14 @@ export function initializeDatabase() {
   return databasePromise;
 }
 
+/** Erases every app-owned SQLite table without replacing the open connection. */
+export async function clearDatabase() {
+  const db = await initializeDatabase();
+  await db.withExclusiveTransactionAsync(async transaction => {
+    await transaction.execAsync('DELETE FROM history; DELETE FROM schedules; DELETE FROM medicines; DELETE FROM settings;');
+  });
+}
+
 /**
  * Add one medicine and its first schedule atomically.
  * schedule.pattern: { kind, startDate, endDate?, weekdays?, interval? }.

@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 export const DATABASE_NAME: string;
 export function initializeDatabase(): Promise<SQLiteDatabase>;
+export function clearDatabase(): Promise<void>;
 
 export type RecurringPattern = {
   kind: 'daily' | 'weekdays' | 'day_interval' | 'hour_interval' | 'prn';

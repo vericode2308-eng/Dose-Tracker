@@ -4,6 +4,7 @@ const KEY = '@dosetracker/settings/v1';
 
 export type SettingsPreferences = {
   theme: 'system' | 'light' | 'dark';
+  remindersEnabled: boolean;
   snoozeMinutes: 5 | 10 | 15 | 30;
   notificationPrivacy: 'show' | 'hide';
   soundAndVibration: boolean;
@@ -11,6 +12,7 @@ export type SettingsPreferences = {
 
 export const DEFAULT_SETTINGS: SettingsPreferences = {
   theme: 'system',
+  remindersEnabled: true,
   snoozeMinutes: 10,
   notificationPrivacy: 'show',
   soundAndVibration: true,
@@ -20,8 +22,10 @@ export async function readSettings(): Promise<SettingsPreferences> {
   const raw = await AsyncStorage.getItem(KEY);
   if (!raw) return DEFAULT_SETTINGS;
   const value: unknown = JSON.parse(raw);
-  if (!isSettings(value)) throw new Error('Saved settings could not be read.');
-  return value;
+  // Existing local installs predate the reminder switch.
+  if (isSettings(value)) return value;
+  if (isLegacySettings(value)) return { ...value, remindersEnabled: true };
+  throw new Error('Saved settings could not be read.');
 }
 
 export async function writeSettings(value: SettingsPreferences): Promise<void> {
@@ -33,6 +37,12 @@ export async function clearSettings(): Promise<void> {
 }
 
 export function isSettings(value: unknown): value is SettingsPreferences {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as SettingsPreferences;
+  return typeof item.remindersEnabled === 'boolean' && isLegacySettings(item);
+}
+
+function isLegacySettings(value: unknown): value is Omit<SettingsPreferences, 'remindersEnabled'> {
   if (!value || typeof value !== 'object') return false;
   const item = value as SettingsPreferences;
   return ['system', 'light', 'dark'].includes(item.theme) &&

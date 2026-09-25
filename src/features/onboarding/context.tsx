@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { INITIAL_DATA, type OnboardingData } from './model';
-import { readOnboarding, writeOnboarding } from './storage';
+import { clearOnboarding, readOnboarding, writeOnboarding } from './storage';
 
-type Context = { data: OnboardingData; save: (patch: Partial<OnboardingData>) => Promise<void> };
+type Context = { data: OnboardingData; save: (patch: Partial<OnboardingData>) => Promise<void>; reset: () => Promise<void> };
 const OnboardingContext = createContext<Context | null>(null);
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
@@ -40,6 +40,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     current.current = next;
     setData(next);
   }, []);
+  const reset = useCallback(async () => {
+    await clearOnboarding();
+    current.current = INITIAL_DATA;
+    setData(INITIAL_DATA);
+  }, []);
   if (loading || failed) return (
     <View className="flex-1 items-center justify-center bg-luminous p-6">
       {loading ? <ActivityIndicator accessibilityLabel="Loading your local setup" color="#0B2540" /> : <>
@@ -48,7 +53,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       </>}
     </View>
   );
-  return <OnboardingContext.Provider value={{ data, save }}>{children}</OnboardingContext.Provider>;
+  return <OnboardingContext.Provider value={{ data, save, reset }}>{children}</OnboardingContext.Provider>;
 }
 
 export function useOnboarding() {
