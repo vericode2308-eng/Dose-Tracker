@@ -10,13 +10,13 @@ import { useProfiles } from './context';
 function Avatar({ profile, size = 52 }: { profile: LocalProfile | null; size?: number }) {
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: profile?.color || '#08B8BE' }} className="shrink-0 items-center justify-center overflow-hidden">{profile?.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: size, height: size }} /> : <Text className="font-semibold text-white" style={{ fontSize: size * 0.36 }}>{initials(profile?.name || 'Me')}</Text>}</View>;
 }
-export function ProfileSwitcherTrigger({ showOverdue = false }: { showOverdue?: boolean }) {
+export function ProfileSwitcherTrigger({ showOtherProfiles = false }: { showOtherProfiles?: boolean }) {
   const { currentProfile, profiles, showSwitcher, select } = useProfiles();
   const { fontScale } = useWindowDimensions();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const selecting = useRef(false);
-  const others = showOverdue ? profiles.filter(p => p.id !== currentProfile?.id && p.status === 'Active' && p.overdueCount > 0) : [];
+  const others = showOtherProfiles ? profiles.filter(p => p.id !== currentProfile?.id && p.status === 'Active') : [];
   async function choose(id: string) {
     if (selecting.current) return;
     selecting.current = true; setBusy(true); setError('');
@@ -32,13 +32,13 @@ export function ProfileSwitcherTrigger({ showOverdue = false }: { showOverdue?: 
         <Text numberOfLines={1} ellipsizeMode="tail" className="min-w-0 shrink text-[16px] font-semibold text-[#102238]">{currentProfile?.name || 'Me'}</Text>
         <Feather name="chevron-down" size={18} color="#102238" />
       </Pressable>
-      {others.length > 0 && <ScrollView key={currentProfile?.id} horizontal showsHorizontalScrollIndicator={false} accessibilityLabel="Profiles with overdue doses" className="min-w-0 flex-1" contentContainerStyle={{ alignItems: 'center', gap: 6, paddingVertical: 2 }}>
+      {others.length > 0 && <ScrollView key={currentProfile?.id} horizontal showsHorizontalScrollIndicator={false} accessibilityLabel="Other profiles" className="min-w-0 flex-1" contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center', gap: 6, paddingVertical: 2 }}>
         {others.map(profile => <Pressable key={profile.id} accessibilityRole="button" accessibilityLabel={`${profile.name}, ${profile.overdueCount} overdue ${profile.overdueCount === 1 ? 'dose' : 'doses'}, switch profile`} accessibilityHint="Opens this person's Today dashboard" accessibilityState={{ disabled: busy }} disabled={busy} onPress={() => void choose(profile.id)}
-          className="min-h-[44px] flex-row items-center gap-1.5 rounded-full bg-[#F4F1ED] px-2 py-1.5" style={{ width: 96 * Math.max(1, fontScale), flexShrink: 0 }}>
-          <View className="h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: `${profile.color}26` }}>
-            {profile.photoUri ? <Image source={{ uri: profile.photoUri }} className="h-7 w-7" /> : <Ionicons name="person" size={21} color={profile.color} />}
+          className="min-h-[44px] flex-row items-center gap-1 rounded-full bg-[#F4F1ED] px-1.5 py-1.5" style={{ width: 104 * Math.max(1, fontScale), flexShrink: 0 }}>
+          <View className="h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: `${profile.color}26` }}>
+            {profile.photoUri ? <Image source={{ uri: profile.photoUri }} className="h-6 w-6" /> : <Ionicons name="person" size={19} color={profile.color} />}
           </View>
-          <View className="min-w-0 flex-1"><Text numberOfLines={1} ellipsizeMode="tail" className="text-[13px] font-semibold text-[#102238]">{profile.name}</Text><Text numberOfLines={1} className="text-[11px] font-medium text-[#C92A2A]">{profile.overdueCount > 99 ? '99+' : profile.overdueCount} overdue</Text></View>
+          <View className="min-w-0 flex-1"><Text numberOfLines={1} ellipsizeMode="tail" className="text-[13px] font-semibold text-[#102238]">{profile.name}</Text><Text numberOfLines={1} className="text-[11px] font-medium" style={{ color: profile.overdueCount > 0 ? '#C92A2A' : '#64748B' }}>{profile.overdueCount > 0 ? `${profile.overdueCount > 99 ? '99+' : profile.overdueCount} overdue` : 'No overdue'}</Text></View>
         </Pressable>)}
       </ScrollView>}
     </View>
@@ -72,7 +72,7 @@ export function ProfileSwitcher() {
           {ordered.map(profile => { const current = profile.id === currentProfile?.id; const archived = profile.status === 'Archived'; return <View key={profile.id} className="mb-2 flex-row items-center rounded-[20px]" style={{ backgroundColor: current ? '#EAF3FF' : '#FFFFFF' }}>
             <Pressable accessibilityRole="button" accessibilityLabel={archived ? `Manage archived profile ${profile.name}` : `Switch to ${profile.name}`} accessibilityState={{ selected: current, disabled: busy }} disabled={busy} onPress={() => archived ? edit(profile.id) : void choose(profile.id)} className="min-w-0 flex-1 flex-row items-center gap-3 py-4 pl-4 pr-2">
               <Avatar profile={profile} /><View className="min-w-0 flex-1"><Text className="text-[19px] font-semibold text-[#102238]">{profile.name}</Text><Text className="mt-1 text-[14px]" style={{ color: current ? '#386791' : '#6A7789' }}>{current ? 'Current profile' : profile.relationship || 'Family member'}</Text>{compact && !current && (archived || profile.overdueCount > 0) && <View className="shrink-0 self-start rounded-full px-2 py-1" style={{ backgroundColor: archived ? '#F0F2F5' : '#FFE8E5' }}><Text className="text-[13px] font-medium" style={{ color: archived ? '#77818F' : '#D85752' }}>{archived ? 'Archived' : `${profile.overdueCount} overdue`}</Text></View>}</View>{!compact && !current && (archived || profile.overdueCount > 0) && <View className="shrink-0 self-start rounded-full px-2 py-1" style={{ backgroundColor: archived ? '#F0F2F5' : '#FFE8E5' }}><Text className="text-[13px] font-medium" style={{ color: archived ? '#77818F' : '#D85752' }}>{archived ? 'Archived' : `${profile.overdueCount} overdue`}</Text></View>}
-              {current && <View className="h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#102238]"><Feather name="check" size={18} color="white" /></View>}
+              {current && <View className="h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#102238]"><Feather name="check" size={18} color="white" /></View>}
             </Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${profile.name}`} disabled={busy} onPress={() => edit(profile.id)} className="h-11 w-11 shrink-0 items-center justify-center"><Feather name="edit-2" size={16} color="#6A7789" /></Pressable>
           </View>; })}

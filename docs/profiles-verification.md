@@ -31,3 +31,20 @@ Verified 2026-09-26 against `design/switch profile.png`.
 - Verified People & profiles entry in Settings.
 
 The browser QA data is labelled QA. This pass does not establish physical Android alarm delivery or Doze behavior; native notification changes were tested at the OS boundary with mocks. Existing reminder schedule limitations remain documented in reminders.md.
+
+## Inline dashboard header refinement
+
+Updated to the user's close-up reference: active avatar/name/chevron on the left; compact family chips on the same row at the right, tinted person icons or saved photos, and red overdue counts. Chips directly select their owner. The dropdown retains add/edit/archive/restore. Overflow chips scroll horizontally without wrapping the header; names truncate visually with full accessible labels. All controls retain at least 44px touch targets, and selection has a double-tap guard and a retryable error message.
+
+Verified with real browser SQLite data on 2026-09-26:
+- Added labelled QA Header Dose (QA Family) and QA Dad Header Test (new blue QA Dad profile).
+- Both inactive profiles appeared together with accurate 1-overdue counts. An initial chip width clipped the count; adjusted spacing and width, then verified both labels were fully readable.
+- At 320 × 640, swiped the chip strip and tapped QA Dad; its dashboard opened directly with only its own dose.
+- Snoozed QA Dad's dose, then tapped QA Family: QA Dad was correctly absent from overdue chips; its dose remained Upcoming when selected again.
+- Reload preserved selection and the snooze.
+- Edited the active test profile to a long name: at 320px the name truncated without displacing the dropdown or adjacent chip; restored the concise QA Dad label afterwards.
+- Original profile data was preserved. QA data remains labelled; no real patient data was used.
+
+### Correction: keep all other active profiles visible
+
+The header now includes every other active profile, even with zero overdue doses. Zero counts show muted “No overdue”; positive counts retain the red overdue label. Only the selected profile and archived profiles are excluded. This supersedes the earlier behavior that removed zero-count or snoozed profiles from the header. Verified switching among FF, QA Family, and QA Dad: each selection retains the other two chips, including FF with zero overdue doses. Lint and TypeScript checks pass.

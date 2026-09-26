@@ -73,7 +73,7 @@ function ProfileToday() {
     </View>;
   }
   return <SafeAreaView className="flex-1 bg-[#FBF8F3]" edges={['top']}><ScrollView contentContainerClassName="px-4 pb-6 pt-4">
-    <ProfileSwitcherTrigger showOverdue />
+    <ProfileSwitcherTrigger showOtherProfiles />
     <Text accessibilityRole="header" className="text-[28px] font-bold text-[#071629]">Today’s Schedule</Text>
     <Text className="mb-3 mt-1 text-base text-[#536073]">{data.now ? new Date(data.now).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Loading…'}</Text>
     <View className="flex-row items-center justify-between rounded-[26px] bg-white px-5 py-2"><View><Text className="text-sm text-[#536073]">Daily Progress</Text><Text className="mt-1 text-2xl font-semibold text-[#071629]">{taken} / {todaysDoses.length}<Text className="text-sm font-normal"> doses taken</Text></Text></View><ProgressRing percent={todaysDoses.length ? Math.round(taken / todaysDoses.length * 100) : 0} /></View>
