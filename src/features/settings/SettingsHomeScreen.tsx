@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
+import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Modal, Platform, Pressable, ScrollView, Switch, Text, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -123,6 +123,15 @@ export default function SettingsHomeScreen() {
     </Pressable>;
   }
 
+  function legalLink(label: string, document: 'privacy' | 'terms') {
+    return <Link href={`https://dosetracker.pages.dev/?legal=${document}`} asChild>
+      <Pressable accessibilityRole="link" accessibilityLabel={label} accessibilityHint="Opens the document in your browser" className="min-h-[48px] flex-row items-center justify-between py-2 pl-[52px]">
+        <Text className="flex-1 text-[15px]" style={{ color: ink }}>{label}</Text>
+        <Feather name="external-link" size={20} color={ink} />
+      </Pressable>
+    </Link>;
+  }
+
   function heading(icon: keyof typeof Feather.glyphMap, title: string, subtitle?: string) {
     return <View className="flex-1 flex-row items-center gap-4 pb-1">
       <View className="w-9 items-center"><Feather name={icon} size={27} color={ink} /></View>
@@ -152,7 +161,7 @@ export default function SettingsHomeScreen() {
 
         <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('database', 'Data')}{row('Export preferences', undefined, () => setMenu('backup'))}{row('Restore preferences', undefined, () => setMenu('restore'))}{row('Erase all data', undefined, () => setMenu('erase'), true)}</View>
 
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('info', 'About')}{row('Offline-first', 'On', () => setMenu('about'))}{row('Privacy information', 'Version 1.0.0', () => setMenu('about'))}</View>
+        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('info', 'About')}{row('Offline-first', 'On', () => setMenu('about'))}{legalLink('Privacy Policy', 'privacy')}{legalLink('Terms of Service', 'terms')}</View>
       </View>
     </ScrollView>
 

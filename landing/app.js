@@ -455,6 +455,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // App Settings links open the requested document immediately.
+  const requestedLegalDocument = new URLSearchParams(window.location.search).get('legal');
+  if (requestedLegalDocument === 'privacy' || requestedLegalDocument === 'terms') {
+    openLegalModal(requestedLegalDocument);
+    legalModalClose?.focus({ preventScroll: true });
+  }
+
   legalModalClose?.addEventListener('click', closeLegalModal);
 
   legalTabPrivacy?.addEventListener('click', () => openLegalModal('privacy'));
