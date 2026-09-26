@@ -2,11 +2,12 @@ import { Stack } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { OnboardingProvider } from '@/features/onboarding/context';
+import { OnboardingProvider, useOnboarding } from '@/features/onboarding/context';
 import { NotificationLifecycle } from '@/features/notifications/NotificationLifecycle';
 import { initializeDatabase } from '@/database';
 import { ProfilesProvider } from '@/features/profiles/context';
 import { ProfileSwitcher } from '@/features/profiles/ProfileSwitcher';
+import { AppLock } from '@/features/security/AppLock';
 import '../../global.css';
 
 export default function RootLayout() {
@@ -33,12 +34,28 @@ export default function RootLayout() {
     </View>;
   }
 
-  return <OnboardingProvider>
+  return <AppLock><OnboardingProvider>
     <ProfilesProvider>
     <StatusBar style="dark" />
     <NotificationLifecycle />
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FBF8F3' }, animation: 'slide_from_right' }} />
+    <RootNavigator />
     <ProfileSwitcher />
     </ProfilesProvider>
-  </OnboardingProvider>;
+  </OnboardingProvider></AppLock>;
+}
+
+function RootNavigator() {
+  const { data } = useOnboarding();
+  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FBF8F3' }, animation: 'slide_from_right' }}>
+    <Stack.Protected guard={!data.completed}>
+      <Stack.Screen name="welcome" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="ready" />
+    </Stack.Protected>
+    <Stack.Screen name="profile" />
+    <Stack.Protected guard={data.completed}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="device-authentication" />
+    </Stack.Protected>
+  </Stack>;
 }

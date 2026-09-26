@@ -32,6 +32,12 @@
       "expo-router",
       "expo-notifications",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow DoseTracker to use Face ID to protect your health information."
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Choose a profile photo stored only on this device.",
@@ -48,7 +54,13 @@
         }
       ],
       "expo-sqlite",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

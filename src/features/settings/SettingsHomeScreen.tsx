@@ -8,8 +8,9 @@ import { useOnboarding } from '@/features/onboarding/context';
 import { useProfiles } from '@/features/profiles/context';
 import { exportPreferences, importPreferences } from '@/features/settings/backup';
 import { clearSettings, DEFAULT_SETTINGS, readSettings, type SettingsPreferences, writeSettings } from '@/features/settings/storage';
+import { useAppLock } from '@/features/security/AppLock';
 
-type Menu = 'snooze' | 'privacy' | 'sound' | 'auth' | 'backup' | 'restore' | 'erase' | 'about' | null;
+type Menu = 'snooze' | 'privacy' | 'sound' | 'backup' | 'restore' | 'erase' | 'about' | null;
 const NAVY = '#0B2540';
 const MUTED = '#536073';
 
@@ -29,6 +30,7 @@ export default function SettingsHomeScreen() {
   const secondary = dark ? '#B6C1CF' : MUTED;
   const pill = dark ? '#374151' : '#F2F3F5';
   const { currentProfile: profile, showSwitcher } = useProfiles();
+  const { enabled: appLockEnabled } = useAppLock();
 
   useEffect(() => {
     let active = true;
@@ -162,7 +164,7 @@ export default function SettingsHomeScreen() {
           <View className="min-h-[52px] flex-row items-center justify-between pl-[52px]"><Text className="text-[15px]" style={{ color: ink }}>Reminders enabled</Text><Switch accessibilityLabel="Reminders enabled" value={prefs.remindersEnabled} disabled={!loaded || busy} onValueChange={(remindersEnabled) => void update({ remindersEnabled })} trackColor={{ false: '#9CA3AF', true: '#08B8BE' }} /></View>
           {row('Default snooze duration', `${prefs.snoozeMinutes} minutes`, () => setMenu('snooze'))}{row('Notification privacy', prefs.notificationPrivacy === 'show' ? 'Show content' : 'Hide content', () => setMenu('privacy'))}{row('Sound & vibration', prefs.soundAndVibration ? 'On' : 'Off', () => setMenu('sound'))}{row('Test reminder', undefined, () => void testReminder())}{row('Reminder status', reminderStatus, () => void checkReminderStatus())}{Platform.OS === 'android' && row('Alarms & reminders access', 'System settings', requestExactAccess)}{Platform.OS !== 'web' && row('Notification system settings', undefined, () => { void Linking.openSettings().catch(() => setMessage('System settings could not be opened.')); })}</View>
 
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('lock', 'Privacy')}{row('Device authentication', 'Off', () => setMenu('auth'))}</View>
+        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('lock', 'Privacy')}{row('Device authentication', appLockEnabled ? 'On' : 'Off', () => router.push('/device-authentication'))}</View>
 
         <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('database', 'Data')}{row('Export preferences', undefined, () => setMenu('backup'))}{row('Restore preferences', undefined, () => setMenu('restore'))}{row('Erase all data', undefined, () => setMenu('erase'), true)}</View>
 
@@ -171,12 +173,11 @@ export default function SettingsHomeScreen() {
     </ScrollView>
 
     {message ? <Pressable accessibilityRole="button" accessibilityLabel="Dismiss message" onPress={() => setMessage('')} className="absolute bottom-3 left-4 right-4 rounded-2xl bg-[#0B2540] p-4"><Text className="text-center text-[14px] text-white">{message}</Text></Pressable> : null}
-    <Modal transparent visible={menu !== null} animationType="fade" onRequestClose={() => { if (!busy) setMenu(null); }}><View className="flex-1 justify-end bg-black/40"><Pressable className="flex-1" disabled={busy} onPress={() => setMenu(null)} /><View className="rounded-t-[28px] p-5 pb-9" style={{ backgroundColor: surface }}><View className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#A1A8B0]" /><Text className="mb-4 text-[20px] font-bold" style={{ color: ink }}>{menu === 'snooze' ? 'Default snooze duration' : menu === 'privacy' ? 'Notification privacy' : menu === 'sound' ? 'Sound & vibration' : menu === 'auth' ? 'Device authentication' : menu === 'backup' ? 'Export backup' : menu === 'restore' ? 'Restore backup' : menu === 'erase' ? 'Erase all data?' : 'About DoseTracker'}</Text>
+    <Modal transparent visible={menu !== null} animationType="fade" onRequestClose={() => { if (!busy) setMenu(null); }}><View className="flex-1 justify-end bg-black/40"><Pressable className="flex-1" disabled={busy} onPress={() => setMenu(null)} /><View className="rounded-t-[28px] p-5 pb-9" style={{ backgroundColor: surface }}><View className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#A1A8B0]" /><Text className="mb-4 text-[20px] font-bold" style={{ color: ink }}>{menu === 'snooze' ? 'Default snooze duration' : menu === 'privacy' ? 'Notification privacy' : menu === 'sound' ? 'Sound & vibration' : menu === 'backup' ? 'Export backup' : menu === 'restore' ? 'Restore backup' : menu === 'erase' ? 'Erase all data?' : 'About DoseTracker'}</Text>
       <View className="gap-2">
         {menu === 'snooze' && ([5, 10, 15, 30] as const).map((minutes) => option(`${minutes} minutes`, prefs.snoozeMinutes === minutes, () => void update({ snoozeMinutes: minutes })))}
         {menu === 'privacy' && <>{option('Show medicine details', prefs.notificationPrivacy === 'show', () => void update({ notificationPrivacy: 'show' }))}{option('Hide details on lock screen', prefs.notificationPrivacy === 'hide', () => void update({ notificationPrivacy: 'hide' }))}</>}
         {menu === 'sound' && <>{option('On', prefs.soundAndVibration, () => void update({ soundAndVibration: true }))}{option('Off', !prefs.soundAndVibration, () => void update({ soundAndVibration: false }))}</>}
-        {menu === 'auth' && <Text className="text-[15px] leading-6" style={{ color: secondary }}>App locking is not available yet. Your saved profile remains on this device.</Text>}
         {menu === 'backup' && <><Text className="text-[15px] leading-6" style={{ color: secondary }}>Save a JSON file with preferences only. Your profile, medicines, and dose history are not included.</Text><Pressable accessibilityRole="button" disabled={busy || !loaded} onPress={() => void exportBackup()} className="mt-2 min-h-[48px] items-center justify-center rounded-full bg-[#0B2540]"><Text className="font-semibold text-white">{busy ? 'Preparing…' : 'Save preferences file'}</Text></Pressable></>}
         {menu === 'restore' && <><Text className="text-[15px] leading-6" style={{ color: secondary }}>Choose a DoseTracker preferences JSON file. Its settings will replace your current preferences.</Text><Pressable accessibilityRole="button" disabled={busy || !loaded} onPress={() => void restoreBackup()} className="mt-2 min-h-[48px] items-center justify-center rounded-full bg-[#0B2540]"><Text className="font-semibold text-white">{busy ? 'Restoring…' : 'Choose preferences file'}</Text></Pressable></>}
         {menu === 'erase' && <><Text className="text-[15px] leading-6" style={{ color: secondary }}>This permanently removes the local profile, medicines, schedules, dose history, and preferences from this device. A preferences backup does not include your profile or medicines.</Text><Pressable accessibilityRole="button" disabled={busy} onPress={() => void eraseData()} className="mt-2 min-h-[48px] items-center justify-center rounded-full bg-[#EF4444]"><Text className="font-semibold text-white">{busy ? 'Erasing…' : 'Erase all local data'}</Text></Pressable></>}
