@@ -337,6 +337,7 @@ body[data-theme="dark"] .btn-secondary:hover {
   width: 40px;
   height: 40px;
   border-radius: 10px;
+  object-fit: contain;
   box-shadow: 0 4px 10px rgba(11, 37, 64, 0.15);
 }
 
@@ -2019,6 +2020,11 @@ body[data-theme="dark"] .legal-tab.active {
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 12px;
+}
+
+.footer-logo img {
+  border-radius: 8px;
+  object-fit: contain;
 }
 
 .footer-tagline {

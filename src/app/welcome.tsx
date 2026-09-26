@@ -1,5 +1,5 @@
 import { Redirect, useRouter } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { useOnboarding } from '@/features/onboarding/context';
 import { Button, Feature, Page, PrivacyNote, ReferenceArt, styles } from '@/features/onboarding/ui';
 
@@ -9,6 +9,7 @@ export default function WelcomeScreen() {
   if (data.completed) return <Redirect href="/" />;
   return <Page>
     <View style={{ paddingTop: 30, paddingHorizontal: 16, marginBottom: 20 }}>
+      <Image source={require('../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 68, height: 68, alignSelf: 'center', marginBottom: 12 }} />
       <Text accessibilityRole="header" style={[styles.title, { textAlign: 'center', fontSize: 32, lineHeight: 40 }]}>DoseTracker</Text>
       <Text style={[styles.subtitle, { textAlign: 'center' }]}>Simple medicine management{'\n'}for you and your family.</Text>
     </View>

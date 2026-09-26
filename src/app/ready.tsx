@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { useOnboarding } from '@/features/onboarding/context';
-import { Button, ErrorMessage, Feature, Icon, Page, PrivacyNote, StepHeader, styles } from '@/features/onboarding/ui';
+import { Button, ErrorMessage, Feature, Page, PrivacyNote, StepHeader, styles } from '@/features/onboarding/ui';
 
 export default function ReadyScreen() {
   const router = useRouter();
@@ -21,7 +21,7 @@ export default function ReadyScreen() {
   return <Page>
     {!data.completed && <StepHeader step={3} />}
     <View className="items-center" style={{ paddingVertical: 48 }}>
-      <View style={{ width: 132, height: 132, borderRadius: 999, backgroundColor: '#DCF5EF', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}><Icon name="shield" size={64} color="#08AD77" /></View>
+      <Image source={require('../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 132, height: 132, marginBottom: 28 }} />
       <Text accessibilityRole="header" style={[styles.title, { textAlign: 'center' }]}>{data.completed ? 'Your space, privately.' : 'You’re all set.'}</Text>
       <Text style={[styles.subtitle, { textAlign: 'center', paddingHorizontal: 12 }]}>{data.profile ? `${data.profile.name}’s profile is saved on this device.` : 'You can create your first profile whenever you’re ready.'}</Text>
     </View>
