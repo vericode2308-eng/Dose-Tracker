@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DoseTracker — Offline-First, Private Medication Management</title>
+  <meta name="description" content="DoseTracker is a 100% offline, privacy-first Android medication tracking app. Precise exact alarms, multi-profile family support, intelligent stock monitoring, and zero cloud tracking.">
+  <meta name="keywords" content="medication tracker, pill reminder, dose tracker, offline health app, private medication tracker, android exact alarm, pill stock manager">
+  <meta name="theme-color" content="#0B2540">
+  
+  <!-- Open Graph / Social Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="DoseTracker — Dependable, Private Medication Management">
+  <meta property="og:description" content="Never miss a dose. 100% offline, zero cloud surveillance, exact native alarms, and multi-profile family care.">
+  <meta property="og:image" content="./assets/design/01-today-dashboard-dose-schedule.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="./assets/icon.png">
+
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body data-theme="light">
+
+  <!-- Background Decorative Ambient Glows -->
+  <div class="ambient-glow glow-top-left" aria-hidden="true"></div>
+  <div class="ambient-glow glow-top-right" aria-hidden="true"></div>
+  <div class="ambient-glow glow-mid-center" aria-hidden="true"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar-wrapper">
+    <nav class="navbar" aria-label="Main Navigation">
+      <a href="#hero" class="brand-logo" id="nav-brand">
+        <img src="./assets/icon.png" alt="DoseTracker App Icon" class="brand-icon">
+        <div class="brand-text">
+          <span class="brand-title">DoseTracker</span>
+          <span class="brand-tag">Offline • Private</span>
+        </div>
+      </a>
+
+      <div class="nav-links" id="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#demo" class="nav-link">Interactive Demo</a>
+        <a href="#showcase" class="nav-link">App Showcase</a>
+        <a href="#privacy" class="nav-link">Privacy & Security</a>
+        <a href="#chimes" class="nav-link">Sound Chimes</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Theme Toggle -->
+        <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark/light theme" title="Toggle theme">
+          <span class="theme-icon sun-icon">☀️</span>
+          <span class="theme-icon moon-icon">🌙</span>
+        </button>
+
+        <a href="#download" class="btn btn-primary btn-sm nav-cta" id="nav-download-btn">
+          <span>Get App</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </a>
+
+        <!-- Mobile Menu Hamburger -->
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HERO SECTION -->
+    <section class="hero-section" id="hero">
+      <div class="container hero-container">
+        
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="badge-dot"></span>
+            <span class="badge-text">Built for peace of mind • Zero Cloud Tracking</span>
+          </div>
+
+          <h1 class="hero-title">
+            Medication tracking that respects your <span class="text-gradient">health & privacy.</span>
+          </h1>
+
+          <p class="hero-description">
+            A free, offline-first Android application designed to make taking medicine effortless. Dependable exact alarms, intelligent refill alerts, and multi-profile family support — with 100% of your data stored safely on your device.
+          </p>
+
+          <div class="hero-pill-badges">
+            <div class="pill-chip">
+              <span class="pill-icon">🛡️</span>
+              <span>100% On-Device SQLite</span>
+            </div>
+            <div class="pill-chip">
+              <span class="pill-icon">⏰</span>
+              <span>Android Exact Alarms</span>
+            </div>
+            <div class="pill-chip">
+              <span class="pill-icon">👨‍👩‍👦</span>
+              <span>Multi-Profile Caregiver</span>
+            </div>
+            <div class="pill-chip">
+              <span class="pill-icon">📦</span>
+              <span>Low-Stock Warnings</span>
+            </div>
+          </div>
+
+          <div class="hero-cta-group">
+            <a href="#download" class="btn btn-primary btn-lg" id="hero-cta-download">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993s-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9994.4482.9994.9993s-.4483.9997-.9994.9997m11.4045-6.02l1.997-3.459a.416.416 0 0 0-.1523-.5676.416.416 0 0 0-.5676.1523l-2.0223 3.503c-1.603-.733-3.415-1.1447-5.3363-1.1447-1.9213 0-3.7333.4117-5.3363 1.1447L4.4377 5.4471a.416.416 0 0 0-.5676-.1523.416.416 0 0 0-.1523.5676l1.997 3.459C2.688 11.0827 1 14.3435 1 18.0003h22c0-3.6568-1.688-6.9176-4.7185-8.6789"/>
+              </svg>
+              <span>Download Android APK</span>
+            </a>
+
+            <a href="#demo" class="btn btn-secondary btn-lg" id="hero-cta-demo">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Try Interactive Simulator</span>
+            </a>
+          </div>
+
+          <div class="hero-tech-specs">
+            <span class="spec-label">Powered by:</span>
+            <span class="spec-tag">Expo SDK 57</span>
+            <span class="spec-tag">React Native 0.86</span>
+            <span class="spec-tag">SQLite v4</span>
+            <span class="spec-tag">Biometric Guard</span>
+          </div>
+        </div>
+
+        <!-- Phone Mockup Container with Floating Visual Highlights -->
+        <div class="hero-visual-wrapper">
+          <div class="phone-mockup-frame">
+            <div class="phone-speaker"></div>
+            <div class="phone-camera"></div>
+            <div class="phone-screen-container">
+              <img src="./assets/design/01-today-dashboard-dose-schedule.png" alt="DoseTracker Today Dashboard Screen" class="phone-screen-img" id="hero-phone-img">
+            </div>
+            <div class="phone-home-indicator"></div>
+          </div>
+
+          <!-- Floating Micro Cards -->
+          <div class="floating-badge badge-top-right glass-card">
+            <div class="floating-icon-wrap bg-success">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="floating-badge-text">
+              <strong>Morning Doses Taken</strong>
+              <span>Atorvastatin 20mg • 8:02 AM</span>
+            </div>
+          </div>
+
+          <div class="floating-badge badge-bottom-left glass-card">
+            <div class="floating-icon-wrap bg-warning">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <div class="floating-badge-text">
+              <strong>Refill Alert</strong>
+              <span>Metformin: 4 pills left</span>
+            </div>
+          </div>
+
+          <div class="floating-badge badge-middle-right glass-card">
+            <div class="floating-icon-wrap bg-navy">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <div class="floating-badge-text">
+              <strong>Biometric Lock</strong>
+              <span>Fingerprint & Face ID</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- KEY STATS STRIP -->
+    <section class="stats-strip-section" aria-label="Key Highlights">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">0 Cloud Servers</div>
+            <div class="stat-label">Everything lives inside local SQLite storage on your phone</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">100% Offline</div>
+            <div class="stat-label">Full capability with zero internet connection required</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">Exact Alarms</div>
+            <div class="stat-label">Built with Android SCHEDULE_EXACT_ALARM permissions</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">Multi-Profile</div>
+            <div class="stat-label">Seamlessly manage family members, elderly parents & pets</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE SIMULATOR (LIVE APP DEMO) -->
+    <section class="demo-section" id="demo">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Hands-On Experience</span>
+          <h2 class="section-title">Test the DoseTracker Workflow Live</h2>
+          <p class="section-subtitle">
+            Interact with our simulated Today dashboard below. Switch profiles, log scheduled doses, feel the celebratory feedback, and test the custom chime audio!
+          </p>
+        </div>
+
+        <div class="demo-card-container glass-card">
+          <!-- Profile switcher row in simulator -->
+          <div class="simulator-header">
+            <div class="simulator-profile-select">
+              <span class="sim-label">Active Profile:</span>
+              <div class="profile-pills-list">
+                <button class="profile-pill active" data-profile="sarah" id="sim-prof-sarah">
+                  <span class="prof-avatar" style="background-color: #0B2540;">S</span>
+                  <span>Sarah (You)</span>
+                </button>
+                <button class="profile-pill" data-profile="dad" id="sim-prof-dad">
+                  <span class="prof-avatar" style="background-color: #14B8A6;">D</span>
+                  <span>Dad (Caregiver)</span>
+                  <span class="profile-alert-badge">1</span>
+                </button>
+                <button class="profile-pill" data-profile="oliver" id="sim-prof-oliver">
+                  <span class="prof-avatar" style="background-color: #8B5CF6;">O</span>
+                  <span>Oliver (Kid)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Simulation Reset Button -->
+            <button class="btn btn-outline btn-sm" id="sim-reset-btn" title="Reset doses back to initial state">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              <span>Reset Doses</span>
+            </button>
+          </div>
+
+          <!-- Progress Ring & Daily Summary -->
+          <div class="simulator-summary-box">
+            <div class="progress-ring-wrap">
+              <svg class="progress-ring-svg" width="96" height="96" viewBox="0 0 100 100">
+                <circle class="ring-bg" cx="50" cy="50" r="42" stroke-width="8"></circle>
+                <circle class="ring-indicator" id="sim-ring-indicator" cx="50" cy="50" r="42" stroke-width="8" stroke-dasharray="263.89" stroke-dashoffset="65.97"></circle>
+              </svg>
+              <div class="ring-text" id="sim-ring-text">75%</div>
+            </div>
+            
+            <div class="summary-details">
+              <div class="summary-title" id="sim-summary-title">Today's Schedule: 3 of 4 Doses Taken</div>
+              <p class="summary-sub" id="sim-summary-sub">Great job! You only have 1 dose remaining for today.</p>
+              <div class="streak-badge">
+                <span class="streak-icon">🔥</span>
+                <span>6 Day Adherence Streak</span>
+              </div>
+            </div>
+
+            <!-- Chime preview button right in simulator -->
+            <div class="sim-audio-trigger">
+              <button class="chime-quick-play-btn" id="sim-quick-chime-btn" title="Play Dose Reminder Chime">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <span>Play Sound Chime</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Simulated Dose List Timeline -->
+          <div class="sim-timeline">
+            
+            <!-- Dose Item 1: Morning (Already taken) -->
+            <div class="sim-dose-card taken" id="dose-card-1">
+              <div class="sim-time-col">
+                <span class="dose-time">08:00 AM</span>
+                <span class="dose-period">Morning</span>
+              </div>
+              <div class="sim-info-col">
+                <div class="sim-med-name">
+                  Atorvastatin
+                  <span class="strength-tag">20 mg tablet</span>
+                </div>
+                <div class="sim-instruction">Take 1 tablet with water • Cholesterol</div>
+                <div class="sim-stock-status">Stock: 26 left</div>
+              </div>
+              <div class="sim-action-col">
+                <div class="status-pill status-taken">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Taken 8:02 AM</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dose Item 2: Afternoon (Interactive Due Now) -->
+            <div class="sim-dose-card due-now pulse-border" id="dose-card-2">
+              <div class="sim-time-col">
+                <span class="dose-time">01:00 PM</span>
+                <span class="dose-period badge-warning-subtle">Due Now</span>
+              </div>
+              <div class="sim-info-col">
+                <div class="sim-med-name">
+                  Metformin
+                  <span class="strength-tag">500 mg tablet</span>
+                  <span class="low-stock-pill">⚠️ Low Stock: 4 pills</span>
+                </div>
+                <div class="sim-instruction">Take 1 tablet after lunch with food</div>
+                <div class="sim-stock-status text-warning">Refill threshold triggered</div>
+              </div>
+              <div class="sim-action-col">
+                <div class="action-btn-cluster" id="dose-2-actions">
+                  <button class="btn btn-primary btn-sm btn-take-dose" id="btn-take-dose-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Take Dose</span>
+                  </button>
+                  <button class="btn btn-secondary btn-sm" id="btn-snooze-dose-2" title="Snooze reminder for 10 minutes">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>Snooze 10m</span>
+                  </button>
+                </div>
+                <div class="status-pill status-taken hidden" id="dose-2-taken-pill">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Taken Just Now</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dose Item 3: Evening (Upcoming) -->
+            <div class="sim-dose-card upcoming" id="dose-card-3">
+              <div class="sim-time-col">
+                <span class="dose-time">07:30 PM</span>
+                <span class="dose-period">Evening</span>
+              </div>
+              <div class="sim-info-col">
+                <div class="sim-med-name">
+                  Lisinopril
+                  <span class="strength-tag">10 mg tablet</span>
+                </div>
+                <div class="sim-instruction">Take 1 tablet before dinner • Blood pressure</div>
+                <div class="sim-stock-status">Stock: 48 left (Adequate)</div>
+              </div>
+              <div class="sim-action-col">
+                <div class="status-pill status-upcoming">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span>Scheduled 7:30 PM</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dose Item 4: Night (Bedtime) -->
+            <div class="sim-dose-card upcoming" id="dose-card-4">
+              <div class="sim-time-col">
+                <span class="dose-time">10:00 PM</span>
+                <span class="dose-period">Bedtime</span>
+              </div>
+              <div class="sim-info-col">
+                <div class="sim-med-name">
+                  Melatonin
+                  <span class="strength-tag">3 mg gummy</span>
+                </div>
+                <div class="sim-instruction">Take 1 chewable 30 mins before sleep</div>
+                <div class="sim-stock-status">Stock: 60 left</div>
+              </div>
+              <div class="sim-action-col">
+                <div class="status-pill status-upcoming">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span>Scheduled 10:00 PM</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Simulation feedback toast -->
+          <div class="sim-feedback-toast" id="sim-toast" aria-live="polite">
+            <span class="toast-icon">✨</span>
+            <span class="toast-message" id="sim-toast-msg">Dose recorded! Stock decremented and history updated.</span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- CORE FEATURES GRID -->
+    <section class="features-section" id="features">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Engineered for Trust</span>
+          <h2 class="section-title">Everything you need. Nothing intrusive.</h2>
+          <p class="section-subtitle">
+            Most health apps treat your prescriptions as advertising inventory. DoseTracker was engineered as an uncompromising, local-first utility.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          
+          <div class="feature-card glass-card">
+            <div class="feature-icon-box bg-navy-light">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0B2540" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+            <h3 class="feature-title">Intuitive Today Schedule</h3>
+            <p class="feature-text">
+              Organized chronological timeline grouped into Morning, Afternoon, Evening, and Night. View dose strengths, food instructions, and immediate single-tap action controls.
+            </p>
+            <div class="feature-pill-tag">Visual Timeline</div>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon-box bg-teal-light">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <h3 class="feature-title">Native Exact Alarms</h3>
+            <p class="feature-text">
+              Harnesses Android’s <code>SCHEDULE_EXACT_ALARM</code> API with idle bypass to sound alarms precisely when scheduled, even when the device enters deep battery-saving Doze mode.
+            </p>
+            <div class="feature-pill-tag">System Level</div>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon-box bg-amber-light">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <h3 class="feature-title">Smart Stock & Refill Alerts</h3>
+            <p class="feature-text">
+              Automatically decrements inventory whenever you take a dose. Set custom low-stock thresholds (e.g. 5 days remaining) to prompt pharmacy refills before you run out.
+            </p>
+            <div class="feature-pill-tag">Zero Panic</div>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon-box bg-purple-light">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
+            <h3 class="feature-title">Multi-Profile Caregiver Hub</h3>
+            <p class="feature-text">
+              Manage medications for yourself, elderly parents, children, or family pets with distinct color avatars. The profile switcher highlights overdue doses across all dependents.
+            </p>
+            <div class="feature-pill-tag">Family Ready</div>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon-box bg-emerald-light">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </div>
+            <h3 class="feature-title">Adherence Calendar & History</h3>
+            <p class="feature-text">
+              Review monthly adherence heatmaps, streak calculations, and exact historical timestamps for every dose taken, skipped, or snoozed. Export records directly to JSON anytime.
+            </p>
+            <div class="feature-pill-tag">Audit Trail</div>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon-box bg-navy-light">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0B2540" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h3 class="feature-title">Biometric App Lock & Privacy</h3>
+            <p class="feature-text">
+              Gate sensitive health records with hardware Fingerprint or Face ID unlock. Configure lock-screen notifications to conceal sensitive drug names from curious eyes.
+            </p>
+            <div class="feature-pill-tag">Encrypted Keys</div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE APP SHOWCASE (TABBED GALLERY OF REAL DESIGNS) -->
+    <section class="showcase-section" id="showcase">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Pixel-Perfect Experience</span>
+          <h2 class="section-title">Designed with Care, Calibrated for Clarity</h2>
+          <p class="section-subtitle">
+            Explore the authentic high-resolution app interfaces. Every screen is purposefully designed to lower stress, enhance readability, and provide effortless navigation.
+          </p>
+        </div>
+
+        <!-- Showcase Tab Navigation -->
+        <div class="showcase-tabs-nav" role="tablist">
+          <button class="showcase-tab active" role="tab" aria-selected="true" data-tab="today" id="tab-today">
+            <span class="tab-emoji">📋</span>
+            <span>Today Dashboard</span>
+          </button>
+          <button class="showcase-tab" role="tab" aria-selected="false" data-tab="meds" id="tab-meds">
+            <span class="tab-emoji">💊</span>
+            <span>Medicines & Filter</span>
+          </button>
+          <button class="showcase-tab" role="tab" aria-selected="false" data-tab="stock" id="tab-stock">
+            <span class="tab-emoji">📦</span>
+            <span>Details & Stock</span>
+          </button>
+          <button class="showcase-tab" role="tab" aria-selected="false" data-tab="history" id="tab-history">
+            <span class="tab-emoji">📅</span>
+            <span>Adherence Calendar</span>
+          </button>
+          <button class="showcase-tab" role="tab" aria-selected="false" data-tab="wizard" id="tab-wizard">
+            <span class="tab-emoji">➕</span>
+            <span>4-Step Setup</span>
+          </button>
+          <button class="showcase-tab" role="tab" aria-selected="false" data-tab="reminders" id="tab-reminders">
+            <span class="tab-emoji">🔔</span>
+            <span>Action Reminders</span>
+          </button>
+          <button class="showcase-tab" role="tab" aria-selected="false" data-tab="profiles" id="tab-profiles">
+            <span class="tab-emoji">👥</span>
+            <span>Family Profiles</span>
+          </button>
+          <button class="showcase-tab" role="tab" aria-selected="false" data-tab="settings" id="tab-settings">
+            <span class="tab-emoji">⚙️</span>
+            <span>Privacy & Settings</span>
+          </button>
+        </div>
+
+        <!-- Showcase Content Card -->
+        <div class="showcase-stage glass-card">
+          <div class="showcase-grid">
+            
+            <!-- Left: Phone Display -->
+            <div class="showcase-phone-col">
+              <div class="phone-mockup-frame mini-frame">
+                <div class="phone-speaker"></div>
+                <div class="phone-camera"></div>
+                <div class="phone-screen-container">
+                  <img src="./assets/design/01-today-dashboard-dose-schedule.png" alt="App screen preview" class="phone-screen-img" id="showcase-screen-img">
+                </div>
+                <div class="phone-home-indicator"></div>
+              </div>
+            </div>
+
+            <!-- Right: Screen Details & Deep Dive -->
+            <div class="showcase-info-col" id="showcase-info-container">
+              <div class="showcase-info-badge" id="showcase-badge">Primary Screen</div>
+              <h3 class="showcase-info-title" id="showcase-title">Today Dashboard & Dose Schedule</h3>
+              <p class="showcase-info-desc" id="showcase-desc">
+                The central control room of your daily routine. Clean, card-based medicine blocks display dose timings, precise milligram strengths, food accompaniment instructions, and a responsive circular progress indicator.
+              </p>
+
+              <div class="showcase-highlights-list" id="showcase-highlights">
+                <div class="highlight-item">
+                  <div class="check-icon">✓</div>
+                  <div><strong>Clear Status Distinction:</strong> Overdue, Due Now, Taken, and Upcoming doses each have distinct visual treatments.</div>
+                </div>
+                <div class="highlight-item">
+                  <div class="check-icon">✓</div>
+                  <div><strong>Actionable Cards:</strong> Record a dose immediately or trigger a 5/10/15/30-minute smart snooze.</div>
+                </div>
+                <div class="highlight-item">
+                  <div class="check-icon">✓</div>
+                  <div><strong>Selected Profile Header:</strong> Always clearly shows which family member or pet's schedule is active.</div>
+                </div>
+              </div>
+
+              <div class="showcase-meta-row">
+                <div class="meta-tag">Design Asset: <code>01-today-dashboard-dose-schedule.png</code></div>
+                <div class="meta-tag">Logical Dimensions: <code>390 × 844 dp</code></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4-STEP MEDICATION WIZARD SHOWCASE -->
+    <section class="wizard-section">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Effortless Onboarding</span>
+          <h2 class="section-title">Add Any Medication in 4 Straightforward Steps</h2>
+          <p class="section-subtitle">
+            No convoluted medical jargon or required cloud accounts. A clean sequential flow makes configuring dosages, complex recurrences, and stock alerts quick and foolproof.
+          </p>
+        </div>
+
+        <div class="wizard-steps-grid">
+          
+          <div class="wizard-step-card glass-card">
+            <div class="step-num-pill">Step 01</div>
+            <div class="wizard-img-wrap">
+              <img src="./assets/design/05-add-medicine-step-1-details.png" alt="Step 1 Details" class="wizard-thumb">
+            </div>
+            <h4 class="step-title">Details & Formulation</h4>
+            <p class="step-text">
+              Enter brand name, strength (mg/mcg/ml), dosage form (tablet, capsule, drops), and custom color tag for fast recognition.
+            </p>
+          </div>
+
+          <div class="wizard-step-card glass-card">
+            <div class="step-num-pill">Step 02</div>
+            <div class="wizard-img-wrap">
+              <img src="./assets/design/06-add-medicine-step-2-schedule.png" alt="Step 2 Schedule" class="wizard-thumb">
+            </div>
+            <h4 class="step-title">Frequency & Timing</h4>
+            <p class="step-text">
+              Choose daily, specific weekdays, or as-needed. Assign exact reminder timestamps matching your breakfast, lunch, or bedtime routine.
+            </p>
+          </div>
+
+          <div class="wizard-step-card glass-card">
+            <div class="step-num-pill">Step 03</div>
+            <div class="wizard-img-wrap">
+              <img src="./assets/design/07-add-medicine-step-3-stock.png" alt="Step 3 Stock" class="wizard-thumb">
+            </div>
+            <h4 class="step-title">Inventory & Refills</h4>
+            <p class="step-text">
+              Track your supply count. Define a low-stock alert threshold so you're notified days before finishing your last blister pack.
+            </p>
+          </div>
+
+          <div class="wizard-step-card glass-card">
+            <div class="step-num-pill">Step 04</div>
+            <div class="wizard-img-wrap">
+              <img src="./assets/design/08-add-medicine-step-4-review.png" alt="Step 4 Review" class="wizard-thumb">
+            </div>
+            <h4 class="step-title">Verify & Arm Alarms</h4>
+            <p class="step-text">
+              Review instructions and alarm schedules at a glance. Confirming commits data to local SQLite and arms exact Android notification requests.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SOUND CHIMES STUDIO SECTION -->
+    <section class="chimes-section" id="chimes">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Acoustic Ergonomics</span>
+          <h2 class="section-title">Pleasant, Calibrated Audio Chimes</h2>
+          <p class="section-subtitle">
+            Most medical alarms use grating, anxiety-inducing sirens. DoseTracker bundles custom-engineered acoustic chime tones designed to catch your attention without causing alarm fatigue.
+          </p>
+        </div>
+
+        <div class="chimes-player-grid">
+          
+          <!-- Chime Card 1: Gentle -->
+          <div class="chime-card glass-card">
+            <div class="chime-header">
+              <div class="chime-badge">Warm & Soothing</div>
+              <span class="chime-filename">assets/sounds/gentle.wav</span>
+            </div>
+            <h3 class="chime-name">Gentle Harmony</h3>
+            <p class="chime-desc">
+              A soft, harmonic double-tone chime with gentle attack. Ideal for quiet offices, reading, bedside evening doses, and low-stress reminders.
+            </p>
+
+            <div class="chime-audio-widget">
+              <button class="play-chime-btn" id="play-gentle-btn" aria-label="Play Gentle Chime">
+                <span class="play-icon">▶</span>
+                <span class="pause-icon hidden">⏸</span>
+                <span class="btn-text">Listen to Gentle</span>
+              </button>
+              
+              <div class="waveform-visualizer" id="wave-gentle">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chime Card 2: Clear -->
+          <div class="chime-card glass-card">
+            <div class="chime-header">
+              <div class="chime-badge badge-accent">Distinct & Crisp</div>
+              <span class="chime-filename">assets/sounds/clear.wav</span>
+            </div>
+            <h3 class="chime-name">Clear Chime</h3>
+            <p class="chime-desc">
+              A vibrant, resonant notification chime with enhanced clarity that cuts through ambient noise, outdoor environments, and conversation.
+            </p>
+
+            <div class="chime-audio-widget">
+              <button class="play-chime-btn" id="play-clear-btn" aria-label="Play Clear Chime">
+                <span class="play-icon">▶</span>
+                <span class="pause-icon hidden">⏸</span>
+                <span class="btn-text">Listen to Clear</span>
+              </button>
+              
+              <div class="waveform-visualizer" id="wave-clear">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <audio id="audio-gentle" src="./assets/sounds/gentle.wav" preload="auto"></audio>
+        <audio id="audio-clear" src="./assets/sounds/clear.wav" preload="auto"></audio>
+
+      </div>
+    </section>
+
+    <!-- PRIVACY & SECURITY COMPARISON MATRIX -->
+    <section class="privacy-section" id="privacy">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Privacy Architecture</span>
+          <h2 class="section-title">Your Health Data is Nobody's Business</h2>
+          <p class="section-subtitle">
+            See how DoseTracker fundamentally differs from conventional cloud-based medication tracking apps.
+          </p>
+        </div>
+
+        <div class="comparison-table-wrapper glass-card">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th class="feature-col">Architectural Feature</th>
+                <th class="dosetracker-col highlight-header">
+                  <div class="table-brand-title">DoseTracker</div>
+                  <div class="table-brand-badge">Local-First Champion</div>
+                </th>
+                <th class="others-col">Conventional Cloud Apps</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="feature-col">
+                  <strong>User Account Requirement</strong>
+                  <div class="table-sub">Registration, email or phone number required</div>
+                </td>
+                <td class="dosetracker-col check-cell">
+                  <span class="check-mark">✓ Zero accounts</span>
+                  <div class="table-note">Instant start, zero sign-in required</div>
+                </td>
+                <td class="others-col cross-cell">
+                  <span class="cross-mark">✗ Mandatory sign-up</span>
+                  <div class="table-note">Ties your identity to medical list</div>
+                </td>
+              </tr>
+              <tr>
+                <td class="feature-col">
+                  <strong>Database Storage Location</strong>
+                  <div class="table-sub">Where medications, dosages, and notes reside</div>
+                </td>
+                <td class="dosetracker-col check-cell">
+                  <span class="check-mark">✓ On-Device SQLite v4</span>
+                  <div class="table-note">App-private storage (dosetracker.db)</div>
+                </td>
+                <td class="others-col cross-cell">
+                  <span class="cross-mark">✗ Remote Cloud Servers</span>
+                  <div class="table-note">Stored in centralized databases</div>
+                </td>
+              </tr>
+              <tr>
+                <td class="feature-col">
+                  <strong>Data Mining & Advertisements</strong>
+                  <div class="table-sub">Third-party trackers, ad SDKs, analytics</div>
+                </td>
+                <td class="dosetracker-col check-cell">
+                  <span class="check-mark">✓ 100% Free of Trackers</span>
+                  <div class="table-note">No Google Analytics, Meta pixel, or ads</div>
+                </td>
+                <td class="others-col cross-cell">
+                  <span class="cross-mark">✗ Targeted Pharma Ads</span>
+                  <div class="table-note">Monetized via telemetry & ads</div>
+                </td>
+              </tr>
+              <tr>
+                <td class="feature-col">
+                  <strong>Hardware Biometric App Lock</strong>
+                  <div class="table-sub">Fingerprint & Face ID local authentication</div>
+                </td>
+                <td class="dosetracker-col check-cell">
+                  <span class="check-mark">✓ Native SecureStore Guard</span>
+                  <div class="table-note">Stored in encrypted hardware keystore</div>
+                </td>
+                <td class="others-col cross-cell">
+                  <span class="cross-mark">✗ Paid "Premium" Tier</span>
+                  <div class="table-note">Requires monthly subscription</div>
+                </td>
+              </tr>
+              <tr>
+                <td class="feature-col">
+                  <strong>Notification Payload Redaction</strong>
+                  <div class="table-sub">Prevent lock-screen medication name leaks</div>
+                </td>
+                <td class="dosetracker-col check-cell">
+                  <span class="check-mark">✓ Public / Private / Secret Modes</span>
+                  <div class="table-note">Conceals medicine names from bystanders</div>
+                </td>
+                <td class="others-col cross-cell">
+                  <span class="cross-mark">✗ Plaintext Defaults</span>
+                  <div class="table-note">Displays full pill name on lock screen</div>
+                </td>
+              </tr>
+              <tr>
+                <td class="feature-col">
+                  <strong>Offline Independence</strong>
+                  <div class="table-sub">Operates without cellular data or WiFi</div>
+                </td>
+                <td class="dosetracker-col check-cell">
+                  <span class="check-mark">✓ Completely Autonomous</span>
+                  <div class="table-note">Airplane mode, remote areas, no degradation</div>
+                </td>
+                <td class="others-col cross-cell">
+                  <span class="cross-mark">✗ Degrades or Fails</span>
+                  <div class="table-note">Sync errors without active connection</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- DESIGN SYSTEM SPOTLIGHT -->
+    <section class="design-system-section">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Aesthetic Direction</span>
+          <h2 class="section-title">The DoseTracker Visual System</h2>
+          <p class="section-subtitle">
+            Rooted in calming, human-centered design. We rejected sterile hospital aesthetics in favor of a warm ivory palette, deep navy authority, and clear tactile geometry.
+          </p>
+        </div>
+
+        <div class="design-board-presentation glass-card">
+          <div class="design-board-preview">
+            <img src="./assets/design/00-design-system-board.png" alt="DoseTracker Design System Specification Board" class="design-board-img">
+          </div>
+
+          <div class="color-palette-strip">
+            <div class="color-swatch-item">
+              <div class="swatch-color" style="background-color: #FBF8F3; border: 1px solid #E5E7EB;"></div>
+              <div class="swatch-name">Warm Ivory</div>
+              <div class="swatch-hex">#FBF8F3</div>
+              <div class="swatch-role">Page Background</div>
+            </div>
+            <div class="color-swatch-item">
+              <div class="swatch-color" style="background-color: #0B2540;"></div>
+              <div class="swatch-name">Deep Navy</div>
+              <div class="swatch-hex">#0B2540</div>
+              <div class="swatch-role">Primary Accent</div>
+            </div>
+            <div class="color-swatch-item">
+              <div class="swatch-color" style="background-color: #14B8A6;"></div>
+              <div class="swatch-name">Vibrant Teal</div>
+              <div class="swatch-hex">#14B8A6</div>
+              <div class="swatch-role">Secondary Accent</div>
+            </div>
+            <div class="color-swatch-item">
+              <div class="swatch-color" style="background-color: #22C55E;"></div>
+              <div class="swatch-name">Success Green</div>
+              <div class="swatch-hex">#22C55E</div>
+              <div class="swatch-role">Dose Taken</div>
+            </div>
+            <div class="color-swatch-item">
+              <div class="swatch-color" style="background-color: #F59E0B;"></div>
+              <div class="swatch-name">Alert Amber</div>
+              <div class="swatch-hex">#F59E0B</div>
+              <div class="swatch-role">Low Stock / Due</div>
+            </div>
+            <div class="color-swatch-item">
+              <div class="swatch-color" style="background-color: #EF4444;"></div>
+              <div class="swatch-name">Error Red</div>
+              <div class="swatch-hex">#EF4444</div>
+              <div class="swatch-role">Overdue / Critical</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FREQUENTLY ASKED QUESTIONS -->
+    <section class="faq-section" id="faq">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="section-tag">Got Questions?</span>
+          <h2 class="section-title">Frequently Asked Questions</h2>
+          <p class="section-subtitle">
+            Clear answers about alarms, Android permissions, privacy guarantees, and data management.
+          </p>
+        </div>
+
+        <div class="faq-accordion-container">
+          
+          <div class="faq-item glass-card" id="faq-1">
+            <button class="faq-question-btn" aria-expanded="false" aria-controls="faq-ans-1">
+              <span>How do reminders trigger if the app is completely offline?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer" id="faq-ans-1">
+              <p>
+                DoseTracker schedules alarms directly with the Android operating system using the <code>SCHEDULE_EXACT_ALARM</code> permission and the device's native alarm manager. Android stores these triggers in hardware RTC registers, allowing the alarm to fire on time without any active internet connection or background network polling.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item glass-card" id="faq-2">
+            <button class="faq-question-btn" aria-expanded="false" aria-controls="faq-ans-2">
+              <span>Can I use DoseTracker to manage medicines for my family or pets?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer" id="faq-ans-2">
+              <p>
+                Yes! DoseTracker includes complete Multi-Profile management. You can create independent profiles for yourself, elderly parents, children, or pets. Each profile maintains its own medication catalog, schedules, stock counts, and history. The profile switcher shows notification badges if another profile has an overdue dose.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item glass-card" id="faq-3">
+            <button class="faq-question-btn" aria-expanded="false" aria-controls="faq-ans-3">
+              <span>What happens if Android puts the app to sleep (Doze Mode)?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer" id="faq-ans-3">
+              <p>
+                Android uses Doze mode to preserve battery when devices are motionless. By requesting exact-alarm access and configuring high-priority notification channels, DoseTracker instructs the system to allow alarm wake-ups during maintenance windows. Our Reminder Status settings screen guides you through granting exact alarm access and battery unmetered execution for peak dependability.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item glass-card" id="faq-4">
+            <button class="faq-question-btn" aria-expanded="false" aria-controls="faq-ans-4">
+              <span>Can other people see my medication names on my lock screen?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer" id="faq-ans-4">
+              <p>
+                Not unless you want them to. In DoseTracker's <strong>Notification Privacy</strong> settings, you can select between <em>Public</em>, <em>Private</em>, or <em>Secret</em> modes. In Private or Secret mode, the reminder notification redacts the medication name and dosage, showing only a discreet message such as "Scheduled Dose Due".
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item glass-card" id="faq-5">
+            <button class="faq-question-btn" aria-expanded="false" aria-controls="faq-ans-5">
+              <span>Can I back up or transfer my data?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer" id="faq-ans-5">
+              <p>
+                Yes. Since DoseTracker stores everything in an app-private SQLite database (`dosetracker.db`), you have complete ownership. You can export your full dosage history, profiles, and medicine schedules as a standard JSON file directly through the Settings screen whenever you choose.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- DOWNLOAD / CALL TO ACTION BANNER -->
+    <section class="cta-banner-section" id="download">
+      <div class="container">
+        <div class="cta-banner-card glass-card">
+          <div class="cta-content">
+            <div class="cta-badge">Open Source • Free Forever</div>
+            <h2 class="cta-title">Take control of your health routine with total peace of mind.</h2>
+            <p class="cta-desc">
+              Experience the clarity of dependable alarms, smart refill tracking, and zero surveillance. Download the native Android build today.
+            </p>
+            
+            <div class="cta-actions">
+              <a href="#" class="btn btn-primary btn-lg" id="footer-download-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993s-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9994.4482.9994.9993s-.4483.9997-.9994.9997m11.4045-6.02l1.997-3.459a.416.416 0 0 0-.1523-.5676.416.416 0 0 0-.5676.1523l-2.0223 3.503c-1.603-.733-3.415-1.1447-5.3363-1.1447-1.9213 0-3.7333.4117-5.3363 1.1447L4.4377 5.4471a.416.416 0 0 0-.5676-.1523.416.416 0 0 0-.1523.5676l1.997 3.459C2.688 11.0827 1 14.3435 1 18.0003h22c0-3.6568-1.688-6.9176-4.7185-8.6789"/>
+                </svg>
+                <span>Download Android APK (v1.0.0)</span>
+              </a>
+
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg" id="footer-github-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <span>GitHub Repository</span>
+              </a>
+            </div>
+
+            <div class="cta-specs-line">
+              <span>Android 8.0+ (Oreo to Android 15)</span>
+              <span>•</span>
+              <span>APK Size: ~34 MB</span>
+              <span>•</span>
+              <span>Targeting Google Play Store</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <img src="./assets/icon.png" alt="DoseTracker Icon" width="32" height="32">
+          <span>DoseTracker</span>
+        </div>
+        <p class="footer-tagline">
+          The offline-first, privacy-respecting medication manager. Built with Expo, React Native, and SQLite.
+        </p>
+        <p class="footer-copyright">
+          &copy; 2026 DoseTracker. All data remains exclusively on your device.
+        </p>
+      </div>
+
+      <div class="footer-links-group">
+        <div class="footer-col">
+          <h4 class="footer-heading">Features</h4>
+          <a href="#features">Today Schedule</a>
+          <a href="#features">Exact Alarms</a>
+          <a href="#features">Inventory & Refills</a>
+          <a href="#features">Multi-Profile Care</a>
+          <a href="#chimes">Calibrated Chimes</a>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-heading">Architecture</h4>
+          <a href="#privacy">Local SQLite v4</a>
+          <a href="#privacy">Biometric Lock</a>
+          <a href="#privacy">Payload Redaction</a>
+          <a href="#faq">Android Exact Alarm</a>
+          <a href="#faq">Battery Optimization</a>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-heading">Technical</h4>
+          <a href="https://expo.dev" target="_blank" rel="noopener">Expo SDK 57</a>
+          <a href="https://reactnative.dev" target="_blank" rel="noopener">React Native 0.86</a>
+          <a href="https://nativewind.dev" target="_blank" rel="noopener">NativeWind 4.2</a>
+          <a href="https://github.com" target="_blank" rel="noopener">Source Code</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
