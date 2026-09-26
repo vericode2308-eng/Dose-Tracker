@@ -1,9 +1,10 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState, type ComponentProps } from 'react';
+import { useRef, useState, type ComponentProps } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMedicines, type Medicine } from './context';
+import { updateMedicineWithReminders, deleteMedicineWithReminders } from '@/notificationManager';
 
 const NAVY = '#071629';
 const RECORDS = [
@@ -41,10 +42,35 @@ export default function MedicineDetailScreen() {
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
   const close = () => { setPanel(null); setError(''); };
-  const update = (patch: Partial<Medicine>) => setMedicines(items => items.map(m => m.id === id ? { ...m, ...patch } : m));
+  const saving = useRef(false);
+  async function update(patch: Partial<Medicine>) {
+    if (saving.current) return;
+    saving.current = true;
+    setError(''); setFeedback('Saving…');
+    try {
+      const result = await updateMedicineWithReminders(id, { name: patch.name, strength: patch.strength,
+        notes: patch.notes, stockRemaining: patch.stock, status: patch.status });
+      setMedicines(items => items.map(m => m.id === id ? { ...m, ...patch } : m));
+      close();
+      setFeedback(result.issues.length ? `Saved. ${result.issues.join(' ')}` : 'Medicine saved.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not save the medicine.';
+      setError(message); setFeedback(message);
+    } finally { saving.current = false; }
+  }
+  async function remove() {
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      await deleteMedicineWithReminders(id);
+      setMedicines(items => items.filter(m => m.id !== id));
+      router.dismissTo('/medicines');
+    } catch { setError('Deletion or reminder reconciliation failed. Please retry.'); }
+    finally { saving.current = false; }
+  }
   function edit() {
     if (!medicine) return;
-    setDraftName(medicine.name); setDraftDosage(medicine.dosage); setDraftNotes(medicine.notes ?? ''); setPanel('edit');
+    setDraftName(medicine.name); setDraftDosage(medicine.strength || ''); setDraftNotes(medicine.notes ?? ''); setPanel('edit');
   }
   if (!medicine) return <SafeAreaView className="flex-1 items-center justify-center gap-5 bg-[#FBF8F3] p-6"><Text className="text-xl text-[#071629]">Medicine not found</Text><View className="h-11 w-full"><Action title="Back to Medicines" onPress={() => router.dismissTo('/medicines')} /></View></SafeAreaView>;
   const lowStock = medicine.stock !== undefined && medicine.stock <= (medicine.stockThreshold ?? 10);
@@ -67,7 +93,7 @@ export default function MedicineDetailScreen() {
         {medicine.status !== 'Active' && <Text accessibilityLiveRegion="polite" className="mb-2 rounded-xl bg-[#F1EEEA] p-2 text-sm text-[#536073]">{medicine.status}</Text>}
         <MetadataRow icon="calendar" label={medicine.schedule ?? (medicine.time ? `Daily at ${medicine.time}` : 'As needed')} />
         <MetadataRow icon="pill" label="Dose amount" value={medicine.doseAmount ?? '1 tablet'} />
-        <MetadataRow icon="calendar" label="Started" value={medicine.startDate ?? '10 Jul 2026'} />
+        <MetadataRow icon="calendar" label="Started" value={medicine.startDate ?? 'Not set'} />
         <MetadataRow icon="infinity" label={medicine.duration ?? 'No end date'} />
         <MetadataRow icon="archive" label="Stock remaining" value={medicine.stock === undefined ? 'Not tracked' : `${medicine.stock} ${medicine.form?.toLowerCase() ?? 'tablet'}${medicine.stock === 1 ? '' : 's'}`} />
         {lowStock && <View accessibilityRole="alert" className="mb-2 mt-2 min-h-[52px] flex-row items-center gap-4 rounded-[14px] bg-[#FFEAEA] px-3 py-2"><View className="h-7 w-7 items-center justify-center rounded-full bg-[#E11717]"><Text className="text-xl font-bold leading-6 text-white">!</Text></View><View><Text className="text-[16px] font-semibold text-[#D90000]">Low stock</Text><Text className="mt-0.5 text-[12px] text-[#D90000]">Only {medicine.stock} tablets remaining.</Text></View></View>}
@@ -82,7 +108,7 @@ export default function MedicineDetailScreen() {
         {!records.length && <Text className="py-5 text-sm text-[#536073]">No recent dose records.</Text>}
       </View>
 
-      <View className="mt-2.5 flex-row gap-2"><Action icon="edit-2" title="Edit" onPress={edit} /><Action icon={medicine.status === 'Paused' ? 'play' : 'pause'} title={medicine.status === 'Paused' ? 'Resume' : 'Pause'} onPress={() => { update({ status: medicine.status === 'Paused' ? 'Active' : 'Paused' }); setFeedback(medicine.status === 'Paused' ? 'Medicine resumed.' : 'Medicine paused.'); }} /><Action icon="archive" title={medicine.status === 'Archived' ? 'Restore' : 'Archive'} onPress={() => medicine.status === 'Archived' ? update({ status: 'Active' }) : setPanel('archive')} /></View>
+      <View className="mt-2.5 flex-row gap-2"><Action icon="edit-2" title="Edit" onPress={edit} /><Action icon={medicine.status === 'Paused' ? 'play' : 'pause'} title={medicine.status === 'Paused' ? 'Resume' : 'Pause'} onPress={() => { void update({ status: medicine.status === 'Paused' ? 'Active' : 'Paused' }); }} /><Action icon="archive" title={medicine.status === 'Archived' ? 'Restore' : 'Archive'} onPress={() => medicine.status === 'Archived' ? update({ status: 'Active' }) : setPanel('archive')} /></View>
       <View className="mt-2"><Action icon="trash-2" title="Delete Medicine" danger onPress={() => setPanel('delete')} /></View>
       {!!feedback && <Text accessibilityLiveRegion="polite" className="mt-3 text-center text-sm text-[#176A4C]">{feedback}</Text>}
     </ScrollView>
@@ -92,9 +118,9 @@ export default function MedicineDetailScreen() {
         <SafeAreaView edges={['bottom']} className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px] bg-[#FBF8F3]">
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
             <View className="mb-4 flex-row items-center justify-between"><Text className="flex-1 text-[22px] font-semibold text-[#071629]">{panel === 'refill' ? 'Log Refill' : panel === 'edit' ? 'Edit Medicine' : panel === 'archive' ? 'Archive Medicine?' : panel === 'delete' ? 'Delete Medicine?' : typeof panel === 'number' ? 'Dose record' : 'Medicine options'}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 items-center justify-center rounded-full bg-white"><Feather name="x" size={22} color={NAVY} /></Pressable></View>
-            {panel === 'refill' && <><Text className="mb-3 text-base text-[#536073]">How many tablets did you add?</Text><TextInput accessibilityLabel="Tablets added" keyboardType="number-pad" value={quantity} onChangeText={setQuantity} className="mb-4 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save refill" dark onPress={() => { const amount = Number(quantity); if (!/^\d+$/.test(quantity) || !Number.isSafeInteger(amount) || amount < 1 || amount > 10000) { setError('Enter a whole number between 1 and 10,000.'); return; } update({ stock: (medicine.stock ?? 0) + amount }); setFeedback(`${amount} tablets added to stock.`); close(); }} /></>}
-            {panel === 'edit' && <><TextInput accessibilityLabel="Medicine name" value={draftName} onChangeText={setDraftName} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Dosage" value={draftDosage} onChangeText={setDraftDosage} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Notes" multiline value={draftNotes} onChangeText={setDraftNotes} placeholder="Notes" className="mb-4 min-h-20 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save changes" dark onPress={() => { if (!draftName.trim() || !draftDosage.trim()) { setError('Enter a medicine name and dosage.'); return; } update({ name: draftName.trim(), dosage: draftDosage.trim(), notes: draftNotes.trim() }); close(); setFeedback('Medicine updated.'); }} /></>}
-            {(panel === 'archive' || panel === 'delete') && <><Text className="mb-5 text-base leading-6 text-[#536073]">{panel === 'archive' ? `${medicine.name} will move to Archived. You can restore it later.` : `Remove ${medicine.name} from this demo? Reloading the app restores the sample data.`}</Text><View className="flex-row gap-3"><Action title="Cancel" onPress={close} /><Action title={panel === 'archive' ? 'Confirm archive' : 'Confirm delete'} danger={panel === 'delete'} dark={panel === 'archive'} onPress={() => { if (panel === 'archive') { update({ status: 'Archived' }); close(); setFeedback('Medicine archived.'); } else { close(); router.dismissTo('/medicines'); setMedicines(items => items.filter(m => m.id !== id)); } }} /></View></>}
+            {panel === 'refill' && <><Text className="mb-3 text-base text-[#536073]">How many tablets did you add?</Text><TextInput accessibilityLabel="Tablets added" keyboardType="number-pad" value={quantity} onChangeText={setQuantity} className="mb-4 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save refill" dark onPress={() => { const amount = Number(quantity); if (!/^\d+$/.test(quantity) || !Number.isSafeInteger(amount) || amount < 1 || amount > 10000) { setError('Enter a whole number between 1 and 10,000.'); return; } void update({ stock: (medicine.stock ?? 0) + amount }); }} /></>}
+            {panel === 'edit' && <><TextInput accessibilityLabel="Medicine name" value={draftName} onChangeText={setDraftName} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Strength" placeholder="Strength (optional)" value={draftDosage} onChangeText={setDraftDosage} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Notes" multiline value={draftNotes} onChangeText={setDraftNotes} placeholder="Notes" className="mb-4 min-h-20 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save changes" dark onPress={() => { if (!draftName.trim()) { setError('Enter a medicine name.'); return; } void update({ name: draftName.trim(), strength: draftDosage.trim(), dosage: [draftDosage.trim(), medicine.form].filter(Boolean).join(' '), notes: draftNotes.trim() }); }} /></>}
+            {(panel === 'archive' || panel === 'delete') && <><Text className="mb-5 text-base leading-6 text-[#536073]">{panel === 'archive' ? `${medicine.name} will move to Archived. You can restore it later.` : `Permanently delete ${medicine.name}, its dose history and its reminders?`}</Text><View className="flex-row gap-3"><Action title="Cancel" onPress={close} /><Action title={panel === 'archive' ? 'Confirm archive' : 'Confirm delete'} danger={panel === 'delete'} dark={panel === 'archive'} onPress={() => { if (panel === 'archive') { void update({ status: 'Archived' }); } else { void remove(); } }} /></View></>}
             {panel === 'options' && <View className="gap-3"><Action title="Edit medicine" icon="edit-2" onPress={edit} /><Action title="Log refill" icon="archive" onPress={() => setPanel('refill')} /><Action title="View dose history" icon="clock" onPress={() => { close(); router.push('/history'); }} /></View>}
             {typeof panel === 'number' && <View className="gap-3 rounded-2xl bg-white p-5"><Text className="text-lg font-semibold text-[#071629]">{medicine.name}</Text><Text className="text-base text-[#536073]">{records[panel]?.date}</Text><Text className="text-base text-[#536073]">{records[panel]?.time} · Taken on time</Text><Text className="text-base text-[#536073]">Dose: 1 tablet</Text></View>}
             {!!error && <Text accessibilityRole="alert" className="mt-3 text-sm text-[#D90000]">{error}</Text>}

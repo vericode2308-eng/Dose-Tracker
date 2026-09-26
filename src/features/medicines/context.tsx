@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { createContext, useContext, useState, useEffect, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+
+import { fetchAllMedicines } from '@/database';
 
 export type Medicine = {
   id: string;
@@ -23,19 +25,34 @@ export type Medicine = {
   instructions?: string;
 };
 
-const INITIAL_MEDICINES: Medicine[] = [
-  { id: 'levothyroxine', name: 'Levothyroxine', dosage: '50 mcg tablet', time: '7:00 AM', next: 'Tomorrow', tag: 'On empty stomach', color: '#31C47A', filled: true, status: 'Active' },
-  { id: 'lisinopril', name: 'Lisinopril', dosage: '10 mg tablet', time: '8:00 AM', next: 'Tomorrow', tag: 'With food', stock: 8, color: '#00B7BD', status: 'Active', purpose: 'Blood pressure', notes: 'Take with food to reduce stomach upset.' },
-  { id: 'atorvastatin', name: 'Atorvastatin', dosage: '20 mg tablet', time: '1:00 PM', next: 'Today', tag: 'After meal', color: '#FFA72E', filled: true, status: 'Active' },
-  { id: 'metformin', name: 'Metformin', dosage: '500 mg tablet', time: '8:00 PM', next: 'Today', tag: 'With dinner', color: '#3297FF', status: 'Active' },
-  { id: 'vitamin-d3', name: 'Vitamin D3', dosage: '1000 IU softgel', color: '#8845FA', status: 'Active' },
-];
 type MedicinesContextValue = { medicines: Medicine[]; setMedicines: Dispatch<SetStateAction<Medicine[]>> };
 const MedicinesContext = createContext<MedicinesContextValue | null>(null);
 
-// Session-only sample data for the reference screens; no real dose records are changed.
+// SQLite is authoritative; the context is a view cache for the medicine screens.
 export function MedicinesProvider({ children }: { children: ReactNode }) {
-  const [medicines, setMedicines] = useState(INITIAL_MEDICINES);
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetchAllMedicines().then(stored => {
+      if (!active) return;
+      setMedicines(stored.map(m => ({ id: m.id, name: m.name,
+        dosage: [m.strength, m.dosageForm].filter(Boolean).join(' '),
+        color: m.color || '#079D9D', status: m.status, form: m.dosageForm,
+        purpose: m.purpose || undefined, notes: m.notes || undefined,
+        instructions: m.instructions || undefined, stock: m.stockRemaining ?? undefined,
+        strength: m.strength || undefined, stockThreshold: m.lowStockThreshold ?? undefined,
+        doseAmount: m.schedules[0] ? `${m.schedules[0].doseAmount} ${m.doseUnit || m.dosageForm}` : undefined,
+        startDate: m.schedules[0]?.pattern.startDate,
+        duration: m.schedules[0]?.pattern.endDate ? `Until ${m.schedules[0].pattern.endDate}` : 'Ongoing',
+        schedule: m.schedules[0]?.pattern.kind === 'weekdays' ? `Weekdays: ${m.schedules[0].pattern.weekdays?.map(day => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day]).join(', ')}`
+          : m.schedules[0]?.pattern.kind === 'prn' ? 'As needed'
+          : m.schedules[0]?.pattern.kind === 'day_interval' ? `Every ${m.schedules[0].pattern.interval} days`
+          : m.schedules[0]?.pattern.kind === 'hour_interval' ? `Every ${m.schedules[0].pattern.interval} hours` : undefined,
+        time: m.schedules[0]?.timeLocalMinute == null ? undefined : `${String(Math.floor(m.schedules[0].timeLocalMinute / 60)).padStart(2, '0')}:${String(m.schedules[0].timeLocalMinute % 60).padStart(2, '0')}`,
+      })));
+    }).catch(() => { /* Today and Settings expose database/reconciliation failures. */ });
+    return () => { active = false; };
+  }, []);
   return <MedicinesContext.Provider value={{ medicines, setMedicines }}>{children}</MedicinesContext.Provider>;
 }
 

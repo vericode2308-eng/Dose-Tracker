@@ -1,1 +1,1 @@
-export { default } from '@/features/today/TodayHomeScreen';
+export { default } from '@/features/today/SavedTodayScreen';

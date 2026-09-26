@@ -1,0 +1,13 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+group = 'expo.modules.dosealarmaccess'
+version = '1.0.0'
+android {
+  namespace 'expo.modules.dosealarmaccess'
+  defaultConfig { versionCode 1; versionName '1.0.0' }
+}
+// SDK 57 autolinks Expo's bundled Maven artifact rather than a Gradle project.
+// Keep this version aligned with the pinned JS package.
+dependencies { implementation 'host.exp.exponent:expo.modules.notifications:57.0.21' }

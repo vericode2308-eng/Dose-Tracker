@@ -1,11 +1,11 @@
 import { Platform } from 'react-native';
-import { isSettings, type SettingsPreferences } from './storage';
+import { isSettings, preferencesOnly, type SettingsPreferences } from './storage';
 
 const FORMAT = 'dosetracker-preferences-v1';
 const MAX_BACKUP_BYTES = 1024 * 1024;
 
 export async function exportPreferences(settings: SettingsPreferences): Promise<void> {
-  const content = JSON.stringify({ format: FORMAT, settings }, null, 2);
+  const content = JSON.stringify({ format: FORMAT, settings: preferencesOnly(settings) }, null, 2);
   if (Platform.OS === 'web') {
     const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
     const link = document.createElement('a');
@@ -46,12 +46,16 @@ export async function importPreferences(): Promise<SettingsPreferences | null> {
   } else {
     const { File } = await import('expo-file-system');
     const file = new File(asset.uri);
-    if (file.size > MAX_BACKUP_BYTES) throw new Error('Backup file is too large.');
-    content = await file.text();
+    try {
+      if (file.size > MAX_BACKUP_BYTES) throw new Error('Backup file is too large.');
+      content = await file.text();
+    } finally {
+      if (file.exists) file.delete();
+    }
   }
   const parsed: unknown = JSON.parse(content);
   if (!parsed || typeof parsed !== 'object') throw new Error('Invalid backup file.');
   const backup = parsed as { format?: unknown; settings?: unknown };
   if (backup.format !== FORMAT || !isSettings(backup.settings)) throw new Error('Invalid backup file.');
-  return backup.settings;
+  return preferencesOnly(backup.settings);
 }

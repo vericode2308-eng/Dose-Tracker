@@ -23,13 +23,19 @@ export async function readSettings(): Promise<SettingsPreferences> {
   if (!raw) return DEFAULT_SETTINGS;
   const value: unknown = JSON.parse(raw);
   // Existing local installs predate the reminder switch.
-  if (isSettings(value)) return value;
-  if (isLegacySettings(value)) return { ...value, remindersEnabled: true };
+  if (isSettings(value)) return preferencesOnly(value);
+  if (isLegacySettings(value) && !('remindersEnabled' in value)) return { ...value, remindersEnabled: true };
   throw new Error('Saved settings could not be read.');
 }
 
 export async function writeSettings(value: SettingsPreferences): Promise<void> {
-  await AsyncStorage.setItem(KEY, JSON.stringify(value));
+  if (!isSettings(value)) throw new Error('Invalid preferences.');
+  await AsyncStorage.setItem(KEY, JSON.stringify(preferencesOnly(value)));
+}
+
+export function preferencesOnly(value: SettingsPreferences): SettingsPreferences {
+  const { theme, remindersEnabled, snoozeMinutes, notificationPrivacy, soundAndVibration } = value;
+  return { theme, remindersEnabled, snoozeMinutes, notificationPrivacy, soundAndVibration };
 }
 
 export async function clearSettings(): Promise<void> {

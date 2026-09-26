@@ -66,6 +66,9 @@ export function addMedicine(input: {
 }): Promise<{ medicineId: string; scheduleId: string }>;
 export function fetchAllMedicines(): Promise<StoredMedicine[]>;
 export function fetchMedicineDetails(medicineId: string): Promise<StoredMedicine | null>;
+export type MedicinePatch = Partial<Pick<StoredMedicine, 'name' | 'strength' | 'notes' | 'stockRemaining' | 'status'>>;
+export function updateMedicine(medicineId: string, patch: MedicinePatch): Promise<void>;
+export function deleteMedicine(medicineId: string): Promise<void>;
 export function logDose(input: {
   scheduleId: string;
   date: string;

@@ -1,5 +1,11 @@
 import * as Crypto from 'expo-crypto';
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
+
+async function withWriteTransaction(db, task) {
+  if (Platform.OS === 'web') return db.withTransactionAsync(() => task(db));
+  return db.withExclusiveTransactionAsync(task);
+}
 
 // All data stays in the app's private on-device SQLite directory.
 export const DATABASE_NAME = 'dosetracker.db';
@@ -63,7 +69,7 @@ async function migrate(db) {
   if (version > SCHEMA_VERSION) throw new Error('This database was created by a newer app version.');
   if (version === SCHEMA_VERSION) return;
 
-  await db.withExclusiveTransactionAsync(async transaction => {
+  await withWriteTransaction(db, async transaction => {
     if (version === 0) {
       await transaction.execAsync(`
         CREATE TABLE medicines (
@@ -132,7 +138,7 @@ export function initializeDatabase() {
 /** Erases every app-owned SQLite table without replacing the open connection. */
 export async function clearDatabase() {
   const db = await initializeDatabase();
-  await db.withExclusiveTransactionAsync(async transaction => {
+  await withWriteTransaction(db, async transaction => {
     await transaction.execAsync('DELETE FROM history; DELETE FROM schedules; DELETE FROM medicines; DELETE FROM settings;');
   });
 }
@@ -160,7 +166,7 @@ export async function addMedicine({ medicine, schedule }) {
   const scheduleId = Crypto.randomUUID();
   const now = Date.now();
   const db = await initializeDatabase();
-  await db.withExclusiveTransactionAsync(async transaction => {
+  await withWriteTransaction(db, async transaction => {
     await transaction.runAsync(
       `INSERT INTO medicines (id, name, dosage_form, strength_text, dose_unit, purpose, instructions,
          notes, color, stock_remaining_q, low_stock_threshold_q, created_at_ms)
@@ -210,6 +216,32 @@ export async function fetchMedicineDetails(medicineId) {
   return medicine;
 }
 
+/** Editable metadata only; changing a schedule requires a separate schedule editor. */
+export async function updateMedicine(medicineId, patch) {
+  const columns = { name: 'name', strength: 'strength_text', notes: 'notes', stockRemaining: 'stock_remaining_q', status: 'status' };
+  const entries = Object.entries(patch).filter(([key, value]) => key in columns && value !== undefined);
+  if (!entries.length) return;
+  const values = entries.map(([key, value]) => {
+    if (key === 'name') return requiredText(value, 'Medicine name');
+    if (key === 'stockRemaining') return quantityToUnits(value, 'Stock remaining');
+    if (key === 'status') {
+      if (!['Active', 'Paused', 'Archived'].includes(value)) throw new Error('Invalid medicine status.');
+      return value;
+    }
+    return optionalText(value);
+  });
+  const db = await initializeDatabase();
+  const result = await db.runAsync(`UPDATE medicines SET ${entries.map(([key]) => `${columns[key]} = ?`).join(', ')} WHERE id = ?`,
+    [...values, requiredText(medicineId, 'Medicine ID')]);
+  if (!result.changes) throw new Error('Medicine not found.');
+}
+
+export async function deleteMedicine(medicineId) {
+  const db = await initializeDatabase();
+  // Foreign keys cascade to the medicine's schedules and dose history.
+  await db.runAsync('DELETE FROM medicines WHERE id = ?', [requiredText(medicineId, 'Medicine ID')]);
+}
+
 /** Records a dose and deducts tracked stock for Taken entries in one transaction.
  * Pass the same requestId when retrying an action to avoid a second stock deduction.
  */
@@ -222,7 +254,7 @@ export async function logDose({ scheduleId, date, actualTakenAtMs = null, status
   }
   const db = await initializeDatabase();
   const historyId = requestId == null ? Crypto.randomUUID() : requiredText(requestId, 'Request ID');
-  await db.withExclusiveTransactionAsync(async transaction => {
+  await withWriteTransaction(db, async transaction => {
     const existing = await transaction.getFirstAsync('SELECT id FROM history WHERE id = ?', [historyId]);
     if (existing) return;
     const schedule = await transaction.getFirstAsync(

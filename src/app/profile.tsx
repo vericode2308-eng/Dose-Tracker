@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useOnboarding } from '@/features/onboarding/context';
@@ -9,7 +9,8 @@ import { Button, ErrorMessage, Icon, Page, StepHeader, styles } from '@/features
 export default function ProfileScreen() {
   const router = useRouter();
   const { data, save } = useOnboarding();
-  const editing = data.completed;
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const editing = mode === 'edit' || data.completed;
   const [profile, setProfile] = useState(data.profile || EMPTY_PROFILE);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);

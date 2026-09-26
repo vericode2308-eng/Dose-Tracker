@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { OnboardingProvider } from '@/features/onboarding/context';
+import { NotificationLifecycle } from '@/features/notifications/NotificationLifecycle';
 import { initializeDatabase } from '@/database';
 import '../../global.css';
 
@@ -32,6 +33,7 @@ export default function RootLayout() {
 
   return <OnboardingProvider>
     <StatusBar style="dark" />
+    <NotificationLifecycle />
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FBF8F3' }, animation: 'slide_from_right' }} />
   </OnboardingProvider>;
 }
