@@ -26,5 +26,10 @@ class DoseAlarmAccessModule : Module() {
           Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
       }
     }
+    AsyncFunction("openNotificationSettings") {
+      context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
   }
 }

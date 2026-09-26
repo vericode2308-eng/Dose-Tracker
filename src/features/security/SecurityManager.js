@@ -27,6 +27,10 @@ export async function setAuthEnabled(enabled) {
   await SecureStore.setItemAsync(APP_LOCK_KEY, enabled ? 'on' : 'off', STORE_OPTIONS);
 }
 
+export async function clearAuthEnabled() {
+  if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(APP_LOCK_KEY, STORE_OPTIONS);
+}
+
 export async function authenticateUser() {
   if (Platform.OS === 'web') return false;
   try {

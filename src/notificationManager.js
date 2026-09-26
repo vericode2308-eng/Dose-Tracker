@@ -1,9 +1,18 @@
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo-modules-core';
-import { fetchAllMedicines, fetchMedicineDetails, updateMedicine, deleteMedicine, clearDatabase, logDose, snoozeDose, fetchPendingSnoozes, fetchScheduledDoses, fetchProfiles, selectProfile, setProfileArchived } from './database';
+import { fetchAllMedicines, fetchMedicineDetails, updateMedicine, deleteMedicine, clearDatabase, logDose, snoozeDose, fetchPendingSnoozes, fetchScheduledDoses, fetchProfiles, selectProfile, setProfileArchived, recordReminderIssue, fetchRecentReminderIssues } from './database';
 import { readSettings } from './features/settings/storage';
 
 export const MEDICATION_CHANNEL = 'medication-reminders';
+export function reminderChannelId(prefs) {
+  return `medication-reminders-v2-${prefs.notificationPrivacy}-${prefs.reminderSound}-${prefs.vibrationEnabled ? 'vibrate' : 'still'}`;
+}
+function reminderContent(prefs, detail, data) {
+  return { title: prefs.notificationPrivacy === 'none' ? 'DoseTracker' : 'Medication reminder',
+    body: prefs.notificationPrivacy === 'show' ? detail : prefs.notificationPrivacy === 'hide'
+      ? 'Open DoseTracker to view your scheduled dose.' : 'Open the app for details.',
+    sound: prefs.reminderSound === 'silent' ? false : prefs.reminderSound === 'default' ? 'default' : `${prefs.reminderSound}.wav`, data };
+}
 const PREFIX = 'dosetracker:dose:';
 const alarmAccess = Platform.OS === 'android' ? requireOptionalNativeModule('DoseAlarmAccess') : null;
 let work = Promise.resolve();
@@ -29,7 +38,7 @@ export function parseReminderTime(value) {
 }
 
 /** Native recurring triggers repeat without a JS timer or the app reopening. */
-export function recurringTriggers(schedule, now = new Date()) {
+export function recurringTriggers(schedule, now = new Date(), channelId = MEDICATION_CHANNEL) {
   const { pattern } = schedule;
   if (pattern.kind === 'prn') return [];
   // Expo's recurring triggers cannot enforce course bounds or anchored intervals.
@@ -38,7 +47,7 @@ export function recurringTriggers(schedule, now = new Date()) {
     throw new Error('Automatic reminders currently support ongoing daily or weekday schedules starting today. This course was saved without reminders.');
   }
   const time = parseReminderTime(schedule.timeLocalMinute);
-  const base = { hour: Math.floor(time / 60), minute: time % 60, channelId: MEDICATION_CHANNEL };
+  const base = { hour: Math.floor(time / 60), minute: time % 60, channelId };
   if (pattern.kind === 'daily') return [{ ...base, type: 'daily' }];
   if (!pattern.weekdays?.length || pattern.weekdays.some(day => !Number.isInteger(day) || day < 0 || day > 6)) throw new Error('Choose valid weekdays.');
   return [...new Set(pattern.weekdays)].map(day => ({ ...base, type: 'weekly', weekday: day + 1 }));
@@ -50,28 +59,40 @@ async function notifications() {
     api.setNotificationHandler({ handleNotification: async () => {
       const prefs = await readSettings();
       return { shouldShowBanner: prefs.remindersEnabled, shouldShowList: prefs.remindersEnabled,
-        shouldPlaySound: prefs.remindersEnabled && prefs.soundAndVibration, shouldSetBadge: false };
+        shouldPlaySound: prefs.remindersEnabled && prefs.reminderSound !== 'silent', shouldSetBadge: false };
     } });
     foregroundHandlerInstalled = true;
   }
   return api;
 }
 
-export async function getReminderStatus(requestPermission = false) {
+export async function getReminderStatus(requestPermission = false, soundOverride) {
   if (Platform.OS === 'web') return { allowed: false, exact: null, message: 'Reminders require an Android or iOS build.' };
   const api = await notifications();
-  if (Platform.OS === 'android') await api.setNotificationChannelAsync(MEDICATION_CHANNEL, {
-    name: 'Medication reminders', importance: api.AndroidImportance.HIGH,
-    sound: 'default', vibrationPattern: [0, 250, 250, 250], enableVibrate: true,
-    lockscreenVisibility: api.AndroidNotificationVisibility.PRIVATE,
+  const savedPrefs = await readSettings();
+  const prefs = soundOverride ? { ...savedPrefs, reminderSound: soundOverride } : savedPrefs;
+  const channelId = reminderChannelId(prefs);
+  if (Platform.OS === 'android') await api.setNotificationChannelAsync(channelId, {
+    name: `Medication reminders · ${prefs.notificationPrivacy === 'show' ? 'Show content' : prefs.notificationPrivacy === 'hide' ? 'Hide details' : 'No info'} · ${prefs.reminderSound === 'default' ? 'Phone sound' : prefs.reminderSound === 'silent' ? 'Silent' : prefs.reminderSound === 'gentle' ? 'Gentle chime' : 'Clear chime'}${prefs.vibrationEnabled ? ' + vibration' : ''}`,
+    importance: api.AndroidImportance.HIGH,
+    sound: prefs.reminderSound === 'silent' ? null : prefs.reminderSound === 'default' ? undefined : `${prefs.reminderSound}.wav`,
+    vibrationPattern: prefs.vibrationEnabled ? [0, 250, 250, 250] : undefined,
+    enableVibrate: prefs.vibrationEnabled,
+    lockscreenVisibility: prefs.notificationPrivacy === 'show' ? api.AndroidNotificationVisibility.PUBLIC
+      : prefs.notificationPrivacy === 'none' ? api.AndroidNotificationVisibility.SECRET : api.AndroidNotificationVisibility.PRIVATE,
   });
   let permission = await api.getPermissionsAsync();
   if (requestPermission && !permission.granted && permission.canAskAgain) permission = await api.requestPermissionsAsync();
   const allowed = permission.granted || permission.ios?.status === api.IosAuthorizationStatus.PROVISIONAL;
-  const channel = Platform.OS === 'android' ? await api.getNotificationChannelAsync(MEDICATION_CHANNEL) : null;
-  const channelAllowed = !channel || channel.importance !== api.AndroidImportance.NONE;
+  const channel = Platform.OS === 'android' ? await api.getNotificationChannelAsync(channelId) : null;
+  const selectedChannel = Platform.OS === 'android' && soundOverride
+    ? await api.getNotificationChannelAsync(reminderChannelId(savedPrefs)) : null;
+  const legacyChannel = Platform.OS === 'android' ? await api.getNotificationChannelAsync(MEDICATION_CHANNEL) : null;
+  const channelAllowed = (!channel || channel.importance !== api.AndroidImportance.NONE) &&
+    (!selectedChannel || selectedChannel.importance !== api.AndroidImportance.NONE) &&
+    (!legacyChannel || legacyChannel.importance !== api.AndroidImportance.NONE);
   const exact = Platform.OS === 'android' ? (alarmAccess ? await alarmAccess.canScheduleExactAlarms() : null) : null;
-  return { allowed: allowed && channelAllowed, exact,
+  return { allowed: allowed && channelAllowed, exact, channelId, channel,
     message: !allowed ? 'Notifications are disabled. Enable notifications in system settings.'
       : !channelAllowed ? 'The Medication reminders channel is disabled in system settings.'
       : Platform.OS === 'android' && exact === null ? 'Rebuild the Android app to check Alarms & reminders access.'
@@ -79,9 +100,50 @@ export async function getReminderStatus(requestPermission = false) {
       : 'Reminders scheduled through the device. Delivery depends on system permissions and restrictions.' };
 }
 
+/** Prevents a preference change from silently bypassing a channel the user blocked in Android settings. */
+export async function canChangeReminderChannel() {
+  if (Platform.OS !== 'android') return true;
+  const api = await notifications();
+  const prefs = await readSettings();
+  const channel = await api.getNotificationChannelAsync(reminderChannelId(prefs));
+  const legacy = await api.getNotificationChannelAsync(MEDICATION_CHANNEL);
+  const expectedSound = prefs.reminderSound === 'silent' ? null : prefs.reminderSound === 'default' ? 'default' : 'custom';
+  return channel?.importance !== api.AndroidImportance.NONE && legacy?.importance !== api.AndroidImportance.NONE &&
+    (!channel || (channel.sound === expectedSound && channel.enableVibrate === prefs.vibrationEnabled));
+}
+
+export async function scheduleTestReminder(soundOverride) {
+  const savedPrefs = await readSettings();
+  const prefs = soundOverride ? { ...savedPrefs, reminderSound: soundOverride } : savedPrefs;
+  if (!prefs.remindersEnabled) throw new Error('Enable reminders before sending a test.');
+  const status = await getReminderStatus(true, soundOverride);
+  if (!status.allowed) throw new Error(status.message);
+  const api = await notifications();
+  await api.scheduleNotificationAsync({
+    content: reminderContent(prefs, 'Sample medication — 1 tablet', { kind: 'reminder-test' }),
+    trigger: { type: 'timeInterval', seconds: 10, channelId: status.channelId },
+  });
+  return 'Test reminder scheduled for 10 seconds from now. Lock your phone to check privacy, sound and vibration.';
+}
+
+export async function getReminderDiagnostics() {
+  const prefs = await readSettings();
+  const status = await getReminderStatus(false);
+  const api = Platform.OS === 'web' ? null : await notifications();
+  const scheduled = api ? (await api.getAllScheduledNotificationsAsync()).filter(item => item.identifier.startsWith(PREFIX)).length : 0;
+  return { ...status, enabled: prefs.remindersEnabled, scheduled, issues: await fetchRecentReminderIssues(7) };
+}
+
 export async function openExactAlarmSettings() {
   if (!alarmAccess) throw new Error('Install a development build containing DoseAlarmAccess.');
   await alarmAccess.openExactAlarmSettings();
+}
+export async function openNotificationSettings() {
+  if (Platform.OS === 'android' && alarmAccess?.openNotificationSettings) {
+    await alarmAccess.openNotificationSettings();
+  } else {
+    await Linking.openSettings();
+  }
 }
 
 async function cancelMedicationRequests(api) {
@@ -108,12 +170,28 @@ export function eraseMedicineDataWithReminders() {
 
 /** Called after a SQLite commit; stable schedule IDs make retries idempotent. */
 export function scheduleMedicineReminders(medicine, requestPermission = true) {
-  return serialized(async () => scheduleSavedMedicines([medicine], requestPermission, false));
+  return serialized(async () => {
+    const result = await scheduleSavedMedicines([medicine], requestPermission, false);
+    if (result.issues.length) await recordReminderIssue('schedule_failed', 'A medication reminder could not be scheduled.').catch(() => undefined);
+    return result;
+  });
 }
 
 /** Repairs failed commits-to-OS scheduling on startup/foreground and preference changes. */
 export function reconcileReminders() {
-  return serialized(async () => scheduleSavedMedicines(await fetchAllMedicines(), false, true));
+  return serialized(async () => {
+    try {
+      const result = await scheduleSavedMedicines(await fetchAllMedicines(), false, true);
+      if (!result.allowed && (await readSettings()).remindersEnabled) await recordReminderIssue('notifications_blocked', result.message).catch(() => undefined);
+      if (result.exact === false) await recordReminderIssue('exact_alarm_off', 'Exact alarm access is off; Android may delay reminders.').catch(() => undefined);
+      for (const issue of result.issues) await recordReminderIssue('schedule_failed',
+        issue.includes('Snooze') ? 'A snooze reminder could not be scheduled.' : 'A medication reminder could not be scheduled.').catch(() => undefined);
+      return result;
+    } catch (error) {
+      await recordReminderIssue('reconcile_failed', 'Reminder setup failed. Open Reminder status to retry.').catch(() => undefined);
+      throw error;
+    }
+  });
 }
 
 /** Profile archives cancel only that person's reminders; other profiles stay armed. */
@@ -176,13 +254,10 @@ async function scheduleSnoozeRequest(api, snooze, medicine, prefs) {
   const schedule = medicine.schedules.find(item => item.id === snooze.scheduleId);
   if (!schedule) return;
   await api.scheduleNotificationAsync({ identifier: snoozeIdentifier(snooze),
-    content: { title: 'Medication reminder',
-      body: prefs.notificationPrivacy === 'hide' ? 'Open DoseTracker to view your scheduled dose.'
-        : `${medicine.name} — ${schedule.doseAmount} ${medicine.doseUnit || medicine.dosageForm}`,
-      sound: prefs.soundAndVibration ? 'default' : false,
-      data: { kind: 'medication-dose', version: 1, medicineId: medicine.id, scheduleId: schedule.id,
-        doseDate: snooze.date, scheduledAtMs: snooze.scheduledAtMs } },
-    trigger: { type: 'date', date: new Date(snooze.untilMs), channelId: MEDICATION_CHANNEL } });
+    content: reminderContent(prefs, `${medicine.name} — ${schedule.doseAmount} ${medicine.doseUnit || medicine.dosageForm}`,
+      { kind: 'medication-dose', version: 1, medicineId: medicine.id, scheduleId: schedule.id,
+        doseDate: snooze.date, scheduledAtMs: snooze.scheduledAtMs }),
+    trigger: { type: 'date', date: new Date(snooze.untilMs), channelId: reminderChannelId(prefs) } });
 }
 
 /** A snooze defers the same occurrence. It is never a Taken/Skipped history entry. */
@@ -201,7 +276,10 @@ export function snoozeMedicationDose(dose, minutes) {
       if (!medicine) throw new Error('Medicine not found.');
       await scheduleSnoozeRequest(await notifications(), { ...dose, untilMs }, medicine, prefs);
       return { untilMs, message: Platform.OS === 'android' && status.exact !== true ? status.message : '' };
-    } catch { return { untilMs, message: 'Snooze saved; reminder scheduling failed. Open Reminder status in Settings to retry.' }; }
+    } catch {
+      await recordReminderIssue('snooze_failed', 'A snooze reminder could not be scheduled.').catch(() => undefined);
+      return { untilMs, message: 'Snooze saved; reminder scheduling failed. Open Reminder status in Settings to retry.' };
+    }
   });
 }
 
@@ -253,17 +331,12 @@ async function scheduleSavedMedicines(medicines, requestPermission, removeObsole
     if (medicine.status !== 'Active') continue;
     for (const schedule of medicine.schedules) {
       try {
-        for (const trigger of recurringTriggers(schedule)) {
+        for (const trigger of recurringTriggers(schedule, new Date(), reminderChannelId(prefs))) {
           const identifier = `${PREFIX}${schedule.id}:${trigger.type === 'weekly' ? trigger.weekday : 'daily'}`;
           desired.add(identifier);
           await api.scheduleNotificationAsync({ identifier,
-            content: {
-              title: 'Medication reminder',
-              body: prefs.notificationPrivacy === 'hide' ? 'Open DoseTracker to view your scheduled dose.'
-                : `${medicine.name} — ${schedule.doseAmount} ${medicine.doseUnit || medicine.dosageForm}`,
-              sound: prefs.soundAndVibration ? 'default' : false,
-              data: { kind: 'medication-dose', version: 1, medicineId: medicine.id, scheduleId: schedule.id },
-            }, trigger });
+            content: reminderContent(prefs, `${medicine.name} — ${schedule.doseAmount} ${medicine.doseUnit || medicine.dosageForm}`,
+              { kind: 'medication-dose', version: 1, medicineId: medicine.id, scheduleId: schedule.id }), trigger });
           scheduled++;
         }
       } catch (error) { issues.push(`${medicine.name}: ${error instanceof Error ? error.message : 'Reminder could not be scheduled.'}`); }

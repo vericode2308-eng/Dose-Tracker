@@ -3,6 +3,8 @@ package expo.modules.dosealarmaccess
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.app.AlarmManager
+import android.os.Build
 import android.util.Log
 import expo.modules.notifications.service.delegates.ExpoSchedulingDelegate
 import java.util.concurrent.Executors
@@ -13,6 +15,9 @@ class AlarmAccessReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
     if (intent.action !in setOf("android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED",
         Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_TIME_CHANGED)) return
+    if (intent.action == "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" &&
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+      !(context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).canScheduleExactAlarms()) return
     val pending = goAsync()
     executor.execute {
       try { ExpoSchedulingDelegate(context.applicationContext).setupScheduledNotifications() }

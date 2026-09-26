@@ -15,17 +15,19 @@ function harness(options = {}) {
   let medicines = options.profiles ? [{ ...medicine(), profileId: 'p1' }, { ...medicine(), id: 'medicine-2', profileId: 'p2', schedules: [{ ...medicine().schedules[0], id: 'schedule-2' }] }] : [medicine()];
   const profiles = [{ id: 'p1', status: 'Active' }, { id: 'p2', status: 'Active' }];
   let selected = 'p2';
-  const prefs = { remindersEnabled: true, soundAndVibration: true, notificationPrivacy: 'show' };
+  const prefs = { remindersEnabled: true, reminderSound: 'default', vibrationEnabled: true, notificationPrivacy: 'show', snoozeMinutes: 10 };
   const calls = [];
   let snoozes = [];
   const history = [];
   let listener;
   const api = {
-    AndroidImportance: { HIGH: 4, NONE: 0 }, AndroidNotificationVisibility: { PRIVATE: 0 },
+    AndroidImportance: { HIGH: 4, NONE: 0 }, AndroidNotificationVisibility: { PUBLIC: 1, PRIVATE: 2, SECRET: 3 },
     IosAuthorizationStatus: { PROVISIONAL: 3 }, DEFAULT_ACTION_IDENTIFIER: 'default',
     setNotificationHandler: handler => { api.handler = handler; },
-    setNotificationChannelAsync: async () => { calls.push('channel'); },
-    getNotificationChannelAsync: async () => ({ importance: options.channelDisabled ? 0 : 4 }),
+    setNotificationChannelAsync: async (id, config) => { calls.push('channel'); api.lastChannel = { id, config }; },
+    getNotificationChannelAsync: async () => ({ importance: options.channelDisabled ? 0 : 4,
+      sound: options.systemSound === undefined ? 'default' : options.systemSound,
+      enableVibrate: options.systemVibration === undefined ? true : options.systemVibration }),
     getPermissionsAsync: async () => ({ granted: options.granted !== false, canAskAgain: true }),
     requestPermissionsAsync: async () => { calls.push('permission'); return { granted: options.grantRequest === true }; },
     scheduleNotificationAsync: async request => { if (options.failSchedule) throw Error('OS scheduling failed'); stored.set(request.identifier, request); return request.identifier; },
@@ -52,9 +54,10 @@ function harness(options = {}) {
     updateMedicine: async (id, patch) => { calls.push('update'); Object.assign(medicines.find(m => m.id === id), patch); },
     deleteMedicine: async id => { calls.push('delete'); medicines = medicines.filter(m => m.id !== id); },
     clearDatabase: async () => { calls.push('clearDB'); medicines = []; },
+    recordReminderIssue: async () => {}, fetchRecentReminderIssues: async () => [],
   };
   const dependencies = {
-    'react-native': { Platform: { OS: options.platform || 'android' } },
+    'react-native': { Platform: { OS: options.platform || 'android' }, Linking: { openSettings: async () => {} } },
     'expo-modules-core': { requireOptionalNativeModule: () => ({ canScheduleExactAlarms: async () => options.exact !== false, openExactAlarmSettings: async () => {} }) },
     'expo-notifications': api, './database': db, './features/settings/storage': { readSettings: async () => prefs },
   };
@@ -107,6 +110,12 @@ test('disabled channel and absent exact access are reported honestly', async () 
   assert.equal(result.exact, false);
   assert.match(result.message, /may be delayed/);
 });
+test('Android system mute or vibration override prevents moving to a fresh channel', async () => {
+  assert.equal(await harness({ channelDisabled: true }).manager.canChangeReminderChannel(), false);
+  assert.equal(await harness({ systemSound: null }).manager.canChangeReminderChannel(), false);
+  assert.equal(await harness({ systemVibration: false }).manager.canChangeReminderChannel(), false);
+  assert.equal(await harness().manager.canChangeReminderChannel(), true);
+});
 test('retries keep one alarm; disabling preferences removes it but preserves unrelated requests', async () => {
   const h = harness();
   await h.manager.scheduleMedicineReminders(h.medicine);
@@ -130,6 +139,33 @@ test('privacy hides medicine text; pause cancels before DB change, resume re-arm
   assert.equal(h.stored.size, 1);
   await h.manager.deleteMedicineWithReminders('medicine-1');
   assert.equal(h.stored.size, 0);
+});
+test('Android channel and payload follow each privacy mode without leaking dose details', async () => {
+  const h = harness();
+  for (const [privacy, visibility] of [['show', 1], ['hide', 2], ['none', 3]]) {
+    h.prefs.notificationPrivacy = privacy;
+    await h.manager.reconcileReminders();
+    const request = [...h.stored.values()][0];
+    assert.equal(h.api.lastChannel.config.lockscreenVisibility, visibility);
+    assert.equal(request.trigger.channelId, h.api.lastChannel.id);
+    assert.equal(request.content.body.includes('Test medicine'), privacy === 'show');
+    if (privacy === 'none') assert.equal(request.content.title, 'DoseTracker');
+  }
+});
+test('sound and vibration create distinct native channels; test reminder mirrors selected content', async () => {
+  const h = harness();
+  h.prefs.reminderSound = 'gentle';
+  h.prefs.vibrationEnabled = false;
+  h.prefs.notificationPrivacy = 'none';
+  await h.manager.reconcileReminders();
+  assert.equal(h.api.lastChannel.config.sound, 'gentle.wav');
+  assert.equal(h.api.lastChannel.config.enableVibrate, false);
+  const channelId = h.api.lastChannel.id;
+  assert.match(await h.manager.scheduleTestReminder(), /10 seconds/);
+  const testRequest = [...h.stored.values()].find(item => item.content.data?.kind === 'reminder-test');
+  assert.equal(testRequest.trigger.channelId, channelId);
+  assert.equal(testRequest.content.title, 'DoseTracker');
+  assert.doesNotMatch(testRequest.content.body, /medicine|tablet/i);
 });
 test('failed OS scheduling is reported; successful DB edits are not reported as failed saves', async () => {
   const h = harness({ failSchedule: true });

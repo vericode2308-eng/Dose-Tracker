@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { isSettings, preferencesOnly, type SettingsPreferences } from './storage';
+import { isLegacySettings, isSettings, migrateLegacySettings, preferencesOnly, type SettingsPreferences } from './storage';
 
 const FORMAT = 'dosetracker-preferences-v1';
 const MAX_BACKUP_BYTES = 1024 * 1024;
@@ -56,6 +56,8 @@ export async function importPreferences(): Promise<SettingsPreferences | null> {
   const parsed: unknown = JSON.parse(content);
   if (!parsed || typeof parsed !== 'object') throw new Error('Invalid backup file.');
   const backup = parsed as { format?: unknown; settings?: unknown };
-  if (backup.format !== FORMAT || !isSettings(backup.settings)) throw new Error('Invalid backup file.');
-  return preferencesOnly(backup.settings);
+  if (backup.format !== FORMAT) throw new Error('Invalid backup file.');
+  if (isSettings(backup.settings)) return preferencesOnly(backup.settings);
+  if (isLegacySettings(backup.settings)) return migrateLegacySettings(backup.settings);
+  throw new Error('Invalid backup file.');
 }

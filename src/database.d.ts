@@ -3,6 +3,9 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 export const DATABASE_NAME: string;
 export function initializeDatabase(): Promise<SQLiteDatabase>;
 export function clearDatabase(): Promise<void>;
+export type ReminderIssue = { code: string; message: string; firstSeenMs: number; lastSeenMs: number; occurrences: number };
+export function recordReminderIssue(code: string, message: string): Promise<void>;
+export function fetchRecentReminderIssues(days?: number): Promise<ReminderIssue[]>;
 export function subscribeToDatabaseChanges(listener: () => void): () => void;
 
 export type RecurringPattern = {

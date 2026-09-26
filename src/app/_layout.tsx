@@ -56,6 +56,9 @@ function RootNavigator() {
     <Stack.Protected guard={data.completed}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="device-authentication" />
+      <Stack.Screen name="notification-privacy" />
+      <Stack.Screen name="reminder-sound" />
+      <Stack.Screen name="reminder-status" />
     </Stack.Protected>
   </Stack>;
 }

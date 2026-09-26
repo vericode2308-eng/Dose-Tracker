@@ -18,7 +18,7 @@ function withWriteTransaction(db, task) {
 
 // All data stays in the app's private on-device SQLite directory.
 export const DATABASE_NAME = 'dosetracker.db';
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const QUANTITY_SCALE = 1_000_000;
 
 let databasePromise;
@@ -161,7 +161,41 @@ async function migrate(db) {
         PRAGMA user_version = 3;
       `);
     }
+    if (version < 4) {
+      await transaction.execAsync(`
+        CREATE TABLE reminder_issues (
+          day TEXT NOT NULL, code TEXT NOT NULL, message TEXT NOT NULL,
+          first_seen_ms INTEGER NOT NULL, last_seen_ms INTEGER NOT NULL,
+          occurrences INTEGER NOT NULL DEFAULT 1,
+          PRIMARY KEY (day, code)
+        );
+        CREATE INDEX reminder_issues_recent_idx ON reminder_issues(last_seen_ms DESC);
+        PRAGMA user_version = 4;
+      `);
+    }
   });
+}
+
+/** Logs observed setup/scheduling issues only; Android does not report every delivery. */
+export async function recordReminderIssue(code, message) {
+  if (!/^[a-z_]{1,40}$/.test(code) || typeof message !== 'string' || !message.trim()) throw new Error('Invalid reminder issue.');
+  const db = await initializeDatabase();
+  const now = Date.now();
+  const day = new Date(now).toISOString().slice(0, 10);
+  await withWriteTransaction(db, async transaction => {
+    await transaction.runAsync(`INSERT INTO reminder_issues (day,code,message,first_seen_ms,last_seen_ms)
+      VALUES (?,?,?,?,?) ON CONFLICT(day,code) DO UPDATE SET
+      message=excluded.message,last_seen_ms=excluded.last_seen_ms,occurrences=occurrences+1`,
+      [day, code, message.trim().slice(0, 240), now, now]);
+    await transaction.runAsync('DELETE FROM reminder_issues WHERE last_seen_ms < ?', [now - 30 * 86400000]);
+  });
+}
+
+export async function fetchRecentReminderIssues(days = 7) {
+  const db = await initializeDatabase();
+  return db.getAllAsync(`SELECT code, message, first_seen_ms AS firstSeenMs,
+    last_seen_ms AS lastSeenMs, occurrences FROM reminder_issues
+    WHERE last_seen_ms >= ? ORDER BY last_seen_ms DESC LIMIT 30`, [Date.now() - days * 86400000]);
 }
 
 /** Opens (and creates, on first launch) the private on-device database. */
@@ -182,7 +216,7 @@ export function initializeDatabase() {
 export async function clearDatabase() {
   const db = await initializeDatabase();
   await withWriteTransaction(db, async transaction => {
-    await transaction.execAsync('DELETE FROM dose_snoozes; DELETE FROM history; DELETE FROM schedules; DELETE FROM medicines; DELETE FROM settings; DELETE FROM profiles;');
+    await transaction.execAsync('DELETE FROM reminder_issues; DELETE FROM dose_snoozes; DELETE FROM history; DELETE FROM schedules; DELETE FROM medicines; DELETE FROM settings; DELETE FROM profiles;');
   });
 }
 

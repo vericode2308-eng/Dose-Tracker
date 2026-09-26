@@ -36,9 +36,20 @@ test('schema upgrades version 1 without losing medicine or dose history', async 
     INSERT INTO history(id,schedule_id,date,status,created_at_ms) VALUES('h','s','2020-01-01','Skipped',1);`);
   const doses = await h.db.fetchScheduledDoses('2020-01-01');
   assert.equal(doses[0].status, 'Skipped');
-  assert.equal(h.sql.prepare('PRAGMA user_version').get().user_version, 3);
+  assert.equal(h.sql.prepare('PRAGMA user_version').get().user_version, 4);
   await h.db.logDose({ scheduleId: 's', date: '2020-01-01', status: 'Taken', actualTakenAtMs: Date.now() });
   assert.equal((await h.db.fetchHistoryByMonth())[0].records.length, 1);
+});
+test('reminder issue log records only structured local diagnostics and erases with app data', async () => {
+  const h = harness();
+  await h.db.recordReminderIssue('exact_alarm_off', 'Exact alarm access is off.');
+  await h.db.recordReminderIssue('exact_alarm_off', 'Exact alarm access is off.');
+  const issues = await h.db.fetchRecentReminderIssues(7);
+  assert.equal(issues.length, 1);
+  assert.equal(issues[0].occurrences, 2);
+  assert.equal(issues[0].code, 'exact_alarm_off');
+  await h.db.clearDatabase();
+  assert.deepEqual(await h.db.fetchRecentReminderIssues(7), []);
 });
 test('daily, weekdays, intervals and inclusive course boundaries produce only real occurrences', async () => {
   const h = harness();
