@@ -3,10 +3,11 @@
  * Features:
  * - Light/Dark Theme Switcher with system & localStorage sync
  * - Interactive Today Dose Simulator with dynamic SVG progress ring & audio
- * - Showcase Screen Switcher for 8 key app views
+ * - Showcase Screen Switcher for 8 key app views (Consumer-Friendly)
  * - Audio Chime Player Studio with waveform animation
  * - Profile Switcher with context-dependent dose schedules
  * - Accessible FAQ Accordion
+ * - Legal Modal Dialog (Privacy Policy & Terms of Service)
  * - Confetti celebration particle burst
  */
 
@@ -18,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const themeToggleBtn = document.getElementById('theme-toggle-btn');
   const body = document.body;
 
-  // Check saved theme or system preference
   const savedTheme = localStorage.getItem('dosetracker-theme');
   const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   
@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
       navLinks.classList.toggle('mobile-open');
     });
 
-    // Close mobile nav when clicking a link
     navLinks.querySelectorAll('.nav-link').forEach(link => {
       link.addEventListener('click', () => {
         navLinks.classList.remove('mobile-open');
@@ -72,14 +71,14 @@ document.addEventListener('DOMContentLoaded', () => {
       audioGentle.currentTime = 0;
       playGentleBtn?.classList.remove('playing');
       waveGentle?.classList.remove('active');
-      if (playGentleBtn) playGentleBtn.querySelector('.btn-text').textContent = 'Listen to Gentle';
+      if (playGentleBtn) playGentleBtn.querySelector('.btn-text').textContent = 'Listen to Gentle Chime';
     }
     if (audioClear) {
       audioClear.pause();
       audioClear.currentTime = 0;
       playClearBtn?.classList.remove('playing');
       waveClear?.classList.remove('active');
-      if (playClearBtn) playClearBtn.querySelector('.btn-text').textContent = 'Listen to Clear';
+      if (playClearBtn) playClearBtn.querySelector('.btn-text').textContent = 'Listen to Clear Chime';
     }
   }
 
@@ -92,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         audio.currentTime = 0;
         button.classList.remove('playing');
         waveform?.classList.remove('active');
-        button.querySelector('.btn-text').textContent = `Listen to ${label}`;
+        button.querySelector('.btn-text').textContent = `Listen to ${label} Chime`;
       } else {
         stopAllAudio();
         audio.play().then(() => {
@@ -108,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     audio.addEventListener('ended', () => {
       button.classList.remove('playing');
       waveform?.classList.remove('active');
-      button.querySelector('.btn-text').textContent = `Listen to ${label}`;
+      button.querySelector('.btn-text').textContent = `Listen to ${label} Chime`;
     });
   }
 
@@ -159,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3200);
   }
 
-  // Initial State: 3 of 4 taken (75%)
   let isDose2Taken = false;
 
   if (btnTakeDose2) {
@@ -170,25 +168,23 @@ document.addEventListener('DOMContentLoaded', () => {
       dose2Actions?.classList.add('hidden');
       dose2TakenPill?.classList.remove('hidden');
 
-      // Update progress to 100%
       updateProgressRing(100);
       if (summaryTitle) summaryTitle.textContent = "All Doses Complete for Today! 🎉";
       if (summarySub) summarySub.textContent = "Outstanding consistency! 4 of 4 scheduled doses completed.";
 
-      // Play chime
       if (audioGentle) {
         audioGentle.currentTime = 0;
         audioGentle.play().catch(e => console.warn(e));
       }
 
-      showToast("✨ Metformin 500mg recorded! SQLite updated & stock decremented.");
+      showToast("✨ Metformin 500mg recorded! Supply updated on your device.");
       launchConfetti();
     });
   }
 
   if (btnSnoozeDose2) {
     btnSnoozeDose2.addEventListener('click', () => {
-      showToast("⏰ Snooze set for 10 minutes. Exact alarm re-armed.");
+      showToast("⏰ Reminder snoozed for 10 minutes.");
       if (audioClear) {
         audioClear.currentTime = 0;
         audioClear.play().catch(e => console.warn(e));
@@ -208,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (summaryTitle) summaryTitle.textContent = "Today's Schedule: 3 of 4 Doses Taken";
       if (summarySub) summarySub.textContent = "Great job! You only have 1 dose remaining for today.";
 
-      showToast("🔄 Simulator reset to default state.");
+      showToast("🔄 Demo reset to default morning view.");
     });
   }
 
@@ -221,15 +217,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const profile = pill.getAttribute('data-profile');
       if (profile === 'dad') {
-        showToast("Switched to Dad's profile: 1 Overdue blood pressure medication.");
+        showToast("Switched to Dad's profile: 1 overdue morning medication.");
         updateProgressRing(50);
         if (summaryTitle) summaryTitle.textContent = "Dad's Schedule: 1 of 2 Doses Taken";
         if (summarySub) summarySub.textContent = "⚠️ Lisinopril 20mg morning dose is currently overdue.";
       } else if (profile === 'oliver') {
-        showToast("Switched to Oliver's profile: Pediatric vitamins & inhaler.");
+        showToast("Switched to Oliver's profile: Daily chewable vitamin & inhaler.");
         updateProgressRing(100);
         if (summaryTitle) summaryTitle.textContent = "Oliver's Schedule: 2 of 2 Doses Taken";
-        if (summarySub) summarySub.textContent = "All pediatric doses administered for today.";
+        if (summarySub) summarySub.textContent = "All doses completed for today.";
       } else {
         showToast("Switched to Sarah (You): Daily active routine.");
         updateProgressRing(isDose2Taken ? 100 : 75);
@@ -241,104 +237,96 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ------------------------------------------------------------------------
-  // 5. APP SHOWCASE SCREEN SWITCHER (8 REAL DESIGN PREVIEWS)
+  // 5. APP SHOWCASE SCREEN SWITCHER (CONSUMER-FRIENDLY)
   // ------------------------------------------------------------------------
   const showcaseData = {
     today: {
       img: './assets/design/01-today-dashboard-dose-schedule.png',
-      badge: 'Primary Screen',
-      title: 'Today Dashboard & Dose Schedule',
-      desc: 'The central control room of your daily routine. Clean, card-based medicine blocks display dose timings, precise milligram strengths, food accompaniment instructions, and a responsive circular progress indicator.',
+      badge: 'Main Screen',
+      title: 'Today Schedule & Daily Checklist',
+      desc: 'Your daily routine laid out clearly. Each medication card shows exact dosage, instructions (such as with food or water), and quick one-tap buttons to confirm or snooze.',
       highlights: [
-        'Clear Status Distinction: Overdue, Due Now, Taken, and Upcoming doses each have distinct visual cues.',
-        'Actionable Cards: Record a dose immediately or trigger a 5/10/15/30-minute smart snooze.',
-        'Selected Profile Header: Always clearly shows which family member or pet schedule is active.'
-      ],
-      asset: '01-today-dashboard-dose-schedule.png'
+        'Clear Status Colors: See at a glance what is taken, due now, or coming up later.',
+        'Quick Snooze: Busy or away from your pills? Snooze for 10 or 15 minutes with one touch.',
+        'Always Know Who: The selected person name and photo remain clearly displayed.'
+      ]
     },
     meds: {
       img: './assets/design/02-medicines-list-active-filter.png',
-      badge: 'Inventory Directory',
-      title: 'Medicines List & Category Filters',
-      desc: 'Browse your entire medicine cabinet at a glance. Filter quickly between Active, As-Needed, and Archived treatments with instant fuzzy search.',
+      badge: 'Medicine Cabinet',
+      title: 'Complete Medicine Cabinet & Search',
+      desc: 'Browse all your current medications in one clean list. Easily filter between daily medications, as-needed treatments, or past prescriptions.',
       highlights: [
-        'Instant Filter Tabs: All, Active Courses, As-Needed (PRN), and Archived.',
-        'Stock Health Indicators: Pill tags alert you immediately when supply falls below minimum refill levels.',
-        'Dose Frequency Badges: Clear labels for "Once Daily", "Twice Daily", or "As Needed".'
-      ],
-      asset: '02-medicines-list-active-filter.png'
+        'Instant Filters: View active daily courses or as-needed pain relief with a tap.',
+        'Pill Supply Warnings: Color tags warn you immediately when a bottle is running low.',
+        'Clear Dosing Rules: Shows how often and how much to take for each medicine.'
+      ]
     },
     stock: {
       img: './assets/design/03-medicine-details-low-stock.png',
-      badge: 'Safety & Refills',
-      title: 'Medicine Details & Low Stock Warnings',
-      desc: 'Comprehensive profile for every prescription. Inspect strength, formulation, prescribing instructions, scheduled alarm times, and active stock counts.',
+      badge: 'Supply & Refills',
+      title: 'Medicine Details & Refill Alerts',
+      desc: 'Never get surprised by an empty prescription bottle. DoseTracker automatically updates your pill count and alerts you days in advance.',
       highlights: [
-        'Inventory Depletion Meter: Real-time visual progress of remaining tablets with projected run-out dates.',
-        'One-Tap Stock Replenishment: Easily top up pill counts after picking up a pharmacy refill.',
-        'Discreet Notes & Warnings: Stores food requirements, side effect notes, and personal physician advice.'
-      ],
-      asset: '03-medicine-details-low-stock.png'
+        'Remaining Supply Meter: Visual bar shows how many days of medication you have left.',
+        'One-Tap Refill: Quickly top up your pill count whenever you pick up a new bottle.',
+        'Food & Doctor Notes: Keep your doctor special instructions handy right in the app.'
+      ]
     },
     history: {
       img: './assets/design/04-history-calendar-and-dose-records.png',
-      badge: 'Audit & Adherence',
-      title: 'Adherence Calendar & Audit Logbook',
-      desc: 'Review adherence consistency across months with color-coded dot heatmaps. A detailed chronological log preserves exact millisecond timestamps of every dose taken or skipped.',
+      badge: 'Progress & Logs',
+      title: 'Monthly Calendar & Adherence History',
+      desc: 'Track your daily consistency over time. Color-coded dots show which days were 100% completed, giving you confidence and clear records to share with your physician.',
       highlights: [
-        'Adherence Heatmap Calendar: Visual monthly view showing 100% adherence, partial days, and skips.',
-        'Accurate Timestamp Audit: Verified historical records to share with your cardiologist or doctor.',
-        'Full JSON Export: Seamlessly export all adherence logs to your device files at any time.'
-      ],
-      asset: '04-history-calendar-and-dose-records.png'
+        'Monthly Overview: At-a-glance calendar shows green dots for perfect days.',
+        'Exact Timestamps: Know precisely what time you took each medication.',
+        'Share with Your Doctor: Bring your verified history to your next checkup.'
+      ]
     },
     wizard: {
       img: './assets/design/08-add-medicine-step-4-review.png',
-      badge: 'Seamless Setup',
-      title: '4-Step Add Medicine Wizard',
-      desc: 'Adding a complex medication routine takes less than 30 seconds. A structured 4-step wizard guides you through Details, Schedule, Stock tracking, and Review.',
+      badge: 'Quick Setup',
+      title: 'Easy 4-Step Medication Assistant',
+      desc: 'Adding a new medicine takes less than a minute. Simple questions guide you through dosage, timing, and pill counts without medical jargon.',
       highlights: [
-        'Step 1 Formulation: Select tablets, capsules, liquid, drops, inhalers, or injections with color tags.',
-        'Step 2 Recurrence: Configure daily, specific days of the week, or interval alarms with exact times.',
-        'Step 3 & 4 Stock & Verification: Review full instructions before committing to SQLite.'
-      ],
-      asset: '08-add-medicine-step-4-review.png'
+        'Choose Pill Form: Select tablets, capsules, liquids, drops, or inhalers.',
+        'Custom Schedules: Set reminders for specific times of day or days of the week.',
+        'Instant Protection: Your alarms arm immediately with no complicated settings.'
+      ]
     },
     reminders: {
       img: './assets/design/09-notification-reminder-and-confirm-dose.png',
-      badge: 'Native Alarms',
-      title: 'Actionable Heads-Up Reminders',
-      desc: 'Dependable Android notifications that deliver exact alerts even when the device is locked or in battery-saving sleep mode.',
+      badge: 'On-Time Reminders',
+      title: 'Heads-Up Reminders That Respect You',
+      desc: 'Reminders appear reliably on your screen with quick buttons to confirm or snooze without having to search through your phone.',
       highlights: [
-        'Direct Action Controls: Take dose directly or snooze for 10 minutes without unlocking.',
-        'Privacy Redaction: Mode options hide sensitive drug names from bystanders seeing your screen.',
-        'Custom Sound Assignment: Choose between gentle harmony or crisp chime tones.'
-      ],
-      asset: '09-notification-reminder-and-confirm-dose.png'
+        'Confirm from Lock Screen: Mark a dose taken directly with a single tap.',
+        'Privacy Protection: Choose to hide medication names so others cannot see your prescriptions.',
+        'Calm Chimes: Gentle tones that alert you politely without loud jarring alarms.'
+      ]
     },
     profiles: {
       img: './assets/design/people and profile.png',
       badge: 'Caregiver Hub',
-      title: 'Multi-Profile Family Care',
-      desc: 'One app to care for everyone. Easily create separate profile cards for family members, elderly parents, or pets with custom avatar colors and photos.',
+      title: 'Caring for Parents, Kids & Pets',
+      desc: 'One app to look after everyone you love. Easily add family members with their own picture and color, keeping their prescriptions neatly organized.',
       highlights: [
-        'Zero Data Bleed: Each profile keeps completely isolated prescriptions, schedules, and history.',
-        'Overdue Notifications: The profile switcher displays urgent dose count badges for all profiles.',
-        'Archive or Delete: Easily archive completed temporary courses while preserving logs.'
-      ],
-      asset: 'people and profile.png'
+        'Completely Separate Records: Each family member has their own schedule and history.',
+        'Urgent Overdue Alerts: The profile menu shows a badge if someone needs their medication.',
+        'No Account Confusion: Switch between family members in one tap.'
+      ]
     },
     settings: {
       img: './assets/design/Settings.png',
       badge: 'Security & Control',
-      title: 'Privacy, Biometrics & Alarm Health',
-      desc: 'Granular control over your device security. Configure hardware fingerprint / Face ID app lock, inspect exact alarm permissions, and preview notification chimes.',
+      title: 'Fingerprint Lock & Privacy Settings',
+      desc: 'Your personal health data stays securely on your phone. Turn on fingerprint lock, choose your favorite chime, and manage privacy settings easily.',
       highlights: [
-        'Hardware Biometric Lock: Built using expo-local-authentication and secure hardware keystore.',
-        'Notification Privacy Levels: Choose Public, Private, or Secret channel visibility.',
-        'Exact Alarm Diagnostics: Real-time system health checks verify Android battery permissions.'
-      ],
-      asset: 'Settings.png'
+        'Fingerprint & Face Lock: Require your phone biometric scan to open the app.',
+        'Notification Privacy: Select whether medicine names show on your locked screen.',
+        'Erase Anytime: You can wipe all records with one tap whenever you choose.'
+      ]
     }
   };
 
@@ -362,7 +350,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = showcaseData[tabKey];
       if (!data) return;
 
-      // Animate update
       if (showcaseScreenImg) {
         showcaseScreenImg.style.opacity = '0.3';
         showcaseScreenImg.src = data.img;
@@ -406,7 +393,6 @@ document.addEventListener('DOMContentLoaded', () => {
     questionBtn?.addEventListener('click', () => {
       const isActive = item.classList.contains('active');
       
-      // Close all others
       faqItems.forEach(otherItem => {
         otherItem.classList.remove('active');
         otherItem.querySelector('.faq-question-btn')?.setAttribute('aria-expanded', 'false');
@@ -420,7 +406,76 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ------------------------------------------------------------------------
-  // 7. CONFETTI BURST CELEBRATION
+  // 7. LEGAL & PRIVACY MODAL DIALOG
+  // ------------------------------------------------------------------------
+  const legalModal = document.getElementById('legal-modal');
+  const legalModalClose = document.getElementById('legal-modal-close');
+  const legalTabPrivacy = document.getElementById('legal-tab-privacy');
+  const legalTabTerms = document.getElementById('legal-tab-terms');
+  const legalContentPrivacy = document.getElementById('legal-content-privacy');
+  const legalContentTerms = document.getElementById('legal-content-terms');
+  const openPrivacyBtns = document.querySelectorAll('.open-privacy-modal, #footer-legal-btn');
+  const openTermsBtns = document.querySelectorAll('.open-terms-modal');
+
+  function openLegalModal(tabName) {
+    if (!legalModal) return;
+    legalModal.classList.remove('hidden');
+    legalModal.setAttribute('aria-hidden', 'false');
+
+    if (tabName === 'terms') {
+      legalTabTerms?.classList.add('active');
+      legalTabPrivacy?.classList.remove('active');
+      legalContentTerms?.classList.add('active');
+      legalContentPrivacy?.classList.remove('active');
+    } else {
+      legalTabPrivacy?.classList.add('active');
+      legalTabTerms?.classList.remove('active');
+      legalContentPrivacy?.classList.add('active');
+      legalContentTerms?.classList.remove('active');
+    }
+  }
+
+  function closeLegalModal() {
+    if (!legalModal) return;
+    legalModal.classList.add('hidden');
+    legalModal.setAttribute('aria-hidden', 'true');
+  }
+
+  openPrivacyBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openLegalModal('privacy');
+    });
+  });
+
+  openTermsBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openLegalModal('terms');
+    });
+  });
+
+  legalModalClose?.addEventListener('click', closeLegalModal);
+
+  legalTabPrivacy?.addEventListener('click', () => openLegalModal('privacy'));
+  legalTabTerms?.addEventListener('click', () => openLegalModal('terms'));
+
+  // Close modal when clicking backdrop
+  legalModal?.addEventListener('click', (e) => {
+    if (e.target === legalModal) {
+      closeLegalModal();
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && legalModal && !legalModal.classList.contains('hidden')) {
+      closeLegalModal();
+    }
+  });
+
+  // ------------------------------------------------------------------------
+  // 8. CONFETTI BURST CELEBRATION
   // ------------------------------------------------------------------------
   function launchConfetti() {
     const colors = ['#22C55E', '#14B8A6', '#0B2540', '#F59E0B', '#8B5CF6'];
