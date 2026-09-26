@@ -29,8 +29,9 @@ The start date must be today or earlier and the course must be ongoing.
 
 This is the daily/weekday implementation requested here, **not completion of the
 advanced recurrence engine in PLAN.md**. Anchored intervals, future course starts,
-finite courses, deterministic DST gap/fold rules, occurrence generations, snooze,
-and native SQLite eligibility checks remain future work. Unsupported schedules
+finite courses, deterministic DST gap/fold rules, occurrence generations
+and native SQLite eligibility checks remain future work. Persisted per-dose snooze
+and Take/Skip integration are implemented; see `docs/integration-verification.md`. Unsupported schedules
 are saved with an explicit “saved without reminders” result, never converted to a
 different recurrence. Native calendar triggers use the device's time zone and
 calendar behavior. A severely delayed notification or a time-zone change between
@@ -68,7 +69,7 @@ npx expo lint
 npx tsc --noEmit
 ```
 
-The 12 manager tests cover time validation, Sunday/weekdays, unsupported patterns,
+The manager tests cover time validation, Sunday/weekdays, unsupported patterns,
 permissions/channel denial, exact-access status, idempotence, privacy, preference
 cancellation, pause/resume/delete, erasure ordering, OS scheduling failures, and
 cold/warm/stale notification taps. They mock the OS boundary and do not prove

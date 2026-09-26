@@ -1,17 +1,14 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState, type ComponentProps } from 'react';
+import { useCallback, useRef, useState, type ComponentProps } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMedicines, type Medicine } from './context';
+import { fetchHistoryByMonth } from '@/database';
+import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { updateMedicineWithReminders, deleteMedicineWithReminders } from '@/notificationManager';
 
 const NAVY = '#071629';
-const RECORDS = [
-  { date: 'Tue, 25 Sep 2024', time: '8:05 AM' },
-  { date: 'Mon, 24 Sep 2024', time: '8:02 AM' },
-  { date: 'Sun, 23 Sep 2024', time: '7:58 AM' },
-];
 type Icon = ComponentProps<typeof Feather>['name'];
 type Panel = 'options' | 'edit' | 'refill' | 'archive' | 'delete' | number | null;
 
@@ -34,6 +31,12 @@ export default function MedicineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { medicines, setMedicines } = useMedicines();
   const medicine = medicines.find(m => m.id === id);
+  const historyQuery = useCallback(async () => (await fetchHistoryByMonth({ medicineId: id })).flatMap(group => group.records).slice(0, 5).map(record => ({
+    id: record.id, date: record.date, status: record.status,
+    time: record.actualTakenAtMs || record.scheduledAtMs ? new Date(record.actualTakenAtMs || record.scheduledAtMs!).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : 'Not recorded',
+    amount: `${record.doseAmount} ${record.doseUnit || record.dosageForm}`,
+  })), [id]);
+  const { data: records } = useLocalQuery(historyQuery, []);
   const [panel, setPanel] = useState<Panel>(null);
   const [quantity, setQuantity] = useState('30');
   const [draftName, setDraftName] = useState('');
@@ -74,7 +77,6 @@ export default function MedicineDetailScreen() {
   }
   if (!medicine) return <SafeAreaView className="flex-1 items-center justify-center gap-5 bg-[#FBF8F3] p-6"><Text className="text-xl text-[#071629]">Medicine not found</Text><View className="h-11 w-full"><Action title="Back to Medicines" onPress={() => router.dismissTo('/medicines')} /></View></SafeAreaView>;
   const lowStock = medicine.stock !== undefined && medicine.stock <= (medicine.stockThreshold ?? 10);
-  const records = medicine.id === 'lisinopril' ? RECORDS : [];
 
   return <SafeAreaView className="flex-1 bg-[#FBF8F3]" edges={['top']}>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 14 }}>
@@ -104,7 +106,7 @@ export default function MedicineDetailScreen() {
 
       <View className="mt-3 rounded-[24px] bg-white px-4 pb-1 pt-3">
         <View className="mb-1 flex-row flex-wrap items-center justify-between gap-1"><Text accessibilityRole="header" className="text-[16px] font-semibold tracking-[-0.4px] text-[#071629]">Recent Dose Records</Text><Pressable accessibilityRole="button" accessibilityLabel="See all in History" hitSlop={10} onPress={() => router.push('/history')} className="min-h-6 flex-row items-center gap-1.5"><Text className="text-[12px] font-medium text-[#0065FF]">See all in History</Text><Feather name="arrow-right" size={19} color="#0065FF" /></Pressable></View>
-        {records.map((record, index) => <Pressable key={record.date} accessibilityRole="button" accessibilityLabel={`Dose record, ${record.date}, ${record.time}`} onPress={() => setPanel(index)} className={`min-h-[46px] flex-row items-center gap-3 py-1 ${index ? 'border-t border-[#E9EBED]' : ''}`}><View className="h-[27px] w-[27px] items-center justify-center rounded-full bg-[#50B85E]"><Feather name="check" size={20} color="white" /></View><View className="flex-1"><Text className="text-[13px] leading-[18px] text-[#071629]">{record.date}</Text><Text className="text-[12px] leading-[18px] text-[#536073]">{record.time} (on time)</Text></View><View className="border-l border-[#F0F1F3] pl-3"><Text className="text-[12px] text-[#536073]">1 tablet</Text></View><Feather name="chevron-right" size={20} color={NAVY} /></Pressable>)}
+        {records.map((record, index) => <Pressable key={record.id} accessibilityRole="button" accessibilityLabel={`Dose record, ${record.date}, ${record.status}, ${record.time}`} onPress={() => setPanel(index)} className={`min-h-[46px] flex-row items-center gap-3 py-1 ${index ? 'border-t border-[#E9EBED]' : ''}`}><View className="h-[27px] w-[27px] items-center justify-center rounded-full bg-[#536073]"><Feather name={record.status === 'Taken' ? 'check' : 'minus'} size={20} color="white" /></View><View className="flex-1"><Text className="text-[13px] leading-[18px] text-[#071629]">{record.date}</Text><Text className="text-[12px] leading-[18px] text-[#536073]">{record.time} · {record.status}</Text></View><View className="border-l border-[#F0F1F3] pl-3"><Text className="text-[12px] text-[#536073]">{record.amount}</Text></View><Feather name="chevron-right" size={20} color={NAVY} /></Pressable>)}
         {!records.length && <Text className="py-5 text-sm text-[#536073]">No recent dose records.</Text>}
       </View>
 
@@ -122,7 +124,7 @@ export default function MedicineDetailScreen() {
             {panel === 'edit' && <><TextInput accessibilityLabel="Medicine name" value={draftName} onChangeText={setDraftName} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Strength" placeholder="Strength (optional)" value={draftDosage} onChangeText={setDraftDosage} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Notes" multiline value={draftNotes} onChangeText={setDraftNotes} placeholder="Notes" className="mb-4 min-h-20 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save changes" dark onPress={() => { if (!draftName.trim()) { setError('Enter a medicine name.'); return; } void update({ name: draftName.trim(), strength: draftDosage.trim(), dosage: [draftDosage.trim(), medicine.form].filter(Boolean).join(' '), notes: draftNotes.trim() }); }} /></>}
             {(panel === 'archive' || panel === 'delete') && <><Text className="mb-5 text-base leading-6 text-[#536073]">{panel === 'archive' ? `${medicine.name} will move to Archived. You can restore it later.` : `Permanently delete ${medicine.name}, its dose history and its reminders?`}</Text><View className="flex-row gap-3"><Action title="Cancel" onPress={close} /><Action title={panel === 'archive' ? 'Confirm archive' : 'Confirm delete'} danger={panel === 'delete'} dark={panel === 'archive'} onPress={() => { if (panel === 'archive') { void update({ status: 'Archived' }); } else { void remove(); } }} /></View></>}
             {panel === 'options' && <View className="gap-3"><Action title="Edit medicine" icon="edit-2" onPress={edit} /><Action title="Log refill" icon="archive" onPress={() => setPanel('refill')} /><Action title="View dose history" icon="clock" onPress={() => { close(); router.push('/history'); }} /></View>}
-            {typeof panel === 'number' && <View className="gap-3 rounded-2xl bg-white p-5"><Text className="text-lg font-semibold text-[#071629]">{medicine.name}</Text><Text className="text-base text-[#536073]">{records[panel]?.date}</Text><Text className="text-base text-[#536073]">{records[panel]?.time} · Taken on time</Text><Text className="text-base text-[#536073]">Dose: 1 tablet</Text></View>}
+            {typeof panel === 'number' && <View className="gap-3 rounded-2xl bg-white p-5"><Text className="text-lg font-semibold text-[#071629]">{medicine.name}</Text><Text className="text-base text-[#536073]">{records[panel]?.date}</Text><Text className="text-base text-[#536073]">{records[panel]?.time} · {records[panel]?.status}</Text><Text className="text-base text-[#536073]">Dose: {records[panel]?.amount}</Text></View>}
             {!!error && <Text accessibilityRole="alert" className="mt-3 text-sm text-[#D90000]">{error}</Text>}
           </ScrollView>
         </SafeAreaView>

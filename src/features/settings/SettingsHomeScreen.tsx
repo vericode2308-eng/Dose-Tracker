@@ -1,11 +1,11 @@
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, Switch, Text, useColorScheme, View } from 'react-native';
+import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Switch, Text, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MEDICATION_CHANNEL, getReminderStatus, openExactAlarmSettings, reconcileReminders, eraseMedicineDataWithReminders } from '@/notificationManager';
 import { useOnboarding } from '@/features/onboarding/context';
-import { initials } from '@/features/onboarding/model';
+import { useProfiles } from '@/features/profiles/context';
 import { exportPreferences, importPreferences } from '@/features/settings/backup';
 import { clearSettings, DEFAULT_SETTINGS, readSettings, type SettingsPreferences, writeSettings } from '@/features/settings/storage';
 
@@ -14,7 +14,7 @@ const NAVY = '#0B2540';
 const MUTED = '#536073';
 
 export default function SettingsHomeScreen() {
-  const { data, reset } = useOnboarding();
+  const { reset } = useOnboarding();
   const systemScheme = useColorScheme();
   const [prefs, setPrefs] = useState(DEFAULT_SETTINGS);
   const [menu, setMenu] = useState<Menu>(null);
@@ -28,7 +28,7 @@ export default function SettingsHomeScreen() {
   const ink = dark ? '#F8FAFC' : '#0F172A';
   const secondary = dark ? '#B6C1CF' : MUTED;
   const pill = dark ? '#374151' : '#F2F3F5';
-  const profile = data.profile;
+  const { currentProfile: profile, showSwitcher } = useProfiles();
 
   useEffect(() => {
     let active = true;
@@ -152,12 +152,9 @@ export default function SettingsHomeScreen() {
     <ScrollView contentContainerClassName="px-4 pb-8" showsVerticalScrollIndicator={false}>
       <View className="w-full max-w-[440px] self-center">
         <Text accessibilityRole="header" className="mb-4 mt-5 text-[28px] font-bold" style={{ color: ink }}>Settings</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={profile ? 'Active profile, edit profile' : 'Create your profile'} onPress={() => router.push({ pathname: '/profile', params: { mode: 'edit' } })} className="mb-4 min-h-[62px] flex-row items-center gap-3">
-          <View className="h-[54px] w-[54px] items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: profile?.color || '#08B8BE' }}>{profile?.photoUri ? <Image source={{ uri: profile.photoUri }} className="h-full w-full" /> : <Text className="text-[20px] font-semibold text-white">{initials(profile?.name || 'Me')}</Text>}</View>
-          <View><View className="flex-row items-center gap-2"><Text className="text-[18px] font-semibold" style={{ color: ink }}>{profile?.name || 'Create your profile'}</Text><Feather name="chevron-down" size={19} color={ink} /></View><Text className="text-[13px]" style={{ color: secondary }}>{profile ? 'Active profile' : 'No profile saved yet'}</Text></View>
-        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Switch profile" onPress={showSwitcher} className="mb-4 min-h-[62px] flex-row items-center gap-3"><Feather name="users" size={30} color={ink} /><View className="min-w-0 flex-1"><Text className="text-[18px] font-semibold" style={{ color: ink }}>{profile?.name || 'Me'}</Text><Text style={{ color: secondary }}>Active profile</Text></View><Feather name="chevron-down" size={20} color={ink} /></Pressable>
 
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}><Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/profile', params: { mode: 'edit' } })} className="flex-row items-center gap-4">{heading('users', 'People & profiles', profile ? 'Edit your saved profile' : 'Create your first profile')}<Feather name="chevron-right" size={21} color={ink} /></Pressable></View>
+        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}><Pressable accessibilityRole="button" onPress={showSwitcher} className="flex-row items-center gap-4">{heading('users', 'People & profiles', 'Switch, add, or manage profiles')}<Feather name="chevron-right" size={21} color={ink} /></Pressable></View>
 
         <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('sun', 'Appearance', 'Choose your theme')}<View className="mt-3 flex-row gap-2">{(['system', 'light', 'dark'] as const).map((theme) => <Pressable key={theme} accessibilityRole="radio" accessibilityLabel={`${theme} theme`} accessibilityState={{ checked: prefs.theme === theme }} disabled={busy || !loaded} onPress={() => void update({ theme })} className="min-h-[42px] flex-1 flex-row items-center justify-center gap-2 rounded-full px-2" style={{ backgroundColor: prefs.theme === theme ? NAVY : pill }}><Feather name={theme === 'system' ? 'check' : theme === 'light' ? 'sun' : 'moon'} size={18} color={prefs.theme === theme ? '#FFFFFF' : ink} /><Text className="text-[14px] font-semibold capitalize" style={{ color: prefs.theme === theme ? '#FFFFFF' : ink }}>{theme}</Text></Pressable>)}</View></View>
 

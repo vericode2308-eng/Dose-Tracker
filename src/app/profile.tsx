@@ -1,6 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { initializeProfiles, saveProfile } from '@/database';
+import { setProfileArchivedWithReminders } from '@/notificationManager';
+import { useProfiles } from '@/features/profiles/context';
 import { useOnboarding } from '@/features/onboarding/context';
 import { AVATAR_COLORS, EMPTY_PROFILE, initials, validBirthday } from '@/features/onboarding/model';
 import { choosePhoto, keepPhoto } from '@/features/onboarding/photos';
@@ -9,14 +12,31 @@ import { Button, ErrorMessage, Icon, Page, StepHeader, styles } from '@/features
 export default function ProfileScreen() {
   const router = useRouter();
   const { data, save } = useOnboarding();
-  const { mode } = useLocalSearchParams<{ mode?: string }>();
-  const editing = mode === 'edit' || data.completed;
-  const [profile, setProfile] = useState(data.profile || EMPTY_PROFILE);
+  const { mode, id } = useLocalSearchParams<{ mode?: string; id?: string }>();
+  const { profiles, currentProfile, refresh } = useProfiles();
+  const creating = mode === 'create';
+  const editing = !creating && (mode === 'edit' || data.completed);
+  const target = creating ? null : profiles.find(p => p.id === (id || currentProfile?.id));
+  const [profile, setProfile] = useState({ ...(target || EMPTY_PROFILE), relationship: target?.relationship || '' });
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const goBack = () => router.canGoBack() ? router.back() : router.replace('/');
+  async function archive() {
+    if (!target || saving.current) return;
+    saving.current = true; setBusy(true); setError('');
+    try {
+      const result = await setProfileArchivedWithReminders(target.id, target.status !== 'Archived');
+      await refresh();
+      if (result.issues.length) { setError(result.issues.join(' ')); setConfirmArchive(false); }
+      else goBack();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not update profile.'); }
+    finally { saving.current = false; setBusy(false); }
+  }
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [moreColors, setMoreColors] = useState(false);
   const saving = useRef(false);
+  const savedId = useRef(target?.id);
   const nameInput = useRef<TextInput>(null);
   const birthdayInput = useRef<TextInput>(null);
   const letters = initials(profile.name);
@@ -29,9 +49,11 @@ export default function ProfileScreen() {
     setError('');
     try {
       const photoUri = skip ? null : await keepPhoto(profile.photoUri);
-      await save({ profile: skip ? null : { ...profile, name: profile.name.trim(), dateOfBirth: profile.dateOfBirth.trim(), photoUri } });
-      if (editing) router.replace('/settings');
-      else router.push('/notifications');
+      if (skip && !currentProfile) await initializeProfiles(null);
+      if (!skip) savedId.current = await saveProfile({ ...profile, id: savedId.current, photoUri });
+      await refresh();
+      if (editing || creating) goBack();
+      else { await save({ profile: skip ? null : { ...profile, photoUri } }); router.push('/notifications'); }
     } catch { setError('Your profile couldn’t be saved on this device. Please try again.'); }
     finally { saving.current = false; setBusy(false); }
   }
@@ -45,17 +67,20 @@ export default function ProfileScreen() {
     } catch { setError('The photo couldn’t be opened. Try another image or continue without a photo.'); }
     finally { setPhotoBusy(false); }
   }
+  if (id && !target) return <Page><ErrorMessage message="This profile is no longer available." /><Button title="Go back" onPress={goBack} /></Page>;
   return <Page>
-    {!editing && <StepHeader step={1} />}
+    {(editing || creating) && <Pressable accessibilityRole="button" accessibilityLabel="Cancel profile editing" disabled={busy} onPress={goBack} className="mb-2 h-11 w-11 items-center justify-center"><Icon name="arrow-left" /></Pressable>}
+    {!editing && !creating && <StepHeader step={1} />}
     <View style={{ paddingHorizontal: 6, marginBottom: 16 }}>
-      <Text accessibilityRole="header" style={styles.title}>{editing ? 'Edit profile' : 'Create your first profile'}</Text>
-      <Text style={styles.subtitle}>{editing ? 'Update your profile details saved on this device.' : 'Let’s set up a profile. You can add more family members later.'}</Text>
+      <Text accessibilityRole="header" style={styles.title}>{creating ? 'Add Profile' : editing ? 'Edit profile' : 'Create your first profile'}</Text>
+      <Text style={styles.subtitle}>{editing ? 'Update your profile details saved on this device.' : creating ? 'Add someone whose medicines you manage on this device.' : 'Let’s set up a profile. You can add more family members later.'}</Text>
     </View>
     <View style={[styles.card, { padding: 14, gap: 14 }]}>
       <View>
         <Text style={s.label}>Name</Text>
         <TextInput ref={nameInput} accessibilityLabel="Name" style={s.input} placeholder="Your name" placeholderTextColor="#8993A0" value={profile.name} maxLength={80} autoCapitalize="words" autoComplete="name" returnKeyType="next" onChangeText={(name) => setProfile({ ...profile, name })} onSubmitEditing={() => birthdayInput.current?.focus()} />
       </View>
+      <View><Text style={s.label}>Relationship (optional)</Text><TextInput accessibilityLabel="Relationship" value={profile.relationship} maxLength={40} placeholder="e.g. Mother, Son, You" style={s.input} onChangeText={relationship => setProfile({ ...profile, relationship })} /></View>
       <View>
         <Text style={s.label}>Avatar color</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 6 }}>
@@ -94,10 +119,11 @@ export default function ProfileScreen() {
         <View className="flex-1"><Text style={[s.label, { marginBottom: 3 }]}>Add first medicine later</Text><Text style={s.helper}>You can set up medicines after creating the profile.</Text></View>
       </View>
     </View>
+    {editing && target && <View className="mt-4 rounded-2xl bg-white p-4"><Text className="mb-3 text-sm text-[#536073]">{target.status === 'Archived' ? 'Restore this profile to view its medicines and resume supported reminders.' : 'Archiving stops reminders for this person and keeps their medicines and history.'}</Text><Button secondary title={target.status === 'Archived' ? 'Restore profile' : confirmArchive ? 'Confirm archive' : 'Archive profile'} busy={busy} onPress={() => target.status === 'Archived' || confirmArchive ? void archive() : setConfirmArchive(true)} /></View>}
     <ErrorMessage message={error} />
     <View style={styles.footer}>
-      <Button title={editing ? 'Save changes' : 'Continue'} busy={busy || photoBusy} onPress={() => void proceed()} />
-      {!editing && <Button title="Not now" secondary busy={busy || photoBusy} onPress={() => void proceed(true)} />}
+      <Button title={creating ? 'Add Profile' : editing ? 'Save changes' : 'Continue'} busy={busy || photoBusy} onPress={() => void proceed()} />
+      {!editing && !creating && <Button title="Not now" secondary busy={busy || photoBusy} onPress={() => void proceed(true)} />}
     </View>
   </Page>;
 }

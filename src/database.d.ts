@@ -3,6 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 export const DATABASE_NAME: string;
 export function initializeDatabase(): Promise<SQLiteDatabase>;
 export function clearDatabase(): Promise<void>;
+export function subscribeToDatabaseChanges(listener: () => void): () => void;
 
 export type RecurringPattern = {
   kind: 'daily' | 'weekdays' | 'day_interval' | 'hour_interval' | 'prn';
@@ -46,6 +47,7 @@ export type StoredSchedule = {
 
 export type StoredMedicine = {
   id: string;
+  profileId: string;
   name: string;
   dosageForm: string;
   strength: string | null;
@@ -61,10 +63,11 @@ export type StoredMedicine = {
 };
 
 export function addMedicine(input: {
+  profileId?: string;
   medicine: MedicineInput;
   schedule: ScheduleInput;
 }): Promise<{ medicineId: string; scheduleId: string }>;
-export function fetchAllMedicines(): Promise<StoredMedicine[]>;
+export function fetchAllMedicines(filters?: { profileId?: string; includeArchivedProfiles?: boolean }): Promise<StoredMedicine[]>;
 export function fetchMedicineDetails(medicineId: string): Promise<StoredMedicine | null>;
 export type MedicinePatch = Partial<Pick<StoredMedicine, 'name' | 'strength' | 'notes' | 'stockRemaining' | 'status'>>;
 export function updateMedicine(medicineId: string, patch: MedicinePatch): Promise<void>;
@@ -72,23 +75,34 @@ export function deleteMedicine(medicineId: string): Promise<void>;
 export function logDose(input: {
   scheduleId: string;
   date: string;
+  scheduledAtMs?: number;
   actualTakenAtMs?: number | null;
   status: 'Taken' | 'Skipped' | 'Missed';
   /** Reuse this UUID when retrying a dose action. */
   requestId?: string;
 }): Promise<string>;
-export function fetchHistoryByMonth(): Promise<{
-  month: string;
-  records: {
-    id: string;
-    date: string;
-    actualTakenAtMs: number | null;
-    status: 'Taken' | 'Skipped' | 'Missed';
-    scheduleId: string;
-    scheduledTimeLocalMinute: number | null;
-    doseAmount: number;
-    medicineId: string;
-    medicineName: string;
-    dosageForm: string;
-  }[];
-}[]>;
+export type ScheduledDose = {
+  id: string; medicine: StoredMedicine; schedule: StoredSchedule; date: string;
+  scheduledAtMs: number; status: 'Taken' | 'Skipped' | 'Missed' | null;
+  actualTakenAtMs: number | null; snoozedUntilMs: number | null;
+};
+export type DoseReference = { scheduleId: string; date: string; scheduledAtMs: number };
+export type PendingSnooze = DoseReference & { medicineId: string; untilMs: number };
+export function snoozeDose(input: DoseReference & { untilMs: number }): Promise<void>;
+export function fetchPendingSnoozes(): Promise<PendingSnooze[]>;
+export function fetchScheduledDoses(date?: string, profileId?: string): Promise<ScheduledDose[]>;
+export type HistoryRecord = {
+  id: string; date: string; scheduledAtMs: number | null; actualTakenAtMs: number | null;
+  status: 'Taken' | 'Skipped' | 'Missed'; scheduleId: string; scheduledTimeLocalMinute: number | null;
+  doseAmount: number; medicineId: string; medicineName: string; dosageForm: string; doseUnit: string | null;
+};
+export function fetchHistoryByMonth(filters?: { from?: string; to?: string; medicineId?: string; profileId?: string }): Promise<{ month: string; records: HistoryRecord[] }[]>;
+
+export type LocalProfile = { id: string; name: string; relationship: string; color: string; photoUri: string | null; dateOfBirth: string; notes: string; status: 'Active' | 'Archived' };
+export type ProfileSummary = LocalProfile & { overdueCount: number };
+export function initializeProfiles(legacyProfile?: { name: string; color: string; photoUri: string | null; dateOfBirth: string; notes: string } | null): Promise<void>;
+export function fetchProfiles(): Promise<LocalProfile[]>;
+export function fetchProfileState(): Promise<{ profiles: ProfileSummary[]; activeProfileId: string | null }>;
+export function selectProfile(profileId: string): Promise<void>;
+export function saveProfile(profile: Omit<LocalProfile, 'id' | 'status'> & { id?: string }): Promise<string>;
+export function setProfileArchived(profileId: string, archived: boolean): Promise<void>;

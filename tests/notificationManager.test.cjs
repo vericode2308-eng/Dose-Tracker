@@ -12,9 +12,13 @@ const medicine = () => ({ id: 'medicine-1', name: 'Test medicine', dosageForm: '
 
 function harness(options = {}) {
   const stored = new Map();
-  let medicines = [medicine()];
+  let medicines = options.profiles ? [{ ...medicine(), profileId: 'p1' }, { ...medicine(), id: 'medicine-2', profileId: 'p2', schedules: [{ ...medicine().schedules[0], id: 'schedule-2' }] }] : [medicine()];
+  const profiles = [{ id: 'p1', status: 'Active' }, { id: 'p2', status: 'Active' }];
+  let selected = 'p2';
   const prefs = { remindersEnabled: true, soundAndVibration: true, notificationPrivacy: 'show' };
   const calls = [];
+  let snoozes = [];
+  const history = [];
   let listener;
   const api = {
     AndroidImportance: { HIGH: 4, NONE: 0 }, AndroidNotificationVisibility: { PRIVATE: 0 },
@@ -29,12 +33,21 @@ function harness(options = {}) {
     cancelScheduledNotificationAsync: async id => { calls.push('cancel'); stored.delete(id); },
     cancelAllScheduledNotificationsAsync: async () => { calls.push('cancelAll'); stored.clear(); },
     dismissAllNotificationsAsync: async () => { calls.push('dismiss'); },
+    getPresentedNotificationsAsync: async () => [],
+    dismissNotificationAsync: async () => {},
     addNotificationResponseReceivedListener: callback => { listener = callback; return { remove: () => { listener = undefined; } }; },
     getLastNotificationResponseAsync: async () => options.lastResponse || null,
     clearLastNotificationResponseAsync: async () => { calls.push('clearResponse'); },
   };
   const db = {
-    fetchAllMedicines: async () => medicines,
+    fetchPendingSnoozes: async () => snoozes.filter(z => medicines.some(m => m.id === z.medicineId && m.status === 'Active')),
+    snoozeDose: async dose => { snoozes = snoozes.filter(z => z.scheduledAtMs !== dose.scheduledAtMs); snoozes.push(dose); },
+    logDose: async dose => { history.push(dose); snoozes = snoozes.filter(z => z.scheduledAtMs !== dose.scheduledAtMs); },
+    fetchScheduledDoses: async date => snoozes.filter(z => z.date === date).map(z => ({ ...z, schedule: { id: z.scheduleId } })),
+    fetchProfiles: async () => profiles,
+    selectProfile: async id => { selected = id; calls.push('select:' + id); },
+    setProfileArchived: async (id, archived) => { calls.push('archive'); profiles.find(p => p.id === id).status = archived ? 'Archived' : 'Active'; },
+    fetchAllMedicines: async ({ profileId, includeArchivedProfiles = false } = {}) => medicines.filter(m => (!profileId || m.profileId === profileId) && (!m.profileId || includeArchivedProfiles || profiles.find(p => p.id === m.profileId).status === 'Active')),
     fetchMedicineDetails: async id => medicines.find(m => m.id === id) || null,
     updateMedicine: async (id, patch) => { calls.push('update'); Object.assign(medicines.find(m => m.id === id), patch); },
     deleteMedicine: async id => { calls.push('delete'); medicines = medicines.filter(m => m.id !== id); },
@@ -50,7 +63,7 @@ function harness(options = {}) {
     assert.ok(name in dependencies, `Unexpected dependency: ${name}`);
     return dependencies[name];
   }, manager);
-  return { manager, stored, prefs, calls, api, emit: response => listener?.(response), get medicine() { return medicines[0]; } };
+  return { manager, stored, prefs, calls, api, history, emit: response => listener?.(response), get selected() { return selected; }, get medicine() { return medicines[0]; } };
 }
 function response(date = new Date(2026, 8, 26, 8).getTime()) {
   return { actionIdentifier: 'default', notification: { date, request: { identifier: 'dosetracker:dose:schedule-1:daily',
@@ -162,4 +175,65 @@ test('web does not claim reminders or call native modules', async () => {
   const result = await h.manager.scheduleMedicineReminders(h.medicine);
   assert.equal(result.allowed, false);
   assert.equal(h.calls.length, 0);
+});
+
+const doseReference = () => ({ medicineId: 'medicine-1', scheduleId: 'schedule-1', date: '2026-09-26', scheduledAtMs: new Date(2026, 8, 26, 8).getTime() });
+test('native snooze uses a stable one-shot alarm and retains the original occurrence on tap', async () => {
+  const h = harness(); const dose = doseReference();
+  await h.manager.snoozeMedicationDose(dose, 10);
+  await h.manager.snoozeMedicationDose(dose, 15);
+  assert.equal(h.stored.size, 1);
+  const request = [...h.stored.values()][0];
+  assert.equal(request.trigger.type, 'date');
+  assert.equal(request.content.data.scheduledAtMs, dose.scheduledAtMs);
+  assert.equal(h.history.length, 0);
+  const route = await h.manager.doseRouteFromResponse({ actionIdentifier: 'default', notification: { date: Date.now(), request } });
+  assert.equal(route.params.scheduledAtMs, String(dose.scheduledAtMs));
+  await h.manager.reconcileReminders();
+  assert.equal(h.stored.size, 2); // recurring + snooze are both preserved
+  await h.manager.recordMedicationDose(dose, 'Skipped');
+  assert.equal(h.stored.size, 1); // completing this dose preserves tomorrow's recurrence
+  assert.equal(h.history[0].status, 'Skipped');
+});
+test('permission denial prevents snooze; browser stores state without claiming an alarm', async () => {
+  const denied = harness({ granted: false });
+  await assert.rejects(denied.manager.snoozeMedicationDose(doseReference(), 10), /Enable reminder/);
+  const web = harness({ platform: 'web' });
+  const result = await web.manager.snoozeMedicationDose(doseReference(), 10);
+  assert.match(result.message, /cannot deliver/);
+  assert.equal(web.stored.size, 0);
+});
+test('a snooze OS failure remains explicit and recoverable on reconciliation', async () => {
+  const options = { failSchedule: true }; const h = harness(options);
+  const result = await h.manager.snoozeMedicationDose(doseReference(), 10);
+  assert.match(result.message, /scheduling failed/);
+  options.failSchedule = false;
+  await h.manager.reconcileReminders();
+  assert.equal(h.stored.size, 2);
+});
+
+
+test('profile archive cancels only its alarms, restore re-arms, and last active profile is protected', async () => {
+  const h = harness({ profiles: true });
+  await h.manager.reconcileReminders(); assert.equal(h.stored.size, 2);
+  await h.manager.setProfileArchivedWithReminders('p1', true);
+  assert.equal(h.stored.size, 1);
+  assert.equal([...h.stored.values()][0].content.data.medicineId, 'medicine-2');
+  assert.ok(h.calls.indexOf('cancel') < h.calls.indexOf('archive'));
+  assert.equal(await h.manager.doseRouteFromResponse(response()), null);
+  await assert.rejects(h.manager.setProfileArchivedWithReminders('p2', true), /at least one/);
+  await h.manager.setProfileArchivedWithReminders('p1', false);
+  assert.equal(h.stored.size, 2);
+});
+test('notification tap selects dose owner before navigation without disabling other profiles alarms', async () => {
+  const h = harness({ profiles: true });
+  await h.manager.reconcileReminders();
+  let resolve;
+  const routed = new Promise(r => { resolve = r; });
+  const dispose = await h.manager.subscribeToReminderTaps(route => { assert.equal(h.selected, 'p1'); resolve(route); });
+  h.emit(response());
+  const route = await routed;
+  assert.equal(route.params.profileId, 'p1');
+  assert.equal(h.stored.size, 2);
+  dispose();
 });

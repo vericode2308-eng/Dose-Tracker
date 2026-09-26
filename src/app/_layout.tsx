@@ -5,6 +5,8 @@ import { Pressable, Text, View } from 'react-native';
 import { OnboardingProvider } from '@/features/onboarding/context';
 import { NotificationLifecycle } from '@/features/notifications/NotificationLifecycle';
 import { initializeDatabase } from '@/database';
+import { ProfilesProvider } from '@/features/profiles/context';
+import { ProfileSwitcher } from '@/features/profiles/ProfileSwitcher';
 import '../../global.css';
 
 export default function RootLayout() {
@@ -32,8 +34,11 @@ export default function RootLayout() {
   }
 
   return <OnboardingProvider>
+    <ProfilesProvider>
     <StatusBar style="dark" />
     <NotificationLifecycle />
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FBF8F3' }, animation: 'slide_from_right' }} />
+    <ProfileSwitcher />
+    </ProfilesProvider>
   </OnboardingProvider>;
 }

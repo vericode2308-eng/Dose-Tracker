@@ -1,4 +1,4 @@
-import type { StoredMedicine, StoredSchedule, MedicinePatch } from './database';
+import type { StoredMedicine, StoredSchedule, MedicinePatch, DoseReference } from './database';
 import type { Href } from 'expo-router';
 import type { NotificationResponse } from 'expo-notifications';
 export const MEDICATION_CHANNEL: string;
@@ -17,3 +17,8 @@ export function updateMedicineWithReminders(medicineId: string, patch: MedicineP
 export function deleteMedicineWithReminders(medicineId: string): Promise<ReminderResult>;
 export function doseRouteFromResponse(response: NotificationResponse): Promise<Href | null>;
 export function subscribeToReminderTaps(onDose: (route: Href) => void, onError?: (error: unknown) => void): Promise<() => void>;
+
+export function snoozeMedicationDose(dose: DoseReference & { medicineId: string }, minutes?: number): Promise<{ untilMs: number; message: string }>;
+export function recordMedicationDose(dose: DoseReference, status: 'Taken' | 'Skipped'): Promise<{ message: string }>;
+
+export function setProfileArchivedWithReminders(profileId: string, archived: boolean): Promise<ReminderResult>;
