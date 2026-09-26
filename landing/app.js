@@ -516,4 +516,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ------------------------------------------------------------------------
+  // 9. SUPPORT CONTACT FORM HANDLER
+  // ------------------------------------------------------------------------
+  const supportForm = document.getElementById('support-contact-form');
+  const contactSuccessBox = document.getElementById('contact-success-box');
+  const btnSendAnother = document.getElementById('btn-send-another');
+
+  if (supportForm) {
+    supportForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      supportForm.classList.add('hidden');
+      contactSuccessBox?.classList.remove('hidden');
+      launchConfetti();
+    });
+  }
+
+  if (btnSendAnother) {
+    btnSendAnother.addEventListener('click', () => {
+      supportForm?.reset();
+      supportForm?.classList.remove('hidden');
+      contactSuccessBox?.classList.add('hidden');
+    });
+  }
+
 });
+
