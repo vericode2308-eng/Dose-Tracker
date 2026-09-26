@@ -1,7 +1,17 @@
 # DoseTracker — Product and Implementation Plan
 
-**Intended file:** `/Users/shome/Documents/Projects/DoseTrackerApp/plan.md`  
-**Document status:** Comprehensive draft. The file has not been written because the current Plan mode prohibits filesystem changes.
+**Document status:** Living product plan. Sections marked **Target** describe future architecture; the current implementation is summarized below and audited in [Settings architecture](docs/SETTINGS_ARCHITECTURE.md).
+
+## Current implementation snapshot (September 2026)
+
+- Expo SDK 57, Expo Router, NativeWind, app-private SQLite schema v4, and Today / History / Settings tabs are in place. The first-run onboarding flow is guarded by its persisted completion flag, and app lock gates health screens before they appear.
+- Profiles, medicines, schedules, dose history, pending snoozes, and structured reminder setup issues live in `dosetracker.db`. Selected profile is `settings.active_profile_id`. Settings preferences and onboarding state currently live in separate AsyncStorage keys; app-lock state lives in `expo-secure-store`. The SQLite `settings.notification_preferences` default is legacy and is not read by the Settings UI.
+- Ongoing daily and selected-weekday medicine reminders use `expo-notifications`; as-needed schedules have no alarm. Future-start, bounded-course, day-interval, and hour-interval alarms still need implementation. Snooze reads the saved 5/10/15/30-minute choice, stores an occurrence deadline in SQLite, and schedules a native one-shot request. Snooze is an in-app Today action after opening a notification; there is no notification-tray Snooze action.
+- Android `SCHEDULE_EXACT_ALARM` and `POST_NOTIFICATIONS` are declared in `app.json`. The local `DoseAlarmAccess` module checks exact-alarm access, opens the OS access page, opens app-specific notification settings, and re-arms Expo requests on relevant system events. Expo SDK 57 schedules exact allow-while-idle alarms when Android grants access and uses an inexact fallback otherwise. Onboarding and Reminder status guide users through both permission paths.
+- Settings has dedicated notification privacy, sound/vibration, device authentication, and reminder status screens; the snooze picker is a bottom sheet. Privacy modes redact notification content as well as request Android `PUBLIC`, `PRIVATE`, or `SECRET` channel visibility. The two bundled chimes need a native build and can be previewed. A real medication-style test notification is scheduled after ten seconds. Reminder status reads native permissions/queued requests and seven days of observed SQLite setup issues; it cannot infer an individual missed delivery from deep sleep.
+- A Pixel 9 emulator build verified the native sound resources, silent/vibration-off channels, redacted test notification, and direct Android settings links. Typecheck, lint, the Node tests, and Expo Doctor passed. This does not validate release builds, physical devices, Doze reliability, or an exact-delivery guarantee.
+
+**Critical remaining requirement:** Exact on-time delivery and recovery for every supported medication schedule remain unproven. Android special access and an exact alarm request improve timing, but the OS and device restrictions can still intervene. The target durable `notification_jobs` scheduler, per-occurrence recovery, broader recurrence, and physical-device tests below remain open work.
 
 ## 1. Product definition
 
@@ -17,9 +27,10 @@ The application must operate entirely offline after installation. Profiles, medi
 - Three native tabs: **Today**, **History**, and **Settings**.
 - NativeWind 4.2.7 with Tailwind CSS 3.
 - `expo-sqlite` for persistent application data.
-- `expo-notifications` for notification presentation, channels, actions, and notification integration.
-- A local Expo Android module for advanced recurrence, native alarm scheduling, and system-event recovery.
-- EAS development, preview APK, and production App Bundle builds.
+- `expo-notifications` for current scheduling, channels, and notification presentation; protected notification actions remain planned.
+- A local Expo Android module currently checks exact-alarm access, opens Android settings, and re-arms Expo requests after system events. A durable native scheduler remains a target.
+- `expo-local-authentication` and `expo-secure-store` for device app lock; `expo-audio` and bundled notification sounds for reminder previews.
+- EAS development, preview APK, and production App Bundle builds remain release targets; current device verification used a local Android development build.
 - npm, with dependencies installed through `npx expo install`.
 
 Keep non-route code outside `src/app/`. Configure native behavior using Expo modules and config plugins; do not hand-edit generated Android or iOS projects.
@@ -180,7 +191,9 @@ Skipped doses remain in the denominator. Paused/cancelled occurrences, extra dos
 - Re-arm the alert after stock rises above that threshold.
 - Show one concise low-stock warning per medicine.
 
-## 4. SQLite database design
+## 4. Target SQLite database design
+
+The following expanded schema is a future design, not the current `src/database.js` schema v4. Current tables include `profiles`, `medicines`, `schedules`, `history`, `dose_snoozes`, `settings`, and `reminder_issues`. Do not write new code against the proposed tables until migrations create them. Current Settings and onboarding preferences are in AsyncStorage, and the Android module does not read SQLite directly.
 
 ### Storage conventions
 
@@ -207,7 +220,7 @@ PRAGMA busy_timeout = 5000;
 
 Use versioned migrations and parameterized statements. Coordinate migrations with native scheduling so a receiver never reads a partially migrated schema.
 
-The UI uses `expo-sqlite`; the Android module accesses the same database file through compatible SQLite connections.
+The UI currently uses `expo-sqlite`. Direct database access from a future Android scheduler will require migration coordination and compatible SQLite connections.
 
 ### Relationships
 
@@ -444,7 +457,7 @@ Validate dose/snooze jobs against an occurrence and its medicine. Do not store u
 | Table | Columns and purpose |
 |---|---|
 | `mutation_receipts` | `request_id TEXT PK`, operation, entity ID, result JSON, completion timestamp. Makes retried mutations idempotent. |
-| `app_settings` | Singleton row: selected profile, theme, snooze duration, detailed-notification preference, onboarding completion. |
+| `app_settings` | Proposed singleton row for selected profile, theme, snooze duration, detailed-notification preference, and onboarding completion. Migrate existing SQLite/AsyncStorage values deliberately before making this the source of truth. |
 | `runtime_state` | Key/value JSON and update timestamp for scheduler generation, migration coordination, reconciliation cursors, and recovery state. |
 | `clock_events` | ID, observed timestamp, IANA zone, UTC offset, reason. Records observed clock/time-zone transitions. |
 
@@ -480,14 +493,16 @@ A Take, Skip, edit, undo, or stock operation performs the following in one trans
 
 Scheduling failures must not roll back a successfully recorded dose. Surface a reminder-status issue and retain repairable database state.
 
-## 5. Scheduling and notification logic
+## 5. Target scheduling and notification logic
+
+The interface, durable-job flow, and delivery checks in this section are planned work. Today's scheduler is `src/notificationManager.js` plus Expo's Android scheduling delegate; `DoseAlarmAccess` supplies permission/settings integration and system-event re-arming. Current status checks queued native requests and observed setup errors. Android does not expose a reliable receipt proving that each local notification was displayed or seen.
 
 ### Ownership
 
 - SQLite is the source of truth.
-- The Android module is the canonical recurrence engine.
+- A future Android scheduler should implement the target recurrence and recovery engine; current occurrence logic is in JavaScript and only ongoing daily/weekday schedules become recurring native reminders.
 - React Native requests previews and materialization through typed interfaces.
-- The native module owns alarm wake-ups and system-event handling.
+- Expo currently owns Android alarm wake-ups. The local module handles access checks, settings intents, and selected system-event recovery.
 - `expo-notifications` handles notification integration and presentation.
 - Do not depend on JavaScript timers or periodic app reopening.
 
@@ -556,7 +571,7 @@ Maintain a bounded projection, initially 30 days, and extend it during native re
 - Do not claim a silent channel can be overridden.
 - Do not bypass Do Not Disturb.
 
-Use one shared medicine-reminder channel for dose reminders. Use a separate lower-priority channel for refill and recovery notices.
+Use deterministic medicine-reminder channels for each supported sound/vibration/privacy preset: Android channel alert behavior cannot be modified after creation. Preserve app-level and channel-level system restrictions when preferences change. Refill and recovery channels remain future work.
 
 ### Delivery eligibility
 
@@ -625,7 +640,9 @@ After interruption:
 
 Android may stop delivery while the phone is off, the application is force-stopped, permissions are revoked, or device restrictions intervene. The app must explain observable problems and repair scheduling when it can run again.
 
-## 6. Screen definitions
+## 6. Screen definitions and target additions
+
+The main Today, History, Settings, onboarding, profile, and reminder Settings routes exist. The tree and secondary-screen rows below also include planned routes that have not been implemented; see the current snapshot and [Settings architecture](docs/SETTINGS_ARCHITECTURE.md) before assuming a route exists.
 
 ### Navigation structure
 
@@ -675,7 +692,7 @@ Root Stack
 | Pause sheet | Pause now, optional resume date, and explanation that paused doses are excluded. |
 | Refill sheet | Quantity added and optional note. |
 | Stock correction | New physical count; explain that it establishes a new stock baseline. |
-| Reminder status | Notification permission, channel status, exact-alarm access, last scheduling error, next reminder. |
+| Reminder status | Implemented: enabled/queued status, notification/channel permission, exact-alarm access, seven-day observed setup issues, and Android settings links. Next-reminder time and per-occurrence delivery state remain planned. |
 | Protected notification action | Authentication gate followed by explicit person/medicine/action confirmation. |
 | Backup export | Included data and explanation that the file is unencrypted. |
 | Restore preview | Backup date, profile/medicine counts, compatibility result, replacement warning. |
@@ -687,10 +704,10 @@ Root Stack
 |---|---|
 | Appearance | System |
 | Snooze | 10 minutes |
-| Notification details | Hidden |
+| Notification details | Show content (current default); Hide sensitive content and No info are available. Revisit the privacy default before release. |
 | App lock | Disabled until enabled |
 | App-lock delay | Immediate |
-| Sound/vibration | Shared Android reminder-channel settings |
+| Sound/vibration | Phone default sound and vibration on; independent sound and vibration controls use preset Android channels. |
 | History retention | Indefinite |
 | Automatic cloud backup | Disabled |
 
@@ -713,6 +730,8 @@ Design and implement:
 - Restore failure with original data preserved.
 
 ## 7. Privacy, export, and restoration
+
+Current export/restore handles validated preferences only. The full data backup, staged transactional restore, CSV export, and several privacy/release checks below are target requirements. Device app lock already uses SecureStore and protects recent-app previews; Erase all data removes the app-owned database, preferences, local profile photos, onboarding flag, and secure app-lock flag.
 
 ### Privacy
 
@@ -792,6 +811,16 @@ Include:
 Use UTF-8, correct quoting, and spreadsheet-formula-injection protection for user-entered text.
 
 ## 8. Implementation sequence
+
+Current phase status:
+
+| Phase | Status in repository |
+|---|---|
+| 1. Foundation and reminder feasibility | Partly complete: local Android development build, exact/inexact code path, channels, and permission UI verified on an emulator. Process-death, reboot, Doze, two-device and release-build validation remain. |
+| 2. Persistence and domain behavior | Partly complete: SQLite v4 profiles/medicines/schedules/history/snoozes/issue logs. Versioned schedule revisions, durable notification jobs, inventory ledgers and full recurrence remain. |
+| 3. Primary screens | Partly complete: guarded first-run onboarding, tabs, Settings sub-screens, profile and medicine basics. Remaining target screens and accessibility checks are listed above. |
+| 4. Reliability and privacy | Partly complete: app lock, Android preview protection, preference-only export/restore, real test reminders, and observed-issue status. Full recovery, protected notification actions, and full backups remain. |
+| 5. Release preparation | Open: physical-device and release-build validation, full offline audit, EAS preview/production configuration, and distribution materials. |
 
 ### Phase 1 — Foundation and reminder feasibility
 
@@ -900,9 +929,9 @@ Also run domain tests, native scheduling tests, migration/backup tests, and Andr
 
 The TypeScript and lint scope should cover the root application without unintentionally treating the unrelated nested project as part of DoseTracker.
 
-### Planning validation already performed
+### Validation performed so far
 
-An in-memory SQLite schema corresponding to this design passed checks for:
+The repository's Node tests cover the implemented schema/migrations, dose and snooze behavior, reminder content/channels, permission handling, and reconciliation. A Pixel 9 Android emulator development build verified native sound/vibration channels, a delivered test reminder, and Android notification/exact-alarm settings links. `npx expo lint`, `npx tsc --noEmit`, and `npx expo-doctor` passed after the reminder Settings work. The proposed expanded schema also had earlier in-memory design checks for:
 
 - Schema creation and foreign-key validity.
 - Duplicate schedule-time rejection.
@@ -912,7 +941,7 @@ An in-memory SQLite schema corresponding to this design passed checks for:
 - Inventory arithmetic.
 - Profile deletion and isolation of surviving profiles.
 
-These checks validate the database design only. Application code, migrations, UI, and Android alarm behavior remain to be implemented and tested.
+Those earlier design checks do not validate the expanded schema in a shipped app. Physical-device alarm timing, background recovery, release builds, and the unimplemented architecture above remain open acceptance criteria.
 
 ## 10. Technical references
 
