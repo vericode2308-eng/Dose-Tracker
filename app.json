@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DoseTrackerApp",
+    "name": "DoseTracker",
     "slug": "DoseTrackerApp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -21,7 +21,8 @@
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.vericode.DoseTrackerApp"
+      "package": "com.vericode.dosetracker",
+      "versionCode": 1
     },
     "web": {
       "output": "single",

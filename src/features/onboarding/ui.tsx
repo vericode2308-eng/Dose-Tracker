@@ -61,18 +61,23 @@ export function ErrorMessage({ message }: { message: string }) {
 export function ReferenceArt({ kind }: { kind: 'family' | 'reminders' }) {
   const [width, setWidth] = useState(0);
   const family = kind === 'family';
-  const cropTop = family ? 298 : 113;
-  const cropHeight = family ? 530 : 420;
-  const sourceHeight = family ? 1626 : 1614;
-  const cropWidth = family ? 690 : 674;
+  if (family) return <Image
+    accessible={false}
+    importantForAccessibility="no-hide-descendants"
+    source={require('../../../assets/onboarding/family-illustration.png')}
+    resizeMode="contain"
+    style={{ width: '100%', aspectRatio: 2282 / 1856 }}
+  />;
+  const cropTop = 113;
+  const cropHeight = 420;
+  const sourceHeight = 1614;
+  const cropWidth = 674;
   const scale = width / cropWidth;
   return <View accessible={false} importantForAccessibility="no-hide-descendants"
     onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
     style={{ width: '100%', aspectRatio: cropWidth / cropHeight, overflow: 'hidden', pointerEvents: 'none' }}>
-    {width > 0 && <Image resizeMode="stretch" source={family
-      ? require('../../../assets/onboarding/family-reference.png')
-      : require('../../../assets/onboarding/reminders-reference.png')}
-      style={{ position: 'absolute', width: 706 * scale, height: sourceHeight * scale, top: -cropTop * scale, left: -(family ? 8 : 16) * scale }} />}
+    {width > 0 && <Image resizeMode="stretch" source={require('../../../assets/onboarding/reminders-reference.png')}
+      style={{ position: 'absolute', width: 706 * scale, height: sourceHeight * scale, top: -cropTop * scale, left: -16 * scale }} />}
   </View>;
 }
 
