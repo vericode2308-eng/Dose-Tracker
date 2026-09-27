@@ -2,6 +2,10 @@ import type { StoredMedicine, StoredSchedule, MedicinePatch, DoseReference, Remi
 import type { Href } from 'expo-router';
 import type { NotificationResponse } from 'expo-notifications';
 export const MEDICATION_CHANNEL: string;
+export const MEDICATION_CATEGORY: string;
+export const ACTION_TAKE: string;
+export const ACTION_SNOOZE: string;
+export const ACTION_SKIP: string;
 export type ReminderStatus = { allowed: boolean; exact: boolean | null; message: string; channelId?: string; channel?: unknown };
 export type ReminderDiagnostics = ReminderStatus & { enabled: boolean; scheduled: number; issues: ReminderIssue[] };
 export type ReminderResult = ReminderStatus & { scheduled: number; issues: string[] };
@@ -21,6 +25,7 @@ export function eraseMedicineDataWithReminders(): Promise<void>;
 export function updateMedicineWithReminders(medicineId: string, patch: MedicinePatch): Promise<ReminderResult>;
 export function deleteMedicineWithReminders(medicineId: string): Promise<ReminderResult>;
 export function doseRouteFromResponse(response: NotificationResponse): Promise<Href | null>;
+export function doseFromResponse(response: NotificationResponse): Promise<(DoseReference & { medicineId: string; profileId: string | null }) | null>;
 export function subscribeToReminderTaps(onDose: (route: Href) => void, onError?: (error: unknown) => void): Promise<() => void>;
 
 export function snoozeMedicationDose(dose: DoseReference & { medicineId: string }, minutes?: number): Promise<{ untilMs: number; message: string }>;

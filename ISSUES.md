@@ -14,7 +14,7 @@ This document tracks all identified UX, Android, and functional issues, their st
 | **P1-1** | 🟡 P1 (High) | **RESOLVED** | `welcome.tsx`, `notifications.tsx` | Hero illustrations push primary action CTAs ("Get started") and advisory footers below the fold on modern aspect ratios. |
 | **P1-2** | 🟡 P1 (High) | **RESOLVED** | `profile.tsx`, `AddMedicineScreen.tsx` | Manual text entry required for dates and times without native Android pickers. |
 | **P1-3** | 🟡 P1 (High) | **RESOLVED** | `AddMedicineScreen.tsx` | Optional stock step switch defaults to active with empty fields, causing contradictory validation error when tapping Next. |
-| **P1-4** | 🟡 P1 (High) | Pending | `notificationManager.js` | Android notifications lack interactive action buttons (`[Take Now]`, `[Snooze 15m]`, `[Skip]`). |
+| **P1-4** | 🟡 P1 (High) | **RESOLVED** | `notificationManager.js` | Android notifications lack interactive action buttons (`[Take Now]`, `[Snooze 15m]`, `[Skip]`). |
 | **P1-5** | 🟡 P1 (High) | Pending | `SettingsHomeScreen.tsx` | Status toast message ("Test reminder scheduled...") lacks auto-dismiss timeout and permanently blocks screen area. |
 | **P2-1** | 🔵 P2 (Polish) | Pending | Global Actions | No tactile/haptic feedback on taking doses, saving medicines, or deleting entries. |
 | **P2-2** | 🔵 P2 (Polish) | Pending | `TodayHomeScreen.tsx` | Circular adherence progress ring and completed dose cards jump instantly without smooth interpolation or layout transitions. |
@@ -178,5 +178,41 @@ This document tracks all identified UX, Android, and functional issues, their st
   - Completed wizard with "Amoxicillin 500 mg Capsule" and saved.
   - Profile screen date of birth modal opens and selects past years cleanly.
   - All 34 automated unit tests pass; TypeScript check passes with zero errors.
+
+---
+
+### 🟡 P1-4: Android Notifications Lack Interactive Quick-Action Buttons
+* **Identified**: 2026-09-27 during Senior Android emulator audit on Pixel 9 (API 35).
+* **Severity**: P1 (High Usability)
+* **Files Modified**:
+  - [`src/notificationManager.js`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/notificationManager.js)
+  - [`src/notificationManager.d.ts`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/notificationManager.d.ts)
+  - [`tests/notificationManager.test.cjs`](file:///Users/shome/Documents/Projects/DoseTrackerApp/tests/notificationManager.test.cjs)
+* **Root Cause**:
+  In `src/notificationManager.js`, scheduled medication reminders and snoozes lacked an interactive notification category (`categoryIdentifier`). When an alert fired on Android, the notification only allowed tapping the body to open the app, requiring users to navigate and find the dose on the Today dashboard rather than acting directly from the lockscreen or notification shade.
+* **Resolution Action**:
+  1. Defined interactive category and action constants:
+     - `MEDICATION_CATEGORY = 'medication-reminders-actions'`
+     - `ACTION_TAKE = 'take-now'` (Button: "Take Now")
+     - `ACTION_SNOOZE = 'snooze-15'` (Button: "Snooze 15m")
+     - `ACTION_SKIP = 'skip'` (Button: "Skip", marked destructive)
+  2. Registered the category via `setNotificationCategoryAsync(MEDICATION_CATEGORY, ...)` on notification handler initialization.
+  3. Attached `categoryIdentifier: MEDICATION_CATEGORY` to all `medication-dose` scheduled notifications and snoozes in `reminderContent()`.
+  4. Implemented `doseFromResponse(response)` to resolve the full concrete `DoseReference` (`{ medicineId, scheduleId, profileId, date, scheduledAtMs }`) from both recurring triggers and snooze notifications.
+  5. Enhanced `subscribeToReminderTaps()` to dispatch action identifiers:
+     - `ACTION_TAKE`: Selects the profile, executes `recordMedicationDose(dose, 'Taken')`, deducts tracked stock atomically, and dismisses the notification.
+     - `ACTION_SNOOZE`: Selects the profile, executes `snoozeMedicationDose(dose, 15)`, schedules a one-shot notification, and dismisses the notification.
+     - `ACTION_SKIP`: Selects the profile, executes `recordMedicationDose(dose, 'Skipped')`, preserves stock, and dismisses the notification.
+     - `DEFAULT_ACTION_IDENTIFIER`: Preserves standard navigation routing to Today's dose.
+* **Verification**:
+  - Added 4 dedicated unit tests in `tests/notificationManager.test.cjs`:
+    - Category registration & `categoryIdentifier` attachment.
+    - `take-now` interactive action execution & dismissal.
+    - `snooze-15` interactive action execution & one-shot alarm scheduling.
+    - `skip` interactive action execution & stock preservation.
+  - All 38 automated unit tests pass (`npm test`).
+  - TypeScript check: 0 errors (`npx tsc --noEmit`).
+  - Tested reminder scheduling live on Pixel 9 emulator; confirmed Android notification shade delivers the alert.
+
 
 

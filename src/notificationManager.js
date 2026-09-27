@@ -4,6 +4,11 @@ import { fetchAllMedicines, fetchMedicineDetails, updateMedicine, deleteMedicine
 import { readSettings } from './features/settings/storage';
 
 export const MEDICATION_CHANNEL = 'medication-reminders';
+export const MEDICATION_CATEGORY = 'medication-reminders-actions';
+export const ACTION_TAKE = 'take-now';
+export const ACTION_SNOOZE = 'snooze-15';
+export const ACTION_SKIP = 'skip';
+
 export function reminderChannelId(prefs) {
   return `medication-reminders-v2-${prefs.notificationPrivacy}-${prefs.reminderSound}-${prefs.vibrationEnabled ? 'vibrate' : 'still'}`;
 }
@@ -11,7 +16,9 @@ function reminderContent(prefs, detail, data) {
   return { title: prefs.notificationPrivacy === 'none' ? 'DoseTracker' : 'Medication reminder',
     body: prefs.notificationPrivacy === 'show' ? detail : prefs.notificationPrivacy === 'hide'
       ? 'Open DoseTracker to view your scheduled dose.' : 'Open the app for details.',
-    sound: prefs.reminderSound === 'silent' ? false : prefs.reminderSound === 'default' ? 'default' : `${prefs.reminderSound}.wav`, data };
+    sound: prefs.reminderSound === 'silent' ? false : prefs.reminderSound === 'default' ? 'default' : `${prefs.reminderSound}.wav`,
+    categoryIdentifier: data?.kind === 'medication-dose' ? MEDICATION_CATEGORY : undefined,
+    data };
 }
 const PREFIX = 'dosetracker:dose:';
 const alarmAccess = Platform.OS === 'android' ? requireOptionalNativeModule('DoseAlarmAccess') : null;
@@ -61,6 +68,13 @@ async function notifications() {
       return { shouldShowBanner: prefs.remindersEnabled, shouldShowList: prefs.remindersEnabled,
         shouldPlaySound: prefs.remindersEnabled && prefs.reminderSound !== 'silent', shouldSetBadge: false };
     } });
+    if (typeof api.setNotificationCategoryAsync === 'function') {
+      await api.setNotificationCategoryAsync(MEDICATION_CATEGORY, [
+        { identifier: ACTION_TAKE, buttonTitle: 'Take Now', options: { opensAppToForeground: false } },
+        { identifier: ACTION_SNOOZE, buttonTitle: 'Snooze 15m', options: { opensAppToForeground: false } },
+        { identifier: ACTION_SKIP, buttonTitle: 'Skip', options: { isDestructive: true, opensAppToForeground: false } },
+      ]).catch(() => undefined);
+    }
     foregroundHandlerInstalled = true;
   }
   return api;
@@ -391,23 +405,96 @@ export async function doseRouteFromResponse(response) {
   return { pathname: '/', params: { ...owner, medicineId: medicine.id, scheduleId: schedule.id, doseDate } };
 }
 
+/** Resolves the concrete DoseReference object from an interactive notification response. */
+export async function doseFromResponse(response) {
+  const data = response?.notification?.request?.content?.data;
+  if (data?.kind !== 'medication-dose' || data.version !== 1 || typeof data.medicineId !== 'string' || typeof data.scheduleId !== 'string') return null;
+  const medicine = await fetchMedicineDetails(data.medicineId);
+  const schedule = medicine?.schedules.find(item => item.id === data.scheduleId);
+  if (!medicine || !schedule || medicine.status !== 'Active') return null;
+  if (medicine.profileId && !(await fetchProfiles()).some(p => p.id === medicine.profileId && p.status === 'Active')) return null;
+
+  if (typeof data.doseDate === 'string' && Number.isSafeInteger(data.scheduledAtMs)) {
+    return {
+      medicineId: medicine.id,
+      scheduleId: schedule.id,
+      profileId: medicine.profileId || null,
+      date: data.doseDate,
+      scheduledAtMs: data.scheduledAtMs,
+    };
+  }
+
+  const delivered = new Date(response.notification.date);
+  if (!Number.isFinite(delivered.getTime())) return null;
+  if (!['daily', 'weekdays'].includes(schedule.pattern.kind) || schedule.timeLocalMinute == null) return null;
+
+  const occurrence = new Date(delivered);
+  occurrence.setHours(Math.floor(schedule.timeLocalMinute / 60), schedule.timeLocalMinute % 60, 0, 0);
+  if (occurrence > delivered) occurrence.setDate(occurrence.getDate() - 1);
+  if (schedule.pattern.kind === 'weekdays') {
+    const days = schedule.pattern.weekdays || [];
+    if (!days.length) return null;
+    for (let i = 0; i < 7 && !days.includes(occurrence.getDay()); i++) occurrence.setDate(occurrence.getDate() - 1);
+  }
+  const doseDate = localDate(occurrence);
+  if (doseDate < schedule.pattern.startDate || (schedule.pattern.endDate && doseDate > schedule.pattern.endDate)) return null;
+
+  return {
+    medicineId: medicine.id,
+    scheduleId: schedule.id,
+    profileId: medicine.profileId || null,
+    date: doseDate,
+    scheduledAtMs: occurrence.getTime(),
+  };
+}
+
 export async function subscribeToReminderTaps(onDose, onError = () => {}) {
   if (Platform.OS === 'web') return () => {};
   const api = await notifications();
   const handled = new Set();
   let active = true;
   async function handle(response) {
-    if (!active || !response || response.actionIdentifier !== api.DEFAULT_ACTION_IDENTIFIER) return;
-    const key = `${response.notification.request.identifier}:${response.notification.date}`;
+    if (!active || !response) return;
+    const action = response.actionIdentifier;
+    const key = `${response.notification.request.identifier}:${response.notification.date}:${action}`;
     if (handled.has(key)) return;
     handled.add(key);
     try {
-      const route = await doseRouteFromResponse(response);
-      if (active && route) {
-        if (route.params.profileId) await selectProfile(route.params.profileId);
-        if (active) onDose(route);
+      if (action === api.DEFAULT_ACTION_IDENTIFIER) {
+        const route = await doseRouteFromResponse(response);
+        if (active && route) {
+          if (route.params.profileId) await selectProfile(route.params.profileId);
+          if (active) onDose(route);
+        }
+      } else if (action === ACTION_TAKE) {
+        const dose = await doseFromResponse(response);
+        if (active && dose) {
+          if (dose.profileId) await selectProfile(dose.profileId);
+          await recordMedicationDose(dose, 'Taken');
+          if (Platform.OS === 'android') {
+            await api.dismissNotificationAsync(response.notification.request.identifier).catch(() => undefined);
+          }
+        }
+      } else if (action === ACTION_SNOOZE) {
+        const dose = await doseFromResponse(response);
+        if (active && dose) {
+          if (dose.profileId) await selectProfile(dose.profileId);
+          await snoozeMedicationDose(dose, 15);
+          if (Platform.OS === 'android') {
+            await api.dismissNotificationAsync(response.notification.request.identifier).catch(() => undefined);
+          }
+        }
+      } else if (action === ACTION_SKIP) {
+        const dose = await doseFromResponse(response);
+        if (active && dose) {
+          if (dose.profileId) await selectProfile(dose.profileId);
+          await recordMedicationDose(dose, 'Skipped');
+          if (Platform.OS === 'android') {
+            await api.dismissNotificationAsync(response.notification.request.identifier).catch(() => undefined);
+          }
+        }
       }
-      await api.clearLastNotificationResponseAsync();
+      await api.clearLastNotificationResponseAsync().catch(() => undefined);
     } catch (error) { handled.delete(key); if (active) onError(error); }
   }
   const listener = api.addNotificationResponseReceivedListener(response => { void handle(response); });

@@ -24,6 +24,7 @@ function harness(options = {}) {
     AndroidImportance: { HIGH: 4, NONE: 0 }, AndroidNotificationVisibility: { PUBLIC: 1, PRIVATE: 2, SECRET: 3 },
     IosAuthorizationStatus: { PROVISIONAL: 3 }, DEFAULT_ACTION_IDENTIFIER: 'default',
     setNotificationHandler: handler => { api.handler = handler; },
+    setNotificationCategoryAsync: async (id, actions, options) => { api.lastCategory = { id, actions, options }; },
     setNotificationChannelAsync: async (id, config) => { calls.push('channel'); api.lastChannel = { id, config }; },
     getNotificationChannelAsync: async () => ({ importance: options.channelDisabled ? 0 : 4,
       sound: options.systemSound === undefined ? 'default' : options.systemSound,
@@ -36,7 +37,7 @@ function harness(options = {}) {
     cancelAllScheduledNotificationsAsync: async () => { calls.push('cancelAll'); stored.clear(); },
     dismissAllNotificationsAsync: async () => { calls.push('dismiss'); },
     getPresentedNotificationsAsync: async () => [],
-    dismissNotificationAsync: async () => {},
+    dismissNotificationAsync: async id => { calls.push('dismissNotification:' + id); },
     addNotificationResponseReceivedListener: callback => { listener = callback; return { remove: () => { listener = undefined; } }; },
     getLastNotificationResponseAsync: async () => options.lastResponse || null,
     clearLastNotificationResponseAsync: async () => { calls.push('clearResponse'); },
@@ -273,3 +274,54 @@ test('notification tap selects dose owner before navigation without disabling ot
   assert.equal(h.stored.size, 2);
   dispose();
 });
+
+test('registers interactive category and attaches categoryIdentifier to scheduled doses', async () => {
+  const h = harness();
+  await h.manager.scheduleMedicineReminders(h.medicine);
+  assert.equal(h.api.lastCategory?.id, 'medication-reminders-actions');
+  assert.deepEqual(h.api.lastCategory?.actions.map(a => a.identifier), ['take-now', 'snooze-15', 'skip']);
+  const scheduled = [...h.stored.values()][0];
+  assert.equal(scheduled.content.categoryIdentifier, 'medication-reminders-actions');
+});
+
+test('interactive action Take Now logs dose as Taken and dismisses notification', async () => {
+  const h = harness();
+  await h.manager.scheduleMedicineReminders(h.medicine);
+  const dispose = await h.manager.subscribeToReminderTaps(() => {});
+  const actionResp = { actionIdentifier: 'take-now', notification: { date: new Date(2026, 8, 26, 8).getTime(), request: { identifier: 'dosetracker:dose:schedule-1:daily', content: { data: { kind: 'medication-dose', version: 1, medicineId: 'medicine-1', scheduleId: 'schedule-1' } } } } };
+  h.emit(actionResp);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(h.history.length, 1);
+  assert.equal(h.history[0].status, 'Taken');
+  assert.ok(h.calls.includes('dismissNotification:dosetracker:dose:schedule-1:daily'));
+  dispose();
+});
+
+test('interactive action Snooze 15m defers dose and schedules one-shot alarm', async () => {
+  const h = harness();
+  await h.manager.scheduleMedicineReminders(h.medicine);
+  const dispose = await h.manager.subscribeToReminderTaps(() => {});
+  const actionResp = { actionIdentifier: 'snooze-15', notification: { date: new Date(2026, 8, 26, 8).getTime(), request: { identifier: 'dosetracker:dose:schedule-1:daily', content: { data: { kind: 'medication-dose', version: 1, medicineId: 'medicine-1', scheduleId: 'schedule-1' } } } } };
+  h.emit(actionResp);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(h.stored.size, 2); // recurring + snooze
+  const snoozed = [...h.stored.values()].find(item => item.identifier.includes('snooze:'));
+  assert.ok(snoozed);
+  assert.equal(snoozed.trigger.type, 'date');
+  assert.ok(h.calls.includes('dismissNotification:dosetracker:dose:schedule-1:daily'));
+  dispose();
+});
+
+test('interactive action Skip logs dose as Skipped without deducting stock', async () => {
+  const h = harness();
+  await h.manager.scheduleMedicineReminders(h.medicine);
+  const dispose = await h.manager.subscribeToReminderTaps(() => {});
+  const actionResp = { actionIdentifier: 'skip', notification: { date: new Date(2026, 8, 26, 8).getTime(), request: { identifier: 'dosetracker:dose:schedule-1:daily', content: { data: { kind: 'medication-dose', version: 1, medicineId: 'medicine-1', scheduleId: 'schedule-1' } } } } };
+  h.emit(actionResp);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(h.history.length, 1);
+  assert.equal(h.history[0].status, 'Skipped');
+  assert.ok(h.calls.includes('dismissNotification:dosetracker:dose:schedule-1:daily'));
+  dispose();
+});
+
