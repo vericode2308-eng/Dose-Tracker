@@ -45,3 +45,5 @@ example
 # Local Expo module build output
 /modules/*/android/build/
 /modules/*/android/.gradle/
+
+.env.local

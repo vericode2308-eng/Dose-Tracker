@@ -78,7 +78,15 @@
           "enableBackgroundRecording": false
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "dose-tracker",
+          "organization": "vericode-an"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
