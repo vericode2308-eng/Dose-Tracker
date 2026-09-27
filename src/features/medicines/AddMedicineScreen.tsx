@@ -9,6 +9,7 @@ import { addMedicine, fetchMedicineDetails, type RecurringPattern } from '@/data
 import { parseReminderTime, scheduleMedicineReminders } from '@/notificationManager';
 import { MedicineDetailsForm } from './MedicineDetailsForm';
 import { DatePickerField, TimePickerField } from '@/features/ui/DateTimePickers';
+import { hapticSelection, hapticSuccess } from '@/features/ui/haptics';
 
 const NAVY = '#102238';
 const TEAL = '#079D9D';
@@ -89,6 +90,7 @@ export default function AddMedicineScreen() {
     if (step === 1 && durationType === 'For a number of days' && (!isWholeNumber(duration) || Number(duration) < 1)) { setError('Enter a valid course duration.'); return; }
     if (step === 1 && durationType === 'End date' && (!parseDate(endDate) || endDate < startDate)) { setError('Choose an end date on or after the start date.'); return; }
     if (step === 2 && trackStock && (!isWholeNumber(stock) || !isWholeNumber(threshold))) { setError('Enter valid whole numbers for stock and the warning level.'); return; }
+    void hapticSelection();
     setError(''); setStep(value => Math.min(value + 1, 3));
   }
   async function save() {
@@ -117,6 +119,7 @@ export default function AddMedicineScreen() {
           timeLocalMinute: kind === 'prn' ? null : parseReminderTime(startTime), doseAmount: amount },
       });
       savedId = result.medicineId;
+      void hapticSuccess();
       const stored = await fetchMedicineDetails(result.medicineId);
       if (!stored) throw new Error('Saved medicine could not be reopened.');
       const reminders = await scheduleMedicineReminders(stored);
@@ -154,7 +157,16 @@ export default function AddMedicineScreen() {
       close();
     }
   }
-  const back = () => saving.current ? undefined : step ? (setError(''), setStep(step - 1)) : handleExit();
+  const back = () => {
+    if (saving.current) return;
+    if (step > 0) {
+      void hapticSelection();
+      setError('');
+      setStep(step - 1);
+    } else {
+      handleExit();
+    }
+  };
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;

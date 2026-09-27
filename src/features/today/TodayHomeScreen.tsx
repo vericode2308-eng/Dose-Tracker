@@ -12,6 +12,8 @@ import { dateKey, isDateKey } from '@/features/doses/occurrences';
 import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { useTheme } from '@/features/theme/ThemeContext';
 
+import { hapticImpactLight, hapticSuccess } from '@/features/ui/haptics';
+
 const time = (at: number) => new Date(at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 function ProgressRing({ percent, isDark, textColor }: { percent: number; isDark: boolean; textColor: string }) {
   const circumference = 2 * Math.PI * 32;
@@ -53,6 +55,8 @@ function ProfileToday() {
     if (busy.current) return;
     busy.current = true; setBusyId(dose.id); setMessage('');
     try {
+      if (action === 'Taken') void hapticSuccess();
+      else void hapticImpactLight();
       const reference = { medicineId: dose.medicine.id, scheduleId: dose.schedule.id, date: dose.date, scheduledAtMs: dose.scheduledAtMs };
       const result = action === 'Snooze' ? await snoozeMedicationDose(reference) : await recordMedicationDose(reference, action);
       setMessage(result.message);

@@ -15,8 +15,8 @@ This document tracks all identified UX, Android, and functional issues, their st
 | **P1-2** | 🟡 P1 (High) | **RESOLVED** | `profile.tsx`, `AddMedicineScreen.tsx` | Manual text entry required for dates and times without native Android pickers. |
 | **P1-3** | 🟡 P1 (High) | **RESOLVED** | `AddMedicineScreen.tsx` | Optional stock step switch defaults to active with empty fields, causing contradictory validation error when tapping Next. |
 | **P1-4** | 🟡 P1 (High) | **RESOLVED** | `notificationManager.js` | Android notifications lack interactive action buttons (`[Take Now]`, `[Snooze 15m]`, `[Skip]`). |
-| **P1-5** | 🟡 P1 (High) | Pending | `SettingsHomeScreen.tsx` | Status toast message ("Test reminder scheduled...") lacks auto-dismiss timeout and permanently blocks screen area. |
-| **P2-1** | 🔵 P2 (Polish) | Pending | Global Actions | No tactile/haptic feedback on taking doses, saving medicines, or deleting entries. |
+| **P1-5** | 🟡 P1 (High) | **RESOLVED** | `SettingsHomeScreen.tsx` | Status toast message ("Test reminder scheduled...") lacks auto-dismiss timeout and permanently blocks screen area. |
+| **P2-1** | 🔵 P2 (Polish) | **RESOLVED** | Global Actions | No tactile/haptic feedback on taking doses, saving medicines, or deleting entries. |
 | **P2-2** | 🔵 P2 (Polish) | Pending | `TodayHomeScreen.tsx` | Circular adherence progress ring and completed dose cards jump instantly without smooth interpolation or layout transitions. |
 | **P2-3** | 🔵 P2 (Polish) | Pending | `TodayHomeScreen.tsx`, `HistoryScreen.tsx` | Completed doses cannot be tapped to "Undo" or edited to fix accidental taps. |
 | **P2-4** | 🔵 P2 (Polish) | Pending | `profile.tsx` | Profile initials logic generates hardcoded fallback `'ME'` for multi-word names instead of splitting words. |
@@ -213,6 +213,51 @@ This document tracks all identified UX, Android, and functional issues, their st
   - All 38 automated unit tests pass (`npm test`).
   - TypeScript check: 0 errors (`npx tsc --noEmit`).
   - Tested reminder scheduling live on Pixel 9 emulator; confirmed Android notification shade delivers the alert.
+
+---
+
+### 🟡 P1-5: Settings Status Toast Lacks Auto-Dismiss Timeout
+* **Identified**: 2026-09-27 during Senior Android emulator audit on Pixel 9 (API 35).
+* **Severity**: P1 (High Usability)
+* **File Modified**: [`src/features/settings/SettingsHomeScreen.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/settings/SettingsHomeScreen.tsx)
+* **Root Cause**:
+  In `SettingsHomeScreen.tsx`, setting `message` state (e.g. after triggering "Test reminder" or preference reconciliation) rendered a sticky toast container at the bottom of the screen (`className="absolute bottom-3 left-4 right-4 rounded-2xl bg-[#0B2540] p-4"`). The toast lacked any timer to automatically clear `message`, permanently blocking the bottom navigation bar and screen content unless the user manually tapped it.
+* **Resolution Action**:
+  1. Added a `useEffect` hook listening to `message` state changes.
+  2. Initiates a 4000ms `setTimeout` that resets `message` to `''`.
+  3. Returns a cleanup function `() => clearTimeout(timer)` to prevent memory leaks or timer collisions when messages change rapidly or the component unmounts.
+* **Verification**:
+  - Tested on Pixel 9 emulator (1080x2424, API 35).
+  - Tapped "Test reminder": toast *"Test reminder scheduled for 10 seconds from now..."* popped up.
+  - Verified with automated emulator screenshots: toast is active at 0.5s, and completely auto-dismissed after 4.5s.
+  - All 38 automated unit tests pass; TypeScript check passes with zero errors.
+
+---
+
+### 🔵 P2-1: Missing Tactile/Haptic Feedback on User Actions
+* **Identified**: 2026-09-27 during Senior Android emulator audit on Pixel 9 (API 35).
+* **Severity**: P2 (Polish & Delight)
+* **Files Modified / Created**:
+  - Created: [`src/features/ui/haptics.ts`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/ui/haptics.ts)
+  - Modified: [`src/features/today/TodayHomeScreen.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/today/TodayHomeScreen.tsx)
+  - Modified: [`src/features/medicines/AddMedicineScreen.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/medicines/AddMedicineScreen.tsx)
+  - Modified: [`src/app/profile.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/app/profile.tsx)
+  - Modified: [`src/features/profiles/ProfileSwitcher.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/profiles/ProfileSwitcher.tsx)
+* **Root Cause**:
+  The application lacked native tactile vibrations when users interacted with critical clinical actions (e.g. taking doses, snoozing alarms, saving medicines, switching or creating profiles). On modern mobile devices, lack of haptic confirmation reduces user confidence and makes interactions feel sluggish and unconfirmed.
+* **Resolution Action**:
+  1. Installed `expo-haptics` (~57.0.x SDK compatible).
+  2. Created safe utility wrapper in `src/features/ui/haptics.ts` (`hapticSuccess`, `hapticWarning`, `hapticError`, `hapticImpactLight`, `hapticImpactMedium`, `hapticSelection`) with web and hardware failure fallbacks.
+  3. Integrated haptics across all core action touchpoints:
+     - Taking a dose: `hapticSuccess()` (crisp success vibration).
+     - Snoozing / Skipping a dose: `hapticImpactLight()` (subtle confirmation tap).
+     - Add Medicine wizard: `hapticSelection()` on step transitions, `hapticSuccess()` on final medicine save.
+     - Profile Management: `hapticSuccess()` on profile creation/update, `hapticWarning()` on profile archive, `hapticSelection()` on profile switcher selection.
+* **Verification**:
+  - Tested on Pixel 9 emulator (1080x2424, API 35).
+  - All 38 automated unit tests pass (`npm test`).
+  - TypeScript check: 0 errors (`npx tsc --noEmit`).
+
 
 
 

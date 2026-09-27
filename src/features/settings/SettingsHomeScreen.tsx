@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { Link, router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Image, Modal, Platform, Pressable, ScrollView, Switch, Text, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { openExactAlarmSettings, openNotificationSettings, reconcileReminders, eraseMedicineDataWithReminders, scheduleTestReminder } from '@/notificationManager';
@@ -33,6 +33,14 @@ export default function SettingsHomeScreen() {
   const pill = colors.pill;
   const { currentProfile: profile, showSwitcher } = useProfiles();
   const { enabled: appLockEnabled, setEnabled: setAppLockEnabled } = useAppLock();
+
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => {
+      setMessage('');
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   useFocusEffect(useCallback(() => {
     let active = true;

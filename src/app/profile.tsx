@@ -9,6 +9,7 @@ import { AVATAR_COLORS, EMPTY_PROFILE, initials, validBirthday } from '@/feature
 import { choosePhoto, keepPhoto } from '@/features/onboarding/photos';
 import { Button, ErrorMessage, Icon, Page, StepHeader, styles } from '@/features/onboarding/ui';
 import { DatePickerField } from '@/features/ui/DateTimePickers';
+import { hapticSuccess, hapticWarning } from '@/features/ui/haptics';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
     if (!target || saving.current) return;
     saving.current = true; setBusy(true); setError('');
     try {
+      void hapticWarning();
       const result = await setProfileArchivedWithReminders(target.id, target.status !== 'Archived');
       await refresh();
       if (result.issues.length) { setError(result.issues.join(' ')); setConfirmArchive(false); }
@@ -52,6 +54,7 @@ export default function ProfileScreen() {
       const photoUri = skip ? null : await keepPhoto(profile.photoUri);
       if (skip && !currentProfile) await initializeProfiles(null);
       if (!skip) savedId.current = await saveProfile({ ...profile, id: savedId.current, photoUri });
+      void hapticSuccess();
       await refresh();
       if (editing || creating) goBack();
       else { await save({ profile: skip ? null : { ...profile, photoUri } }); router.push('/notifications'); }

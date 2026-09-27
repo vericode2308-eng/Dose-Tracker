@@ -7,6 +7,7 @@ import type { LocalProfile } from '@/database';
 import { initials } from '@/features/onboarding/model';
 import { useProfiles } from './context';
 import { useTheme } from '@/features/theme/ThemeContext';
+import { hapticSelection } from '@/features/ui/haptics';
 
 function Avatar({ profile, size = 52 }: { profile: LocalProfile | null; size?: number }) {
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: profile?.color || '#08B8BE' }} className="shrink-0 items-center justify-center overflow-hidden">{profile?.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: size, height: size }} /> : <Text className="font-semibold text-white" style={{ fontSize: size * 0.36 }}>{initials(profile?.name || 'Me')}</Text>}</View>;
@@ -22,7 +23,7 @@ export function ProfileSwitcherTrigger({ showOtherProfiles = false }: { showOthe
   async function choose(id: string) {
     if (selecting.current) return;
     selecting.current = true; setBusy(true); setError('');
-    try { await select(id); }
+    try { void hapticSelection(); await select(id); }
     catch { setError('Could not switch profiles. Tap the profile to retry.'); }
     finally { selecting.current = false; setBusy(false); }
   }
@@ -61,7 +62,7 @@ export function ProfileSwitcher() {
   const choose = async (id: string) => {
     if (selecting.current) return;
     selecting.current = true; setBusy(true); setError('');
-    try { await select(id); } catch { setError('Could not switch profiles. Please try again.'); }
+    try { void hapticSelection(); await select(id); } catch { setError('Could not switch profiles. Please try again.'); }
     finally { selecting.current = false; setBusy(false); }
   };
   const ordered = [...profiles].sort((a, b) => Number(b.id === currentProfile?.id) - Number(a.id === currentProfile?.id));
