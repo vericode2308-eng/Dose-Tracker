@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Platform, Text, View, useWindowDimensions } from 'react-native';
 import { useOnboarding } from '@/features/onboarding/context';
 import { requestLocalNotifications } from '@/features/onboarding/permissions';
 import { getReminderStatus, openExactAlarmSettings, openNotificationSettings } from '@/notificationManager';
@@ -9,6 +9,8 @@ import { Button, ErrorMessage, Feature, Page, PrivacyNote, ReferenceArt, StepHea
 export default function NotificationsScreen() {
   const router = useRouter();
   const { save } = useOnboarding();
+  const { height } = useWindowDimensions();
+  const illustrationMaxHeight = Math.round(Math.min(height * 0.22, 160));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [denied, setDenied] = useState(false);
@@ -33,18 +35,18 @@ export default function NotificationsScreen() {
   }
   return <Page>
     <StepHeader step={2} />
-    <ReferenceArt kind="reminders" />
-    <View style={{ marginTop: 18, marginBottom: 22, paddingHorizontal: 4 }}>
-      <Text accessibilityRole="header" style={[styles.title, { textAlign: 'center', fontSize: 27 }]}>Get reminder notifications</Text>
-      <Text style={[styles.subtitle, { textAlign: 'center' }]}>We’ll notify you when it’s time to take your medicines.</Text>
+    <ReferenceArt kind="reminders" maxHeight={illustrationMaxHeight} />
+    <View style={{ marginTop: 8, marginBottom: 12, paddingHorizontal: 4 }}>
+      <Text accessibilityRole="header" style={[styles.title, { textAlign: 'center', fontSize: 24, lineHeight: 30 }]}>Get reminder notifications</Text>
+      <Text style={[styles.subtitle, { textAlign: 'center', fontSize: 15, lineHeight: 20, marginTop: 4 }]}>We’ll notify you when it’s time to take your medicines.</Text>
     </View>
-    <View style={[styles.card, { gap: 22, paddingVertical: 18 }]}>
+    <View style={[styles.card, { gap: 12, paddingVertical: 14, paddingHorizontal: 14 }]}>
       <Feature icon="bell" title="Never miss a dose">Get timely reminders for you and your family.</Feature>
-      <Feature icon="settings" title="Uses Android permissions">Notifications require permission to send alerts. Exact alarms may be needed for precise timing on some devices.</Feature>
+      <Feature icon="settings" title="Uses Android permissions">Notifications require permission to send alerts. Exact alarms may be needed for precise timing.</Feature>
       <Feature icon="shield" title="Tracking still works" green>If you don’t allow notifications, you can still track your medicines in the app.</Feature>
     </View>
     <ErrorMessage message={error} />
-    <View style={styles.footer}>
+    <View style={[styles.footer, { paddingTop: 6 }]}>
       {denied && <Button title="Open notification settings" secondary onPress={() => { void openNotificationSettings().catch(() => setError('Open your device Settings to change notification permissions.')); }} />}
       {exactNeeded && <Button title="Allow alarms & reminders" onPress={() => { void openExactAlarmSettings().catch(() => setError('Open Android Settings to allow Alarms & reminders.')); }} />}
       <Button title={exactNeeded ? 'Check access again' : denied ? 'Check permission again' : 'Allow notifications'} busy={busy} onPress={() => void proceed()} />

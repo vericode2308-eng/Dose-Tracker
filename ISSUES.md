@@ -11,7 +11,7 @@ This document tracks all identified UX, Android, and functional issues, their st
 | **P0-1** | 🔴 P0 (Blocker) | **RESOLVED** | `AddMedicineScreen.tsx` | Bottom action buttons ("Back" and "Save Medicine") pushed below the viewport into the Android gesture navigation pill on Step 4 (Review and save). |
 | **P0-2** | 🔴 P0 (Blocker) | **RESOLVED** | `(tabs)/_layout.tsx`, `SettingsHomeScreen.tsx`, Global UI | Dark theme only changed local Settings styling; Tab bar and Today/History/Medicines remained bright white. Hardcoded checkmark next to System theme. |
 | **P0-3** | 🔴 P0 (Blocker) | **RESOLVED** | `AddMedicineScreen.tsx` | Android hardware/gesture back press abruptly exits the wizard, discarding entered schedules and medicine details. |
-| **P1-1** | 🟡 P1 (High) | Pending | `welcome.tsx`, `notifications.tsx` | Hero illustrations push primary action CTAs ("Get started") and advisory footers below the fold on modern aspect ratios. |
+| **P1-1** | 🟡 P1 (High) | **RESOLVED** | `welcome.tsx`, `notifications.tsx` | Hero illustrations push primary action CTAs ("Get started") and advisory footers below the fold on modern aspect ratios. |
 | **P1-2** | 🟡 P1 (High) | Pending | `profile.tsx`, `AddMedicineScreen.tsx` | Manual text entry required for dates and times without native Android pickers. |
 | **P1-3** | 🟡 P1 (High) | **RESOLVED** | `AddMedicineScreen.tsx` | Optional stock step switch defaults to active with empty fields, causing contradictory validation error when tapping Next. |
 | **P1-4** | 🟡 P1 (High) | Pending | `notificationManager.js` | Android notifications lack interactive action buttons (`[Take Now]`, `[Snooze 15m]`, `[Skip]`). |
@@ -122,4 +122,32 @@ This document tracks all identified UX, Android, and functional issues, their st
   - Opened Profile Switcher: confirmed modal sheet, active profile badge, and "+ Add Profile" CTA render in dark theme.
   - Switched back to `[☼ Light]`: verified immediate transition back to ivory/white palette with dark navy accents and dark status bar.
   - All 34 automated unit tests pass; TypeScript check passes with zero errors.
+
+---
+
+### 🟡 P1-1: Hero Illustration Overflow & Button Clipping on Onboarding Screens
+* **Identified**: 2026-09-27 during Senior Android emulator audit on Pixel 9 (API 35).
+* **Severity**: P1 (High Usability)
+* **Files Modified**:
+  - [`src/features/onboarding/ui.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/onboarding/ui.tsx)
+  - [`src/app/welcome.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/app/welcome.tsx)
+  - [`src/app/notifications.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/app/notifications.tsx)
+  - [`src/app/ready.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/app/ready.tsx)
+* **Root Cause**:
+  1. In `src/features/onboarding/ui.tsx`, `ReferenceArt` rendered illustrations with full 100% width and unconstrained aspect ratios (`2282 / 1856` for family, `674 / 420` for reminders), measuring >320dp vertically on standard modern phone screens (~400dp logical width).
+  2. The `Feature` component rendered massive 62x62 circular icon containers with 29px Feather icons. In a list of three features inside `styles.card`, the feature block alone consumed >280dp vertically.
+  3. Combined with header text, page indicator dots, and footers, the total content height exceeded 950dp. On typical Android viewports (700-800dp usable height), the primary CTA ("Get started" on Welcome, "Allow notifications" and "Not now" on Notifications) and the mandatory privacy disclaimer were clipped completely off-screen below the fold, forcing unnecessary scrolling.
+* **Resolution Action**:
+  1. Updated `ReferenceArt` in `src/features/onboarding/ui.tsx` to accept a responsive `maxHeight` parameter, defaulting to `Math.round(windowHeight * 0.25)`.
+     - For `family`: Proportionally calculates `artWidth = Math.round(effectiveMaxHeight * (2282 / 1856))`, capping at 100% container width with `resizeMode="contain"` and centered alignment.
+     - For `reminders`: Calculates dynamic scale `scale = effectiveMaxHeight / 420`, scaling container width, inner image size, and coordinate crop offsets (`cropTop`, `cropLeft`) in exact mathematical lockstep.
+  2. Streamlined `Feature` styling: reduced icon circle from 62x62 to 44x44 (icon size 22), set title to 15sp/20lh, and body to 13sp/18lh. Reduced feature card vertical footprint by over 110dp while retaining high legibility and polished hierarchy.
+  3. Refined layout spacing in `welcome.tsx`, `notifications.tsx`, and `ready.tsx`: tightened brand mark icon sizes (52x52 / 72x72), normalized margins, and ensured `styles.footer` with its buttons and privacy note is 100% visible above the fold on all standard mobile aspect ratios.
+* **Verification**:
+  - Tested on Pixel 9 emulator (1080x2424, API 35).
+  - Verified `WelcomeScreen`: brand mark, title, subtitle, centered family illustration, 3 offline/family/free features, page dots, primary "Get started ->" button, and privacy note are completely visible above the fold with zero scrolling required.
+  - Verified `NotificationsScreen`: header, scaled reminders illustration, title, 3 reminder/permission features, "Allow notifications" CTA, and "Not now" secondary button are fully visible above the fold.
+  - Verified `ReadyScreen`: 72x72 brand mark, completion text, cards, and "Edit profile" / "Finish setup" CTA render cleanly within viewport.
+  - Unit tests: 34/34 passing (`npm test`).
+  - TypeScript check: 0 errors (`npx tsc --noEmit`).
 

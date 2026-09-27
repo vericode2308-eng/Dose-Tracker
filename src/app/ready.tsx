@@ -20,17 +20,17 @@ export default function ReadyScreen() {
   }
   return <Page>
     {!data.completed && <StepHeader step={3} />}
-    <View className="items-center" style={{ paddingVertical: 48 }}>
-      <Image source={require('../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 132, height: 132, marginBottom: 28 }} />
-      <Text accessibilityRole="header" style={[styles.title, { textAlign: 'center' }]}>{data.completed ? 'Your space, privately.' : 'You’re all set.'}</Text>
-      <Text style={[styles.subtitle, { textAlign: 'center', paddingHorizontal: 12 }]}>{data.profile ? `${data.profile.name}’s profile is saved on this device.` : 'You can create your first profile whenever you’re ready.'}</Text>
+    <View className="items-center" style={{ paddingVertical: 20 }}>
+      <Image source={require('../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 72, height: 72, marginBottom: 14 }} />
+      <Text accessibilityRole="header" style={[styles.title, { textAlign: 'center', fontSize: 26, lineHeight: 32 }]}>{data.completed ? 'Your space, privately.' : 'You’re all set.'}</Text>
+      <Text style={[styles.subtitle, { textAlign: 'center', paddingHorizontal: 12, fontSize: 15, lineHeight: 20, marginTop: 4 }]}>{data.profile ? `${data.profile.name}’s profile is saved on this device.` : 'You can create your first profile whenever you’re ready.'}</Text>
     </View>
-    <View style={[styles.card, { gap: 24 }]}>
+    <View style={[styles.card, { gap: 12, paddingVertical: 14, paddingHorizontal: 14 }]}>
       <Feature icon="cloud-off" title="Private by design">Your profile stays on this device. No account or cloud connection is needed.</Feature>
       <Feature icon="bell" title={data.notificationChoice === 'granted' ? 'Notification permission enabled' : 'Notifications are optional'}>{data.notificationChoice === 'granted' ? 'Permission is ready. Reminders begin only after you add and schedule medicines.' : 'You can enable notifications later in your device settings.'}</Feature>
     </View>
     <ErrorMessage message={error} />
-    <View style={styles.footer}>
+    <View style={[styles.footer, { paddingTop: 8 }]}>
       {!data.completed ? <Button title="Finish setup" icon="check" busy={busy} onPress={() => void finish()} /> : <Button title={data.profile ? 'Edit profile' : 'Create a profile'} icon="user" onPress={() => router.push('/profile')} />}
       <PrivacyNote />
     </View>
