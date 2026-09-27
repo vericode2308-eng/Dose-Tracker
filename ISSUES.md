@@ -12,7 +12,7 @@ This document tracks all identified UX, Android, and functional issues, their st
 | **P0-2** | 🔴 P0 (Blocker) | **RESOLVED** | `(tabs)/_layout.tsx`, `SettingsHomeScreen.tsx`, Global UI | Dark theme only changed local Settings styling; Tab bar and Today/History/Medicines remained bright white. Hardcoded checkmark next to System theme. |
 | **P0-3** | 🔴 P0 (Blocker) | **RESOLVED** | `AddMedicineScreen.tsx` | Android hardware/gesture back press abruptly exits the wizard, discarding entered schedules and medicine details. |
 | **P1-1** | 🟡 P1 (High) | **RESOLVED** | `welcome.tsx`, `notifications.tsx` | Hero illustrations push primary action CTAs ("Get started") and advisory footers below the fold on modern aspect ratios. |
-| **P1-2** | 🟡 P1 (High) | Pending | `profile.tsx`, `AddMedicineScreen.tsx` | Manual text entry required for dates and times without native Android pickers. |
+| **P1-2** | 🟡 P1 (High) | **RESOLVED** | `profile.tsx`, `AddMedicineScreen.tsx` | Manual text entry required for dates and times without native Android pickers. |
 | **P1-3** | 🟡 P1 (High) | **RESOLVED** | `AddMedicineScreen.tsx` | Optional stock step switch defaults to active with empty fields, causing contradictory validation error when tapping Next. |
 | **P1-4** | 🟡 P1 (High) | Pending | `notificationManager.js` | Android notifications lack interactive action buttons (`[Take Now]`, `[Snooze 15m]`, `[Skip]`). |
 | **P1-5** | 🟡 P1 (High) | Pending | `SettingsHomeScreen.tsx` | Status toast message ("Test reminder scheduled...") lacks auto-dismiss timeout and permanently blocks screen area. |
@@ -150,4 +150,33 @@ This document tracks all identified UX, Android, and functional issues, their st
   - Verified `ReadyScreen`: 72x72 brand mark, completion text, cards, and "Edit profile" / "Finish setup" CTA render cleanly within viewport.
   - Unit tests: 34/34 passing (`npm test`).
   - TypeScript check: 0 errors (`npx tsc --noEmit`).
+
+---
+
+### 🟡 P1-2: Manual Text Entry for Dates and Times Lacks Native Pickers
+* **Identified**: 2026-09-27 during Senior Android emulator audit on Pixel 9 (API 35).
+* **Severity**: P1 (High Usability)
+* **Files Modified / Created**:
+  - Created: [`src/features/ui/DateTimePickers.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/ui/DateTimePickers.tsx)
+  - Modified: [`src/app/profile.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/app/profile.tsx)
+  - Modified: [`src/features/medicines/AddMedicineScreen.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/medicines/AddMedicineScreen.tsx)
+* **Root Cause**:
+  1. Profile setup and edit (`profile.tsx`) required users to manually type their Date of Birth (`YYYY-MM-DD`) into a raw text input field with soft keyboard, which is highly error-prone and violates mobile UX standards.
+  2. Medicine schedule creation (`AddMedicineScreen.tsx`) required users to manually type Reminder Times (e.g. `9:00 AM`, `09:00`, `21:00`) and Course Dates (`YYYY-MM-DD`).
+  3. Slight formatting mismatches (e.g. lowercase `am`/`pm`, missing space, invalid dates) failed regex parsers in SQLite or `notificationManager.js` (`parseReminderTime`), causing silent scheduling skips or form rejection.
+* **Resolution Action**:
+  1. Created modular, native-styled bottom sheet pickers in `src/features/ui/DateTimePickers.tsx`:
+     - `DatePickerModal` & `DatePickerField`: Interactive calendar grid with month navigation (< / >), year quick-jump selector grid, "Today" preset, clear button, and future/past date constraints.
+     - `TimePickerModal` & `TimePickerField`: 12-hour/24-hour hour & minute selectors with AM/PM toggle, and one-tap clinical presets ("Morning 8:00 AM", "Noon 12:00 PM", "Evening 6:00 PM", "Bedtime 9:00 PM").
+     - Always outputs canonical `YYYY-MM-DD` and `H:MM AM/PM` formats expected by database and reminder engines.
+  2. Integrated `DatePickerField` into `src/app/profile.tsx` for Date of Birth (`maxDate` set to today, enabling year-jump selection).
+  3. Integrated `DatePickerField` for Start Date & End Date, and `TimePickerField` for Reminder Time in `src/features/medicines/AddMedicineScreen.tsx`.
+* **Verification**:
+  - Tested on Pixel 9 emulator (1080x2424, API 35).
+  - Tapped Start Date in Add Medicine: modal sheet cleanly slid up; tapped "Tomorrow"; modal formatted `2026-09-28`.
+  - Tapped Reminder Time: modal opened with hour/minute selector and presets; selected "Dinner 6:00 PM"; formatted `6:00 PM` (`18:00`).
+  - Completed wizard with "Amoxicillin 500 mg Capsule" and saved.
+  - Profile screen date of birth modal opens and selects past years cleanly.
+  - All 34 automated unit tests pass; TypeScript check passes with zero errors.
+
 

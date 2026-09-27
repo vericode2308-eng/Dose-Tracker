@@ -8,6 +8,7 @@ import { useOnboarding } from '@/features/onboarding/context';
 import { AVATAR_COLORS, EMPTY_PROFILE, initials, validBirthday } from '@/features/onboarding/model';
 import { choosePhoto, keepPhoto } from '@/features/onboarding/photos';
 import { Button, ErrorMessage, Icon, Page, StepHeader, styles } from '@/features/onboarding/ui';
+import { DatePickerField } from '@/features/ui/DateTimePickers';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -103,11 +104,15 @@ export default function ProfileScreen() {
         </View>
       </View>
       <View>
-        <Text style={s.label}>Date of birth (optional)</Text>
-        <View style={s.dateRow}>
-          <TextInput ref={birthdayInput} accessibilityLabel="Date of birth, YYYY-MM-DD" placeholder="YYYY-MM-DD" placeholderTextColor="#8993A0" value={profile.dateOfBirth} maxLength={10} keyboardType="numbers-and-punctuation" style={[s.input, { flex: 1, borderWidth: 0, paddingRight: 0 }]} onChangeText={(dateOfBirth) => setProfile({ ...profile, dateOfBirth })} />
-          <Pressable accessibilityRole="button" accessibilityLabel="Enter date of birth" onPress={() => birthdayInput.current?.focus()} style={{ padding: 12 }}><Icon name="calendar" size={22} /></Pressable>
-        </View>
+        <DatePickerField
+          label="Date of birth (optional)"
+          value={profile.dateOfBirth}
+          placeholder="YYYY-MM-DD"
+          title="Date of Birth"
+          maxDate={new Date().toISOString().slice(0, 10)}
+          allowClear
+          onChange={(dateOfBirth) => setProfile({ ...profile, dateOfBirth })}
+        />
       </View>
       <View>
         <Text style={s.label}>Notes (optional)</Text>
