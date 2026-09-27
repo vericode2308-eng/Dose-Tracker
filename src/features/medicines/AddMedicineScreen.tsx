@@ -1,7 +1,7 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useRef, useState, type ComponentProps } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { Alert, BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfiles } from '@/features/profiles/context';
 import { useMedicines } from './context';
@@ -138,9 +138,44 @@ export default function AddMedicineScreen() {
     if (router.canGoBack()) router.back();
     else router.replace('/medicines');
   }
-  const back = () => saving.current ? undefined : step ? (setError(''), setStep(step - 1)) : close();
+  function handleExit() {
+    if (saving.current) return;
+    if (name.trim()) {
+      Alert.alert(
+        'Discard medicine?',
+        'You have unsaved changes. Are you sure you want to leave?',
+        [
+          { text: 'Keep editing', style: 'cancel' },
+          { text: 'Discard', style: 'destructive', onPress: close },
+        ]
+      );
+    } else {
+      close();
+    }
+  }
+  const back = () => saving.current ? undefined : step ? (setError(''), setStep(step - 1)) : handleExit();
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const onBackPress = () => {
+      if (saving.current) return true;
+      if (step > 0) {
+        setError('');
+        setStep(current => current - 1);
+        return true;
+      }
+      if (name.trim()) {
+        handleExit();
+        return true;
+      }
+      return false;
+    };
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [step, name]);
+
   return <SafeAreaView style={{ flex: 1, backgroundColor: '#FBF8F3' }} edges={['top', 'bottom']}>
-    <View className="flex-row items-center justify-between px-4 pt-1"><Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={back} className="h-11 w-11 items-center justify-center"><Feather name="arrow-left" size={25} color={NAVY} /></Pressable><Text className="text-[20px] font-semibold text-[#102238]">Add Medicine</Text><Pressable accessibilityRole="button" accessibilityLabel="Close add medicine" onPress={close} className="h-11 w-11 items-center justify-center"><Feather name="x" size={25} color={NAVY} /></Pressable></View>
+    <View className="flex-row items-center justify-between px-4 pt-1"><Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={back} className="h-11 w-11 items-center justify-center"><Feather name="arrow-left" size={25} color={NAVY} /></Pressable><Text className="text-[20px] font-semibold text-[#102238]">Add Medicine</Text><Pressable accessibilityRole="button" accessibilityLabel="Close add medicine" onPress={handleExit} className="h-11 w-11 items-center justify-center"><Feather name="x" size={25} color={NAVY} /></Pressable></View>
     <View className="flex-row px-5 pb-4 pt-3"><View pointerEvents="none" className="absolute left-[16%] right-[16%] top-[28px] h-[1px] bg-[#CDD5DF]" />{STEPS.map((label, index) => <View key={label} className="flex-1 items-center"><View className={`z-10 h-8 w-8 items-center justify-center rounded-full ${index <= step ? 'bg-[#079D9D]' : 'bg-[#EBEFF4]'}`}>{index < step ? <Feather name="check" size={19} color="white" /> : <Text className={`text-[16px] font-semibold ${index === step ? 'text-white' : 'text-[#34445B]'}`}>{index + 1}</Text>}</View><Text className={`mt-1 text-[12px] ${index === step ? 'font-semibold text-[#102238]' : 'text-[#53647A]'}`}>{label}</Text></View>)}</View>
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}>

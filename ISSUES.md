@@ -10,7 +10,7 @@ This document tracks all identified UX, Android, and functional issues, their st
 | :--- | :---: | :---: | :--- | :--- |
 | **P0-1** | 🔴 P0 (Blocker) | **RESOLVED** | `AddMedicineScreen.tsx` | Bottom action buttons ("Back" and "Save Medicine") pushed below the viewport into the Android gesture navigation pill on Step 4 (Review and save). |
 | **P0-2** | 🔴 P0 (Blocker) | Pending | `(tabs)/_layout.tsx`, `SettingsHomeScreen.tsx` | Dark theme only changes local Settings styling; Tab bar and Today/History/Medicines remain bright white. Hardcoded checkmark next to System theme. |
-| **P0-3** | 🔴 P0 (Blocker) | Pending | `AddMedicineScreen.tsx` | Android hardware/gesture back press abruptly exits the wizard, discarding entered schedules and medicine details. |
+| **P0-3** | 🔴 P0 (Blocker) | **RESOLVED** | `AddMedicineScreen.tsx` | Android hardware/gesture back press abruptly exits the wizard, discarding entered schedules and medicine details. |
 | **P1-1** | 🟡 P1 (High) | Pending | `welcome.tsx`, `notifications.tsx` | Hero illustrations push primary action CTAs ("Get started") and advisory footers below the fold on modern aspect ratios. |
 | **P1-2** | 🟡 P1 (High) | Pending | `profile.tsx`, `AddMedicineScreen.tsx` | Manual text entry required for dates and times without native Android pickers. |
 | **P1-3** | 🟡 P1 (High) | Pending | `AddMedicineScreen.tsx` | Optional stock step switch defaults to active with empty fields, causing contradictory validation error when tapping Next. |
@@ -42,4 +42,27 @@ This document tracks all identified UX, Android, and functional issues, their st
   - Verified across all 4 steps of the wizard (Details, Schedule, Stock, Review).
   - Confirmed "Back" and "Save Medicine ✓" buttons are 100% visible, fully interactive, and comfortably clear of the Android navigation bar.
   - Successfully committed a new medicine ("Metformin 500 mg Capsule") and verified clean transition to the active medicines list.
+  - All 34 automated unit tests pass.
+
+---
+
+### 🔴 P0-3: Android Hardware/Gesture Back Navigation Drops Entered Medicine Data
+* **Identified**: 2026-09-27 during Senior Android emulator audit on Pixel 9 (API 35).
+* **Severity**: P0 (Release Blocker)
+* **File Modified**: [`src/features/medicines/AddMedicineScreen.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/medicines/AddMedicineScreen.tsx)
+* **Root Cause**:
+  In React Native / Expo Router on Android, the system back button and edge-swipe gesture invoke default stack navigation (`router.back()`). The multi-step wizard (`AddMedicineScreen.tsx`) managed internal step progression via `step` state (0 to 3) without registering an Android `BackHandler`. Pressing back on Step 2 (Schedule), Step 3 (Stock), or Step 4 (Review) unmounted the entire screen immediately, discarding all configured schedules and clinical notes.
+* **Resolution Action**:
+  1. Registered a React Native `BackHandler` listener attached to the `hardwareBackPress` event:
+     - On `step > 0`: Intercepts the back press, clears any validation errors, and steps backward (`setStep(current - 1)`).
+     - On `step === 0`: If medicine name is entered, intercepts back press and presents an Android `Alert.alert('Discard medicine?')` asking the user to confirm discarding or keep editing.
+     - On `step === 0` with no input: Gracefully allows default exit navigation.
+  2. Wired the top-left arrow and top-right close ('x') buttons to the unified `handleExit()` guard to ensure consistent safety across touch and gesture interactions.
+* **Verification**:
+  - Tested on Pixel 9 emulator (1080x2424, API 35).
+  - Advanced through Steps 1 ➔ 2 ➔ 3 with "Ibuprofen 400 mg".
+  - Triggered Android hardware back key (`adb shell input keyevent 4`) on Step 3: successfully stepped back to Step 2.
+  - Triggered back key on Step 2: successfully stepped back to Step 1 with all text preserved.
+  - Triggered back key on Step 1: intercepted and rendered "Discard medicine?" dialog with "KEEP EDITING" and "DISCARD".
+  - Tapped "DISCARD": cleanly exited to the Medicines list.
   - All 34 automated unit tests pass.
