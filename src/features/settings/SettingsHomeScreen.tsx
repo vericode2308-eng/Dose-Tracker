@@ -11,38 +11,43 @@ import { clearSettings, DEFAULT_SETTINGS, readSettings, type SettingsPreferences
 import { useAppLock } from '@/features/security/AppLock';
 import { clearAuthEnabled } from '@/features/security/SecurityManager';
 
+import { useTheme } from '@/features/theme/ThemeContext';
+
 type Menu = 'snooze' | 'backup' | 'restore' | 'erase' | 'about' | null;
 const NAVY = '#0B2540';
 const MUTED = '#536073';
 
 export default function SettingsHomeScreen() {
   const { reset } = useOnboarding();
-  const systemScheme = useColorScheme();
+  const { isDark, colors, setTheme, refreshTheme } = useTheme();
   const [prefs, setPrefs] = useState(DEFAULT_SETTINGS);
   const [menu, setMenu] = useState<Menu>(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const dark = prefs.theme === 'dark' || (prefs.theme === 'system' && systemScheme === 'dark');
-  const surface = dark ? '#1F2937' : '#FFFFFF';
-  const background = dark ? '#0B1220' : '#FBF8F3';
-  const ink = dark ? '#F8FAFC' : '#0F172A';
-  const secondary = dark ? '#B6C1CF' : MUTED;
-  const pill = dark ? '#374151' : '#F2F3F5';
+  const dark = isDark;
+  const surface = colors.surface;
+  const background = colors.background;
+  const ink = colors.ink;
+  const secondary = colors.secondary;
+  const pill = colors.pill;
   const { currentProfile: profile, showSwitcher } = useProfiles();
   const { enabled: appLockEnabled, setEnabled: setAppLockEnabled } = useAppLock();
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    readSettings().then(value => { if (active) { setPrefs(value); setLoaded(true); } }).catch(() => { if (active) setMessage('Saved settings could not be loaded. Reopen Settings to try again.'); });
+    readSettings().then(value => { if (active) { setPrefs(value); setLoaded(true); void refreshTheme(); } }).catch(() => { if (active) setMessage('Saved settings could not be loaded. Reopen Settings to try again.'); });
     return () => { active = false; };
-  }, []));
+  }, [refreshTheme]));
 
   async function update(patch: Partial<SettingsPreferences>) {
     if (!loaded || busy) return;
     setBusy(true);
     const next = { ...prefs, ...patch };
     try {
+      if (patch.theme) {
+        await setTheme(patch.theme);
+      }
       await writeSettings(next);
       setPrefs(next);
       setMenu(null);
@@ -151,7 +156,7 @@ export default function SettingsHomeScreen() {
 
         <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}><Pressable accessibilityRole="button" onPress={showSwitcher} className="flex-row items-center gap-4">{heading('users', 'People & profiles', 'Switch, add, or manage profiles')}<Feather name="chevron-right" size={21} color={ink} /></Pressable></View>
 
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('sun', 'Appearance', 'Choose your theme')}<View className="mt-3 flex-row gap-2">{(['system', 'light', 'dark'] as const).map((theme) => <Pressable key={theme} accessibilityRole="radio" accessibilityLabel={`${theme} theme`} accessibilityState={{ checked: prefs.theme === theme }} disabled={busy || !loaded} onPress={() => void update({ theme })} className="min-h-[42px] flex-1 flex-row items-center justify-center gap-2 rounded-full px-2" style={{ backgroundColor: prefs.theme === theme ? NAVY : pill }}><Feather name={theme === 'system' ? 'check' : theme === 'light' ? 'sun' : 'moon'} size={18} color={prefs.theme === theme ? '#FFFFFF' : ink} /><Text className="text-[14px] font-semibold capitalize" style={{ color: prefs.theme === theme ? '#FFFFFF' : ink }}>{theme}</Text></Pressable>)}</View></View>
+        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('sun', 'Appearance', 'Choose your theme')}<View className="mt-3 flex-row gap-2">{(['system', 'light', 'dark'] as const).map((theme) => <Pressable key={theme} accessibilityRole="radio" accessibilityLabel={`${theme} theme`} accessibilityState={{ checked: prefs.theme === theme }} disabled={busy || !loaded} onPress={() => void update({ theme })} className="min-h-[42px] flex-1 flex-row items-center justify-center gap-2 rounded-full px-2" style={{ backgroundColor: prefs.theme === theme ? (dark ? '#08B8BE' : NAVY) : pill }}><Feather name={theme === 'system' ? 'smartphone' : theme === 'light' ? 'sun' : 'moon'} size={18} color={prefs.theme === theme ? '#FFFFFF' : ink} /><Text className="text-[14px] font-semibold capitalize" style={{ color: prefs.theme === theme ? '#FFFFFF' : ink }}>{theme}</Text></Pressable>)}</View></View>
 
         <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('bell', 'Reminders', 'Local reminder preferences')}
           <View className="min-h-[52px] flex-row items-center justify-between pl-[52px]"><Text className="text-[15px]" style={{ color: ink }}>Reminders enabled</Text><Switch accessibilityLabel="Reminders enabled" value={prefs.remindersEnabled} disabled={!loaded || busy} onValueChange={(remindersEnabled) => void update({ remindersEnabled })} trackColor={{ false: '#9CA3AF', true: '#08B8BE' }} /></View>

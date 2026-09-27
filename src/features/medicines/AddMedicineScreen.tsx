@@ -70,7 +70,7 @@ export default function AddMedicineScreen() {
   const [durationType, setDurationType] = useState('Ongoing');
   const [duration, setDuration] = useState('7');
   const [endDate, setEndDate] = useState('');
-  const [trackStock, setTrackStock] = useState(true);
+  const [trackStock, setTrackStock] = useState(false);
   const [stock, setStock] = useState('');
   const [threshold, setThreshold] = useState('');
   const [error, setError] = useState('');

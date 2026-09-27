@@ -9,6 +9,7 @@ import { initializeDatabase } from '@/database';
 import { ProfilesProvider } from '@/features/profiles/context';
 import { ProfileSwitcher } from '@/features/profiles/ProfileSwitcher';
 import { AppLock } from '@/features/security/AppLock';
+import { ThemeProvider, useTheme } from '@/features/theme/ThemeContext';
 import '../../global.css';
 
 Sentry.init({
@@ -18,6 +19,11 @@ Sentry.init({
   tracesSampleRate: __DEV__ ? 1.0 : 0.2,
   tracePropagationTargets: [],
 });
+
+function ThemedStatusBar() {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+}
 
 function RootLayout() {
   const [databaseState, setDatabaseState] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -50,21 +56,26 @@ function RootLayout() {
     </View>;
   }
 
-  return <AppLock><OnboardingProvider>
-    <ProfilesProvider>
-    <StatusBar style="dark" />
-    <NotificationLifecycle />
-    <RootNavigator />
-    <ProfileSwitcher />
-    </ProfilesProvider>
-  </OnboardingProvider></AppLock>;
+  return <ThemeProvider>
+    <AppLock>
+      <OnboardingProvider>
+        <ProfilesProvider>
+          <ThemedStatusBar />
+          <NotificationLifecycle />
+          <RootNavigator />
+          <ProfileSwitcher />
+        </ProfilesProvider>
+      </OnboardingProvider>
+    </AppLock>
+  </ThemeProvider>;
 }
 
 export default Sentry.wrap(RootLayout);
 
 function RootNavigator() {
   const { data } = useOnboarding();
-  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FBF8F3' }, animation: 'slide_from_right' }}>
+  const { colors } = useTheme();
+  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, animation: 'slide_from_right' }}>
     <Stack.Protected guard={!data.completed}>
       <Stack.Screen name="welcome" />
       <Stack.Screen name="notifications" />
