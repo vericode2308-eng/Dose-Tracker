@@ -190,3 +190,31 @@ test('overdue counts exclude completed and future-snoozed doses and refresh afte
   await h.db.saveProfile({ ...profileInput('Edited'), id: 'profile-default' });
   assert.equal((await h.db.fetchProfileState()).profiles[0].name, 'Edited');
 });
+test('undoDoseLog deletes history entry, restores stock if taken, and restores uncompleted status', async () => {
+  const h = harness(); const ids = await h.add();
+  const [dose] = await h.db.fetchScheduledDoses('2020-01-01');
+  const ref = { scheduleId: ids.scheduleId, date: dose.date, scheduledAtMs: dose.scheduledAtMs };
+  
+  // Log as Taken: stock drops to 9
+  await h.db.logDose({ ...ref, status: 'Taken', actualTakenAtMs: Date.now() });
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 9);
+  assert.equal((await h.db.fetchScheduledDoses('2020-01-01'))[0].status, 'Taken');
+
+  // Undo Taken dose: stock restored to 10, status becomes null
+  await h.db.undoDoseLog(ref);
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 10);
+  assert.equal((await h.db.fetchScheduledDoses('2020-01-01'))[0].status, null);
+  assert.deepEqual(await h.db.fetchHistoryByMonth(), []);
+
+  // Log as Skipped: stock remains 10
+  await h.db.logDose({ ...ref, status: 'Skipped' });
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 10);
+  assert.equal((await h.db.fetchScheduledDoses('2020-01-01'))[0].status, 'Skipped');
+
+  // Undo Skipped dose: stock remains 10, status becomes null
+  await h.db.undoDoseLog(ref);
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 10);
+  assert.equal((await h.db.fetchScheduledDoses('2020-01-01'))[0].status, null);
+  assert.deepEqual(await h.db.fetchHistoryByMonth(), []);
+});
+

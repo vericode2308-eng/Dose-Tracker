@@ -30,5 +30,6 @@ export function subscribeToReminderTaps(onDose: (route: Href) => void, onError?:
 
 export function snoozeMedicationDose(dose: DoseReference & { medicineId: string }, minutes?: number): Promise<{ untilMs: number; message: string }>;
 export function recordMedicationDose(dose: DoseReference, status: 'Taken' | 'Skipped'): Promise<{ message: string }>;
+export function undoMedicationDose(dose: DoseReference): Promise<{ message: string }>;
 
 export function setProfileArchivedWithReminders(profileId: string, archived: boolean): Promise<ReminderResult>;

@@ -1,6 +1,6 @@
 import { Linking, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo-modules-core';
-import { fetchAllMedicines, fetchMedicineDetails, updateMedicine, deleteMedicine, clearDatabase, logDose, snoozeDose, fetchPendingSnoozes, fetchScheduledDoses, fetchProfiles, selectProfile, setProfileArchived, recordReminderIssue, fetchRecentReminderIssues } from './database';
+import { fetchAllMedicines, fetchMedicineDetails, updateMedicine, deleteMedicine, clearDatabase, logDose, undoDoseLog, snoozeDose, fetchPendingSnoozes, fetchScheduledDoses, fetchProfiles, selectProfile, setProfileArchived, recordReminderIssue, fetchRecentReminderIssues } from './database';
 import { readSettings } from './features/settings/storage';
 
 export const MEDICATION_CHANNEL = 'medication-reminders';
@@ -322,6 +322,13 @@ export function recordMedicationDose(dose, status) {
       }
       return { message: '' };
     } catch { return { message: 'Dose saved. Reminder cleanup needs a retry in Settings.' }; }
+  });
+}
+
+export function undoMedicationDose(dose) {
+  return serialized(async () => {
+    await undoDoseLog(dose);
+    return { message: '' };
   });
 }
 

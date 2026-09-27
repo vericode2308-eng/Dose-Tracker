@@ -4,11 +4,13 @@ import { router } from 'expo-router';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchHistoryByMonth, type HistoryRecord } from '@/database';
+import { undoMedicationDose } from '@/notificationManager';
 import { useProfiles } from '@/features/profiles/context';
 import { ProfileSwitcherTrigger } from '@/features/profiles/ProfileSwitcher';
 import { dateKey } from '@/features/doses/occurrences';
 import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { useTheme, type ThemeColors } from '@/features/theme/ThemeContext';
+import { hapticImpactLight } from '@/features/ui/haptics';
 
 type Status = HistoryRecord['status'];
 type Sheet = 'range' | 'medicine' | 'status' | HistoryRecord | null;
@@ -33,6 +35,7 @@ function ProfileHistory() {
   const [medicine, setMedicine] = useState('All');
   const [status, setStatus] = useState<Status | 'All'>('All');
   const [sheet, setSheet] = useState<Sheet>(null);
+  const [busyUndo, setBusyUndo] = useState(false);
   const query = useCallback(async () => {
     let from = dateKey(month);
     let to = dateKey(new Date(month.getFullYear(), month.getMonth() + 1, 0));
@@ -77,7 +80,43 @@ function ProfileHistory() {
   <Modal visible={sheet !== null} transparent animationType="slide" onRequestClose={close}><View className="flex-1 justify-end bg-black/30"><SafeAreaView edges={['bottom']} className="max-h-[80%] w-full max-w-[440px] self-center overflow-hidden rounded-t-[28px]" style={{ backgroundColor: colors.background }}><ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ padding: 20 }}><View className="mb-3 flex-row items-start gap-3"><Text className="min-w-0 flex-1 pt-2 text-xl font-semibold leading-7" style={{ color: colors.ink }}>{typeof sheet === 'object' ? sheet?.medicineName : sheet === 'range' ? 'Date range' : sheet === 'medicine' ? 'Medicine' : 'Status'}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: colors.surface }}><Feather name="x" size={24} color={colors.ink} /></Pressable></View>
     {choices.map(choice => <Pressable key={choice} accessibilityRole="button" onPress={() => { if (sheet === 'range') { setRange(choice); setSelectedDate(null); } else setStatus(choice as Status | 'All'); close(); }} className="mb-2 min-h-12 justify-center rounded-2xl p-4" style={{ backgroundColor: colors.surface }}><Text style={{ color: colors.ink }}>{choice}</Text></Pressable>)}
     {sheet === 'medicine' && [['All', 'All'], ...medicines].map(([id, name]) => <Pressable key={id} accessibilityRole="button" onPress={() => { setMedicine(id); close(); }} className="mb-2 min-h-12 justify-center rounded-2xl p-4" style={{ backgroundColor: colors.surface }}><Text style={{ color: colors.ink }}>{name}</Text></Pressable>)}
-    {typeof sheet === 'object' && sheet && <View className="gap-3 rounded-2xl p-5" style={{ backgroundColor: colors.surface }}><Text style={{ color: colors.ink }}>{sheet.date}</Text><Text style={{ color: COLORS[sheet.status] }}>{sheet.status}</Text><Text style={{ color: colors.ink }}>{sheet.doseAmount} {sheet.doseUnit || sheet.dosageForm}</Text>{sheet.scheduledAtMs && <Text style={{ color: colors.secondary }}>Scheduled: {time(sheet.scheduledAtMs)}</Text>}{sheet.actualTakenAtMs && <Text style={{ color: colors.secondary }}>Taken: {time(sheet.actualTakenAtMs)}</Text>}</View>}
+    {typeof sheet === 'object' && sheet && (
+      <View className="gap-3 rounded-2xl p-5" style={{ backgroundColor: colors.surface }}>
+        <Text style={{ color: colors.ink }}>{sheet.date}</Text>
+        <Text style={{ color: COLORS[sheet.status] }}>{sheet.status}</Text>
+        <Text style={{ color: colors.ink }}>{sheet.doseAmount} {sheet.doseUnit || sheet.dosageForm}</Text>
+        {sheet.scheduledAtMs && <Text style={{ color: colors.secondary }}>Scheduled: {time(sheet.scheduledAtMs)}</Text>}
+        {sheet.actualTakenAtMs && <Text style={{ color: colors.secondary }}>Taken: {time(sheet.actualTakenAtMs)}</Text>}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Undo and remove log for ${sheet.medicineName}`}
+          disabled={busyUndo}
+          onPress={async () => {
+            setBusyUndo(true);
+            try {
+              void hapticImpactLight();
+              await undoMedicationDose({
+                scheduleId: sheet.scheduleId,
+                date: sheet.date,
+                scheduledAtMs: sheet.scheduledAtMs || 0,
+              });
+              close();
+              await reload();
+            } catch {
+              // ignore
+            } finally {
+              setBusyUndo(false);
+            }
+          }}
+          className="mt-3 min-h-12 flex-row items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30"
+        >
+          <Feather name="rotate-ccw" size={16} color="#DC2626" />
+          <Text className="font-semibold text-[#DC2626]">
+            {busyUndo ? 'Removing…' : 'Undo dose / Remove from history'}
+          </Text>
+        </Pressable>
+      </View>
+    )}
   </ScrollView></SafeAreaView></View></Modal></SafeAreaView>;
 }
 

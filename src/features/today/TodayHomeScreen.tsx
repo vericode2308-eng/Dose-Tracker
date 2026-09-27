@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { fetchScheduledDoses, type ScheduledDose } from '@/database';
-import { recordMedicationDose, snoozeMedicationDose } from '@/notificationManager';
+import { recordMedicationDose, snoozeMedicationDose, undoMedicationDose } from '@/notificationManager';
 import { useProfiles } from '@/features/profiles/context';
 import { ProfileSwitcherTrigger } from '@/features/profiles/ProfileSwitcher';
 import { dateKey, isDateKey } from '@/features/doses/occurrences';
@@ -15,17 +15,86 @@ import { useTheme } from '@/features/theme/ThemeContext';
 import { hapticImpactLight, hapticSuccess } from '@/features/ui/haptics';
 
 const time = (at: number) => new Date(at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
 function ProgressRing({ percent, isDark, textColor }: { percent: number; isDark: boolean; textColor: string }) {
+  const [animatedPercent, setAnimatedPercent] = useState(percent);
+  const currentValRef = useRef(percent);
+  const reqIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const startVal = currentValRef.current;
+    const endVal = percent;
+    if (startVal === endVal) return;
+
+    const duration = 500;
+    const startTime = Date.now();
+
+    const step = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(startVal + (endVal - startVal) * ease);
+      currentValRef.current = current;
+      setAnimatedPercent(current);
+
+      if (progress < 1) {
+        reqIdRef.current = requestAnimationFrame(step);
+      }
+    };
+
+    reqIdRef.current = requestAnimationFrame(step);
+    return () => {
+      if (reqIdRef.current) cancelAnimationFrame(reqIdRef.current);
+    };
+  }, [percent]);
+
   const circumference = 2 * Math.PI * 32;
-  return <View accessibilityRole="progressbar" accessibilityLabel="Daily doses taken" accessibilityValue={{ min: 0, max: 100, now: percent }} className="h-20 w-20 items-center justify-center">
-    <Svg width={80} height={80} style={{ position: 'absolute' }}><Circle cx={40} cy={40} r={32} fill="none" stroke={isDark ? '#374151' : '#E7E7E7'} strokeWidth={6} /><Circle cx={40} cy={40} r={32} fill="none" stroke="#079D9D" strokeWidth={6} strokeDasharray={`${circumference * percent / 100} ${circumference}`} transform="rotate(-90 40 40)" /></Svg>
-    <Text className="text-lg font-bold" style={{ color: textColor }}>{percent}%</Text>
-  </View>;
+  const strokeDashoffset = circumference - (circumference * animatedPercent) / 100;
+  const isComplete = animatedPercent === 100;
+
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel="Daily doses taken"
+      accessibilityValue={{ min: 0, max: 100, now: animatedPercent }}
+      className="h-20 w-20 items-center justify-center"
+    >
+      <Svg width={80} height={80} style={{ position: 'absolute' }}>
+        <Circle
+          cx={40}
+          cy={40}
+          r={32}
+          fill="none"
+          stroke={isDark ? '#374151' : '#E7E7E7'}
+          strokeWidth={6}
+        />
+        <Circle
+          cx={40}
+          cy={40}
+          r={32}
+          fill="none"
+          stroke={isComplete ? '#10B981' : '#079D9D'}
+          strokeWidth={6}
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={strokeDashoffset}
+          transform="rotate(-90 40 40)"
+        />
+      </Svg>
+      {isComplete ? (
+        <MaterialCommunityIcons name="check-bold" size={24} color="#10B981" />
+      ) : (
+        <Text className="text-lg font-bold" style={{ color: textColor }}>{animatedPercent}%</Text>
+      )}
+    </View>
+  );
 }
+
 export default function TodayHomeScreen() {
   const { currentProfile } = useProfiles();
   return <ProfileToday key={currentProfile?.id} />;
 }
+
 function ProfileToday() {
   const params = useLocalSearchParams<{ medicineId?: string; scheduleId?: string; doseDate?: string; scheduledAtMs?: string }>();
   const { currentProfile } = useProfiles();
@@ -51,14 +120,18 @@ function ProfileToday() {
   const due = data.doses.filter(dose => !dose.status && Math.max(dose.scheduledAtMs, dose.snoozedUntilMs || 0) <= data.now);
   const upcoming = data.doses.filter(dose => !dose.status && Math.max(dose.scheduledAtMs, dose.snoozedUntilMs || 0) > data.now);
   const completed = data.doses.filter(dose => dose.status);
-  const act = useCallback(async (dose: ScheduledDose, action: 'Taken' | 'Skipped' | 'Snooze') => {
+  const act = useCallback(async (dose: ScheduledDose, action: 'Taken' | 'Skipped' | 'Snooze' | 'Undo') => {
     if (busy.current) return;
     busy.current = true; setBusyId(dose.id); setMessage('');
     try {
       if (action === 'Taken') void hapticSuccess();
       else void hapticImpactLight();
       const reference = { medicineId: dose.medicine.id, scheduleId: dose.schedule.id, date: dose.date, scheduledAtMs: dose.scheduledAtMs };
-      const result = action === 'Snooze' ? await snoozeMedicationDose(reference) : await recordMedicationDose(reference, action);
+      const result = action === 'Snooze'
+        ? await snoozeMedicationDose(reference)
+        : action === 'Undo'
+        ? await undoMedicationDose(reference)
+        : await recordMedicationDose(reference, action);
       setMessage(result.message);
       await reload();
     } catch (error) { setMessage(error instanceof Error ? error.message : 'The dose could not be saved. Please retry.'); }
@@ -76,6 +149,24 @@ function ProfileToday() {
         {!!dose.medicine.instructions && <Text className="mt-2 text-sm" style={{ color: colors.secondary }}>{dose.medicine.instructions}</Text>}
       </View></View>
       {!dose.status && dose.scheduledAtMs <= data.now && <View className="mt-3 flex-row gap-2">{(['Taken', 'Skipped', 'Snooze'] as const).map(action => <Pressable key={action} accessibilityRole="button" accessibilityLabel={`${action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action} ${dose.medicine.name}`} accessibilityState={{ disabled: busyId !== null }} disabled={busyId !== null} onPress={() => void act(dose, action)} className="min-h-12 flex-1 items-center justify-center rounded-full" style={{ backgroundColor: action === 'Taken' ? (isDark ? '#08B8BE' : '#071629') : colors.pill }}><Text className="text-sm font-semibold" style={{ color: action === 'Taken' ? '#FFFFFF' : colors.ink }}>{busyId === dose.id ? 'Saving…' : action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action}</Text></Pressable>)}</View>}
+      {!!dose.status && (
+        <View className="mt-3 flex-row justify-end">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Undo ${dose.status} for ${dose.medicine.name}`}
+            accessibilityState={{ disabled: busyId !== null }}
+            disabled={busyId !== null}
+            onPress={() => void act(dose, 'Undo')}
+            className="min-h-10 px-4 flex-row items-center gap-1.5 rounded-full border"
+            style={{ borderColor: colors.border, backgroundColor: colors.pill }}
+          >
+            <MaterialCommunityIcons name="undo" size={16} color={colors.ink} />
+            <Text className="text-xs font-semibold" style={{ color: colors.ink }}>
+              {busyId === dose.id ? 'Undoing…' : 'Undo'}
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </View>;
   }
   return <SafeAreaView className="flex-1" edges={['top']} style={{ backgroundColor: colors.background }}><ScrollView contentContainerClassName="px-4 pb-6 pt-4">

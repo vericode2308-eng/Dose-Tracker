@@ -372,6 +372,26 @@ export async function logDose({ scheduleId, date, scheduledAtMs, actualTakenAtMs
   return historyId;
 }
 
+export async function undoDoseLog({ scheduleId, date, scheduledAtMs }) {
+  const id = requiredText(scheduleId, 'Schedule ID');
+  if (!isCalendarDate(date)) throw new Error('Dose date must be a valid YYYY-MM-DD date.');
+  const db = await initializeDatabase();
+  await withWriteTransaction(db, async transaction => {
+    const row = await transaction.getFirstAsync(
+      `SELECT s.*, m.id as medicine_id FROM schedules s JOIN medicines m ON m.id = s.medicine_id WHERE s.id = ?`, [id]);
+    if (!row) throw new Error('Schedule not found.');
+    const calendarDose = JSON.parse(row.recurring_pattern).kind !== 'hour_interval';
+    const existing = await existingDose(transaction, id, date, scheduledAtMs, calendarDose);
+    if (!existing) return;
+    if (existing.status === 'Taken') {
+      await transaction.runAsync(`UPDATE medicines SET stock_remaining_q = stock_remaining_q + ?
+        WHERE id = ? AND stock_remaining_q IS NOT NULL`, [row.dose_amount_q, row.medicine_id]);
+    }
+    await transaction.runAsync('DELETE FROM history WHERE id = ?', [existing.id]);
+  });
+  changed();
+}
+
 export async function snoozeDose({ scheduleId, date, scheduledAtMs, untilMs }) {
   if (!isCalendarDate(date) || !Number.isSafeInteger(untilMs) || untilMs <= Date.now()) throw new Error('Choose a future snooze time.');
   const db = await initializeDatabase();

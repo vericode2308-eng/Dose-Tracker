@@ -92,6 +92,7 @@ export type ScheduledDose = {
 export type DoseReference = { scheduleId: string; date: string; scheduledAtMs: number };
 export type PendingSnooze = DoseReference & { medicineId: string; untilMs: number };
 export function snoozeDose(input: DoseReference & { untilMs: number }): Promise<void>;
+export function undoDoseLog(input: DoseReference): Promise<void>;
 export function fetchPendingSnoozes(): Promise<PendingSnooze[]>;
 export function fetchScheduledDoses(date?: string, profileId?: string): Promise<ScheduledDose[]>;
 export type HistoryRecord = {

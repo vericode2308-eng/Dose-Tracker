@@ -17,9 +17,9 @@ This document tracks all identified UX, Android, and functional issues, their st
 | **P1-4** | 🟡 P1 (High) | **RESOLVED** | `notificationManager.js` | Android notifications lack interactive action buttons (`[Take Now]`, `[Snooze 15m]`, `[Skip]`). |
 | **P1-5** | 🟡 P1 (High) | **RESOLVED** | `SettingsHomeScreen.tsx` | Status toast message ("Test reminder scheduled...") lacks auto-dismiss timeout and permanently blocks screen area. |
 | **P2-1** | 🔵 P2 (Polish) | **RESOLVED** | Global Actions | No tactile/haptic feedback on taking doses, saving medicines, or deleting entries. |
-| **P2-2** | 🔵 P2 (Polish) | Pending | `TodayHomeScreen.tsx` | Circular adherence progress ring and completed dose cards jump instantly without smooth interpolation or layout transitions. |
-| **P2-3** | 🔵 P2 (Polish) | Pending | `TodayHomeScreen.tsx`, `HistoryScreen.tsx` | Completed doses cannot be tapped to "Undo" or edited to fix accidental taps. |
-| **P2-4** | 🔵 P2 (Polish) | Pending | `profile.tsx` | Profile initials logic generates hardcoded fallback `'ME'` for multi-word names instead of splitting words. |
+| **P2-2** | 🔵 P2 (Polish) | **RESOLVED** | `TodayHomeScreen.tsx` | Circular adherence progress ring and completed dose cards jump instantly without smooth interpolation or layout transitions. |
+| **P2-3** | 🔵 P2 (Polish) | **RESOLVED** | `TodayHomeScreen.tsx`, `HistoryScreen.tsx` | Completed doses cannot be tapped to "Undo" or edited to fix accidental taps. |
+| **P2-4** | 🔵 P2 (Polish) | **RESOLVED** | `model.ts`, `profile.tsx` | Profile initials logic generates hardcoded fallback `'ME'` for multi-word names instead of splitting words. |
 
 ---
 
@@ -255,8 +255,83 @@ This document tracks all identified UX, Android, and functional issues, their st
      - Profile Management: `hapticSuccess()` on profile creation/update, `hapticWarning()` on profile archive, `hapticSelection()` on profile switcher selection.
 * **Verification**:
   - Tested on Pixel 9 emulator (1080x2424, API 35).
-  - All 38 automated unit tests pass (`npm test`).
+  - All 39 automated unit tests pass (`npm test`).
   - TypeScript check: 0 errors (`npx tsc --noEmit`).
+
+---
+
+### 🔵 P2-2: Adherence Ring Lacked Smooth Stroke & Counter Interpolation
+* **Identified**: 2026-09-27 during Senior Android emulator audit on Pixel 9 (API 35).
+* **Severity**: P2 (Polish & Delight)
+* **File Modified**: [`src/features/today/TodayHomeScreen.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/today/TodayHomeScreen.tsx)
+* **Root Cause**:
+  In `TodayHomeScreen.tsx`, the `ProgressRing` calculated SVG stroke dash array directly from the raw `percent` integer (`circumference * percent / 100`). Taking or undoing a dose caused the ring and numerical percentage to snap immediately (e.g. 0% -> 33% -> 67% -> 100%), creating a jarring visual jump devoid of momentum or delight.
+* **Resolution Action**:
+  1. Built an animated `ProgressRing` component using `requestAnimationFrame` and a smooth cubic ease-out curve (`1 - Math.pow(1 - t, 3)` over 500ms).
+  2. Avoided unconfigured Babel Reanimated worklet crashes by relying on clean, native JavaScript animation frames.
+  3. Interpolates both the SVG stroke offset (`strokeDashoffset`) and the numeric percentage indicator fluidly.
+  4. Added rounded stroke caps (`strokeLinecap="round"`) for a modern, refined clinical aesthetic.
+  5. Added celebratory 100% adherence state: when all doses are taken (100%), the stroke transitions to emerald green (`#10B981`) and displays a bold emerald checkmark (`check-bold`) icon in the center.
+* **Verification**:
+  - Tested on Pixel 9 emulator (1080x2424, API 35).
+  - Verified fluid animation from 33% -> 67% -> 100% when taking doses.
+  - Confirmed 100% adherence display renders the emerald checkmark and ring cleanly.
+  - Verified smooth downward interpolation from 67% -> 33% when undoing doses.
+
+---
+
+### 🔵 P2-3: Missing Ability to Undo Logged Doses from Today and History
+* **Identified**: 2026-09-27 during Senior Android emulator audit on Pixel 9 (API 35).
+* **Severity**: P2 (High Usability / Error Recovery)
+* **Files Modified**:
+  - [`src/database.js`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/database.js)
+  - [`src/database.d.ts`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/database.d.ts)
+  - [`src/notificationManager.js`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/notificationManager.js)
+  - [`src/notificationManager.d.ts`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/notificationManager.d.ts)
+  - [`src/features/today/TodayHomeScreen.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/today/TodayHomeScreen.tsx)
+  - [`src/features/history/HistoryScreen.tsx`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/history/HistoryScreen.tsx)
+  - [`tests/database.test.cjs`](file:///Users/shome/Documents/Projects/DoseTrackerApp/tests/database.test.cjs)
+* **Root Cause**:
+  Once a user logged a dose as "Taken" or "Skipped" (whether deliberately or accidentally), there was no way to reverse the action. The dose was permanently locked in the "Completed" section of Today and in History records. If "Taken", tracked stock was deducted and could not be rolled back without manually editing medicine details in Settings.
+* **Resolution Action**:
+  1. Implemented `undoDoseLog({ scheduleId, date, scheduledAtMs })` in `src/database.js`:
+     - Finds the recorded history entry.
+     - Atomically restores tracked medicine stock if the recorded status was `Taken` (`stock_remaining_q = stock_remaining_q + dose_amount_q`).
+     - Deletes the record from `history`.
+     - Emits database `changed()` event.
+  2. Exported `undoMedicationDose(dose)` in `src/notificationManager.js`.
+  3. Added interactive **[Undo]** button on all completed dose cards on the Today dashboard (`TodayHomeScreen.tsx`). Tapping Undo invokes `undoMedicationDose`, triggers light haptic confirmation, reloads the query, and moves the medicine back into "Due now" or "Upcoming" with its Take/Skip/Snooze actions restored.
+  4. Added **[⟲ Undo dose / Remove from history]** action in the History record detail bottom sheet modal (`HistoryScreen.tsx`). Tapping it removes the entry, restores stock, and refreshes the calendar dots and record counts.
+  5. Added unit test in `tests/database.test.cjs` validating history removal, status reset, and exact stock rollback.
+* **Verification**:
+  - Tested on Pixel 9 emulator (1080x2424, API 35).
+  - Tapped Undo on Aspirin: immediately removed from Completed and returned to "Due now" with Take/Skip/Snooze buttons.
+  - Tapped Undo on Metformin: stock rolled back, progress ring animated down from 67% to 33%.
+  - Opened History sheet for Aspirin: tapped "Undo dose / Remove from history", verified record disappeared from History list and calendar dot counts updated.
+  - All 39 automated unit tests pass.
+
+---
+
+### 🔵 P2-4: Suboptimal Profile Initials Generation
+* **Identified**: 2026-09-27 during Senior Android emulator audit on Pixel 9 (API 35).
+* **Severity**: P2 (Polish)
+* **Files Modified**:
+  - [`src/features/onboarding/model.ts`](file:///Users/shome/Documents/Projects/DoseTrackerApp/src/features/onboarding/model.ts)
+* **Root Cause**:
+  In `src/features/onboarding/model.ts`, `initials(name)` only extracted the first character or defaulted to `'ME'` if whitespace/length criteria were missed, resulting in avatars displaying single letters or improper fallbacks for full names (e.g. "Senior Tester" displayed "S" or "ME").
+* **Resolution Action**:
+  1. Upgraded `initials(name)` algorithm:
+     - Splits multi-word names on whitespace: e.g. "Senior Tester" -> **"ST"**, "Mary Jane Watson" -> **"MW"** (first and last initial).
+     - For single-word names >= 2 chars: returns first two letters uppercase (e.g. "Alice" -> **"AL"**).
+     - For single-char names: returns single letter uppercase.
+     - Fallback: **"ME"** for empty or invalid names.
+  2. Automatically updates avatar preview circles and color swatches across Onboarding, Edit Profile, and Profile Switcher.
+* **Verification**:
+  - Tested on Pixel 9 emulator (1080x2424, API 35).
+  - Tested "Senior Tester" in Add Profile: avatar and swatches immediately displayed **"ST"**.
+  - Tested "Alice": avatar and swatches immediately displayed **"AL"**.
+  - All 39 automated unit tests pass; TypeScript check passes with zero errors.
+
 
 
 
