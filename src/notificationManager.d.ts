@@ -7,7 +7,7 @@ export const ACTION_TAKE: string;
 export const ACTION_SNOOZE: string;
 export const ACTION_SKIP: string;
 export type ReminderStatus = { allowed: boolean; exact: boolean | null; message: string; channelId?: string; channel?: unknown };
-export type ReminderDiagnostics = ReminderStatus & { enabled: boolean; scheduled: number; issues: ReminderIssue[] };
+export type ReminderDiagnostics = ReminderStatus & { enabled: boolean; requested: number; scheduled: number; issues: ReminderIssue[] };
 export type ReminderResult = ReminderStatus & { scheduled: number; issues: string[] };
 export function localDate(date?: Date): string;
 export function parseReminderTime(value: number | string): number;
@@ -19,6 +19,7 @@ export function getReminderDiagnostics(): Promise<ReminderDiagnostics>;
 export function openExactAlarmSettings(): Promise<void>;
 export function openNotificationSettings(): Promise<void>;
 export function scheduleMedicineReminders(medicine: StoredMedicine, requestPermission?: boolean): Promise<ReminderResult>;
+export function setScheduleReminderEnabled(scheduleId: string, enabled: boolean): Promise<ReminderResult>;
 export function reconcileReminders(): Promise<ReminderResult>;
 export function cancelMedicationReminders(): Promise<void>;
 export function eraseMedicineDataWithReminders(): Promise<void>;
@@ -26,6 +27,7 @@ export function updateMedicineWithReminders(medicineId: string, patch: MedicineP
 export function deleteMedicineWithReminders(medicineId: string): Promise<ReminderResult>;
 export function doseRouteFromResponse(response: NotificationResponse): Promise<Href | null>;
 export function doseFromResponse(response: NotificationResponse): Promise<(DoseReference & { medicineId: string; profileId: string | null }) | null>;
+export function handleReminderAction(response: NotificationResponse): Promise<void>;
 export function subscribeToReminderTaps(onDose: (route: Href) => void, onError?: (error: unknown) => void): Promise<() => void>;
 
 export function snoozeMedicationDose(dose: DoseReference & { medicineId: string }, minutes?: number): Promise<{ untilMs: number; message: string }>;

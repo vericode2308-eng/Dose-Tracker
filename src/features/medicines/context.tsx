@@ -20,6 +20,9 @@ export type Medicine = {
   strength?: string;
   doseAmount?: string;
   schedule?: string;
+  scheduleId?: string;
+  reminderEnabled?: boolean;
+  reminderSupported?: boolean;
   startDate?: string;
   duration?: string;
   stockThreshold?: number;
@@ -28,6 +31,7 @@ export type Medicine = {
 
 type MedicinesContextValue = { medicines: Medicine[]; setMedicines: Dispatch<SetStateAction<Medicine[]>>; error: string; loading: boolean; refresh: () => void };
 const MedicinesContext = createContext<MedicinesContextValue | null>(null);
+const todayKey = () => { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; };
 
 // SQLite is authoritative; the context is a view cache for the medicine screens.
 export function MedicinesProvider({ children }: { children: ReactNode }) {
@@ -52,6 +56,11 @@ export function MedicinesProvider({ children }: { children: ReactNode }) {
         instructions: m.instructions || undefined, stock: m.stockRemaining ?? undefined,
         strength: m.strength || undefined, stockThreshold: m.lowStockThreshold ?? undefined,
         doseAmount: m.schedules[0] ? `${m.schedules[0].doseAmount} ${m.doseUnit || m.dosageForm}` : undefined,
+        scheduleId: m.schedules[0]?.id,
+        reminderEnabled: m.schedules[0]?.reminderEnabled ?? false,
+        reminderSupported: !!m.schedules[0] && !m.schedules[0].pattern.endDate
+          && m.schedules[0].pattern.startDate <= todayKey()
+          && ['daily', 'weekdays'].includes(m.schedules[0].pattern.kind),
         startDate: m.schedules[0]?.pattern.startDate,
         duration: m.schedules[0]?.pattern.endDate ? `Until ${m.schedules[0].pattern.endDate}` : 'Ongoing',
         schedule: m.schedules[0]?.pattern.kind === 'weekdays' ? `Weekdays: ${m.schedules[0].pattern.weekdays?.map(day => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day]).join(', ')}`

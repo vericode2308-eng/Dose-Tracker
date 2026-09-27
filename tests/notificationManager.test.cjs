@@ -53,6 +53,7 @@ function harness(options = {}) {
     fetchAllMedicines: async ({ profileId, includeArchivedProfiles = false } = {}) => medicines.filter(m => (!profileId || m.profileId === profileId) && (!m.profileId || includeArchivedProfiles || profiles.find(p => p.id === m.profileId).status === 'Active')),
     fetchMedicineDetails: async id => medicines.find(m => m.id === id) || null,
     updateMedicine: async (id, patch) => { calls.push('update'); Object.assign(medicines.find(m => m.id === id), patch); },
+    updateScheduleReminderEnabled: async (id, enabled) => { const schedule = medicines.flatMap(m => m.schedules).find(s => s.id === id); if (!schedule) throw Error('Schedule not found.'); schedule.reminderEnabled = enabled; },
     deleteMedicine: async id => { calls.push('delete'); medicines = medicines.filter(m => m.id !== id); },
     clearDatabase: async () => { calls.push('clearDB'); medicines = []; },
     recordReminderIssue: async () => {}, fetchRecentReminderIssues: async () => [],
@@ -103,6 +104,33 @@ test('permission channel is created first; rejected notifications schedule nothi
   assert.equal(result.allowed, false);
   assert.equal(h.stored.size, 0);
   assert.deepEqual(h.calls.slice(0, 2), ['channel', 'permission']);
+});
+test('tracking-only medicine asks for no permission and creates no alarm', async () => {
+  const h = harness({ granted: false });
+  h.medicine.schedules[0].reminderEnabled = false;
+  const result = await h.manager.scheduleMedicineReminders(h.medicine);
+  assert.equal(result.scheduled, 0);
+  assert.deepEqual(result.issues, []);
+  assert.equal(h.stored.size, 0);
+  assert.equal(h.calls.includes('permission'), false);
+});
+test('turning a schedule into tracking-only removes its old alarm on reconciliation', async () => {
+  const h = harness();
+  h.medicine.schedules[0].reminderEnabled = true;
+  await h.manager.scheduleMedicineReminders(h.medicine);
+  assert.equal(h.stored.size, 1);
+  h.medicine.schedules[0].reminderEnabled = false;
+  const result = await h.manager.reconcileReminders();
+  assert.equal(result.scheduled, 0);
+  assert.equal(h.stored.size, 0);
+});
+test('medicine detail reminder switch arms and removes only the chosen schedule', async () => {
+  const h = harness();
+  h.medicine.schedules[0].reminderEnabled = false;
+  assert.equal((await h.manager.setScheduleReminderEnabled('schedule-1', true)).scheduled, 1);
+  assert.equal(h.stored.size, 1);
+  assert.equal((await h.manager.setScheduleReminderEnabled('schedule-1', false)).scheduled, 0);
+  assert.equal(h.stored.size, 0);
 });
 test('disabled channel and absent exact access are reported honestly', async () => {
   assert.equal((await harness({ channelDisabled: true }).manager.getReminderStatus()).allowed, false);
@@ -278,10 +306,10 @@ test('notification tap selects dose owner before navigation without disabling ot
 test('registers interactive category and attaches categoryIdentifier to scheduled doses', async () => {
   const h = harness();
   await h.manager.scheduleMedicineReminders(h.medicine);
-  assert.equal(h.api.lastCategory?.id, 'medication-reminders-actions');
+  assert.equal(h.api.lastCategory?.id, 'medication_reminders_actions');
   assert.deepEqual(h.api.lastCategory?.actions.map(a => a.identifier), ['take-now', 'snooze-15', 'skip']);
   const scheduled = [...h.stored.values()][0];
-  assert.equal(scheduled.content.categoryIdentifier, 'medication-reminders-actions');
+  assert.equal(scheduled.content.categoryIdentifier, 'medication_reminders_actions');
 });
 
 test('interactive action Take Now logs dose as Taken and dismisses notification', async () => {
@@ -324,4 +352,3 @@ test('interactive action Skip logs dose as Skipped without deducting stock', asy
   assert.ok(h.calls.includes('dismissNotification:dosetracker:dose:schedule-1:daily'));
   dispose();
 });
-

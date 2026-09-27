@@ -33,7 +33,13 @@ export default function NotificationsScreen() {
     } catch { setError('Notification preferences couldn’t be saved. Please try again, or choose Not now.'); }
     finally { lock.current = false; setBusy(false); }
   }
-  return <Page>
+  return <Page footer={<View style={[styles.footer, { paddingTop: 6 }]}>
+    {denied && <Button title="Open notification settings" secondary onPress={() => { void openNotificationSettings().catch(() => setError('Open your device Settings to change notification permissions.')); }} />}
+    {exactNeeded && <Button title="Allow alarms & reminders" onPress={() => { void openExactAlarmSettings().catch(() => setError('Open Android Settings to allow Alarms & reminders.')); }} />}
+    <Button title={exactNeeded ? 'Check access again' : denied ? 'Check permission again' : 'Allow notifications'} busy={busy} onPress={() => void proceed()} />
+    <Button title={exactNeeded ? 'Continue with possible delays' : 'Not now'} secondary busy={busy} onPress={() => { if (exactNeeded) router.push('/ready'); else void proceed(true); }} />
+    <PrivacyNote />
+  </View>}>
     <StepHeader step={2} />
     <ReferenceArt kind="reminders" maxHeight={illustrationMaxHeight} />
     <View style={{ marginTop: 8, marginBottom: 12, paddingHorizontal: 4 }}>
@@ -46,12 +52,5 @@ export default function NotificationsScreen() {
       <Feature icon="shield" title="Tracking still works" green>If you don’t allow notifications, you can still track your medicines in the app.</Feature>
     </View>
     <ErrorMessage message={error} />
-    <View style={[styles.footer, { paddingTop: 6 }]}>
-      {denied && <Button title="Open notification settings" secondary onPress={() => { void openNotificationSettings().catch(() => setError('Open your device Settings to change notification permissions.')); }} />}
-      {exactNeeded && <Button title="Allow alarms & reminders" onPress={() => { void openExactAlarmSettings().catch(() => setError('Open Android Settings to allow Alarms & reminders.')); }} />}
-      <Button title={exactNeeded ? 'Check access again' : denied ? 'Check permission again' : 'Allow notifications'} busy={busy} onPress={() => void proceed()} />
-      <Button title={exactNeeded ? 'Continue with possible delays' : 'Not now'} secondary busy={busy} onPress={() => { if (exactNeeded) router.push('/ready'); else void proceed(true); }} />
-      <PrivacyNote />
-    </View>
   </Page>;
 }

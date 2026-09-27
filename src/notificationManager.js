@@ -1,10 +1,10 @@
 import { Linking, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo-modules-core';
-import { fetchAllMedicines, fetchMedicineDetails, updateMedicine, deleteMedicine, clearDatabase, logDose, undoDoseLog, snoozeDose, fetchPendingSnoozes, fetchScheduledDoses, fetchProfiles, selectProfile, setProfileArchived, recordReminderIssue, fetchRecentReminderIssues } from './database';
+import { fetchAllMedicines, fetchMedicineDetails, updateMedicine, updateScheduleReminderEnabled, deleteMedicine, clearDatabase, logDose, undoDoseLog, snoozeDose, fetchPendingSnoozes, fetchScheduledDoses, fetchProfiles, selectProfile, setProfileArchived, recordReminderIssue, fetchRecentReminderIssues } from './database';
 import { readSettings } from './features/settings/storage';
 
 export const MEDICATION_CHANNEL = 'medication-reminders';
-export const MEDICATION_CATEGORY = 'medication-reminders-actions';
+export const MEDICATION_CATEGORY = 'medication_reminders_actions';
 export const ACTION_TAKE = 'take-now';
 export const ACTION_SNOOZE = 'snooze-15';
 export const ACTION_SKIP = 'skip';
@@ -142,10 +142,15 @@ export async function scheduleTestReminder(soundOverride) {
 
 export async function getReminderDiagnostics() {
   const prefs = await readSettings();
+  const medicines = await fetchAllMedicines();
+  const requested = medicines.reduce((count, medicine) => count + (medicine.status === 'Active'
+    ? medicine.schedules.filter(schedule => schedule.reminderEnabled !== false).length : 0), 0)
+    + (await fetchPendingSnoozes()).length;
   const status = await getReminderStatus(false);
   const api = Platform.OS === 'web' ? null : await notifications();
   const scheduled = api ? (await api.getAllScheduledNotificationsAsync()).filter(item => item.identifier.startsWith(PREFIX)).length : 0;
-  return { ...status, enabled: prefs.remindersEnabled, scheduled, issues: await fetchRecentReminderIssues(7) };
+  return { ...status, enabled: prefs.remindersEnabled, requested, scheduled,
+    issues: requested ? await fetchRecentReminderIssues(7) : [] };
 }
 
 export async function openExactAlarmSettings() {
@@ -188,6 +193,20 @@ export function scheduleMedicineReminders(medicine, requestPermission = true) {
     const result = await scheduleSavedMedicines([medicine], requestPermission, false);
     if (result.issues.length) await recordReminderIssue('schedule_failed', 'A medication reminder could not be scheduled.').catch(() => undefined);
     return result;
+  });
+}
+
+export function setScheduleReminderEnabled(scheduleId, enabled) {
+  return serialized(async () => {
+    await updateScheduleReminderEnabled(scheduleId, enabled);
+    try {
+      const result = await scheduleSavedMedicines(await fetchAllMedicines(), enabled, true);
+      if (result.issues.length) await recordReminderIssue('schedule_failed', 'A medication reminder could not be scheduled.').catch(() => undefined);
+      return result;
+    } catch {
+      await recordReminderIssue('schedule_failed', 'A medication reminder could not be scheduled.').catch(() => undefined);
+      return { scheduled: 0, allowed: false, exact: null, message: 'Reminder preference saved. Open Reminder status in Settings to retry setup.', issues: [] };
+    }
   });
 }
 
@@ -327,8 +346,9 @@ export function recordMedicationDose(dose, status) {
 
 export function undoMedicationDose(dose) {
   return serialized(async () => {
-    await undoDoseLog(dose);
-    return { message: '' };
+    const result = await undoDoseLog(dose);
+    return { message: result.manualStockCorrectionNeeded
+      ? 'Dose removed. This older log has no exact stock deduction saved, so check and correct its stock in Medicines.' : '' };
   });
 }
 
@@ -339,6 +359,12 @@ async function scheduleSavedMedicines(medicines, requestPermission, removeObsole
   if (!prefs.remindersEnabled) {
     await cancelMedicationRequests(api);
     return { scheduled: 0, issues: [], allowed: false, exact: null, message: 'Reminders are switched off in Settings.' };
+  }
+  const pendingSnoozes = await fetchPendingSnoozes();
+  const requested = medicines.some(medicine => medicine.status === 'Active' && medicine.schedules.some(schedule => schedule.reminderEnabled !== false)) || pendingSnoozes.length > 0;
+  if (!requested) {
+    if (removeObsolete) await cancelMedicationRequests(api);
+    return { scheduled: 0, issues: [], allowed: true, exact: null, message: 'No reminders requested.' };
   }
   const status = await getReminderStatus(requestPermission);
   if (!status.allowed) {
@@ -351,6 +377,7 @@ async function scheduleSavedMedicines(medicines, requestPermission, removeObsole
   for (const medicine of medicines) {
     if (medicine.status !== 'Active') continue;
     for (const schedule of medicine.schedules) {
+      if (schedule.reminderEnabled === false) continue;
       try {
         for (const trigger of recurringTriggers(schedule, new Date(), reminderChannelId(prefs))) {
           const identifier = `${PREFIX}${schedule.id}:${trigger.type === 'weekly' ? trigger.weekday : 'daily'}`;
@@ -363,7 +390,7 @@ async function scheduleSavedMedicines(medicines, requestPermission, removeObsole
       } catch (error) { issues.push(`${medicine.name}: ${error instanceof Error ? error.message : 'Reminder could not be scheduled.'}`); }
     }
   }
-  for (const snooze of await fetchPendingSnoozes()) {
+  for (const snooze of pendingSnoozes) {
     const medicine = medicines.find(item => item.id === snooze.medicineId);
     if (!medicine) continue;
     const identifier = snoozeIdentifier(snooze);
@@ -473,38 +500,26 @@ export async function subscribeToReminderTaps(onDose, onError = () => {}) {
           if (route.params.profileId) await selectProfile(route.params.profileId);
           if (active) onDose(route);
         }
-      } else if (action === ACTION_TAKE) {
-        const dose = await doseFromResponse(response);
-        if (active && dose) {
-          if (dose.profileId) await selectProfile(dose.profileId);
-          await recordMedicationDose(dose, 'Taken');
-          if (Platform.OS === 'android') {
-            await api.dismissNotificationAsync(response.notification.request.identifier).catch(() => undefined);
-          }
-        }
-      } else if (action === ACTION_SNOOZE) {
-        const dose = await doseFromResponse(response);
-        if (active && dose) {
-          if (dose.profileId) await selectProfile(dose.profileId);
-          await snoozeMedicationDose(dose, 15);
-          if (Platform.OS === 'android') {
-            await api.dismissNotificationAsync(response.notification.request.identifier).catch(() => undefined);
-          }
-        }
-      } else if (action === ACTION_SKIP) {
-        const dose = await doseFromResponse(response);
-        if (active && dose) {
-          if (dose.profileId) await selectProfile(dose.profileId);
-          await recordMedicationDose(dose, 'Skipped');
-          if (Platform.OS === 'android') {
-            await api.dismissNotificationAsync(response.notification.request.identifier).catch(() => undefined);
-          }
-        }
-      }
+      } else await handleReminderAction(response);
       await api.clearLastNotificationResponseAsync().catch(() => undefined);
     } catch (error) { handled.delete(key); if (active) onError(error); }
   }
   const listener = api.addNotificationResponseReceivedListener(response => { void handle(response); });
   void api.getLastNotificationResponseAsync().then(handle).catch(onError);
   return () => { active = false; listener.remove(); };
+}
+
+/** Shared by the UI listener and Android's headless notification action task. */
+export async function handleReminderAction(response) {
+  const action = response?.actionIdentifier;
+  if (![ACTION_TAKE, ACTION_SNOOZE, ACTION_SKIP].includes(action)) return;
+  const dose = await doseFromResponse(response);
+  if (!dose) return;
+  if (dose.profileId) await selectProfile(dose.profileId);
+  if (action === ACTION_SNOOZE) await snoozeMedicationDose(dose, 15);
+  else await recordMedicationDose(dose, action === ACTION_TAKE ? 'Taken' : 'Skipped');
+  if (Platform.OS === 'android') {
+    const api = await notifications();
+    await api.dismissNotificationAsync(response.notification.request.identifier).catch(() => undefined);
+  }
 }

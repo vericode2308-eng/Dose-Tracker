@@ -87,8 +87,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refreshTheme();
-  }, [refreshTheme]);
+    readSettings().then(prefs => setThemeState(prefs.theme)).catch(() => undefined);
+  }, []);
 
   const setTheme = useCallback(async (newTheme: ThemeMode) => {
     setThemeState(newTheme);

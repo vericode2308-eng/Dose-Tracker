@@ -1,12 +1,12 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState, type ComponentProps } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMedicines, type Medicine } from './context';
 import { fetchHistoryByMonth } from '@/database';
 import { useLocalQuery } from '@/features/doses/useLocalQuery';
-import { updateMedicineWithReminders, deleteMedicineWithReminders } from '@/notificationManager';
+import { updateMedicineWithReminders, deleteMedicineWithReminders, setScheduleReminderEnabled } from '@/notificationManager';
 
 const NAVY = '#071629';
 type Icon = ComponentProps<typeof Feather>['name'];
@@ -71,6 +71,20 @@ export default function MedicineDetailScreen() {
     } catch { setError('Deletion or reminder reconciliation failed. Please retry.'); }
     finally { saving.current = false; }
   }
+  async function toggleReminder(enabled: boolean) {
+    if (saving.current || !medicine?.scheduleId) return;
+    saving.current = true;
+    setFeedback('Updating reminders…');
+    try {
+      const result = await setScheduleReminderEnabled(medicine.scheduleId, enabled);
+      setMedicines(items => items.map(item => item.id === id ? { ...item, reminderEnabled: enabled } : item));
+      setFeedback(!enabled && result.message.startsWith('Reminder preference saved') ? result.message
+        : enabled && (!result.allowed || result.issues.length)
+        ? `Reminder requested. ${result.issues.join(' ') || result.message}`
+        : enabled ? 'Reminder is on.' : 'Reminder is off. Dose tracking continues.');
+    } catch (error) { setFeedback(error instanceof Error ? error.message : 'Could not update the reminder.'); }
+    finally { saving.current = false; }
+  }
   function edit() {
     if (!medicine) return;
     setDraftName(medicine.name); setDraftDosage(medicine.strength || ''); setDraftNotes(medicine.notes ?? ''); setPanel('edit');
@@ -94,6 +108,7 @@ export default function MedicineDetailScreen() {
         </View>
         {medicine.status !== 'Active' && <Text accessibilityLiveRegion="polite" className="mb-2 rounded-xl bg-[#F1EEEA] p-2 text-sm text-[#536073]">{medicine.status}</Text>}
         <MetadataRow icon="calendar" label={medicine.schedule ?? (medicine.time ? `Daily at ${medicine.time}` : 'As needed')} />
+        {!!medicine.scheduleId && <View className="my-2 flex-row items-center gap-3 rounded-2xl border border-[#E3E5E9] p-3"><View className="flex-1"><Text className="text-[14px] font-medium text-[#071629]">Dose reminders</Text><Text className="text-[12px] leading-5 text-[#536073]">{medicine.reminderSupported ? 'Optional device alerts. Dose tracking works with reminders off.' : 'Available for ongoing daily or weekday schedules starting today.'}</Text></View><Switch accessibilityLabel="Dose reminders" value={!!medicine.reminderEnabled} disabled={!medicine.reminderSupported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value)} /></View>}
         <MetadataRow icon="pill" label="Dose amount" value={medicine.doseAmount ?? '1 tablet'} />
         <MetadataRow icon="calendar" label="Started" value={medicine.startDate ?? 'Not set'} />
         <MetadataRow icon="infinity" label={medicine.duration ?? 'No end date'} />

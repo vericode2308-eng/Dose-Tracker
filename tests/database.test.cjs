@@ -36,9 +36,26 @@ test('schema upgrades version 1 without losing medicine or dose history', async 
     INSERT INTO history(id,schedule_id,date,status,created_at_ms) VALUES('h','s','2020-01-01','Skipped',1);`);
   const doses = await h.db.fetchScheduledDoses('2020-01-01');
   assert.equal(doses[0].status, 'Skipped');
-  assert.equal(h.sql.prepare('PRAGMA user_version').get().user_version, 4);
+  assert.equal(h.sql.prepare('PRAGMA user_version').get().user_version, 6);
+  assert.equal((await h.db.fetchMedicineDetails('m')).schedules[0].reminderEnabled, true);
   await h.db.logDose({ scheduleId: 's', date: '2020-01-01', status: 'Taken', actualTakenAtMs: Date.now() });
   assert.equal((await h.db.fetchHistoryByMonth())[0].records.length, 1);
+});
+test('tracking-only schedules stay quiet; supported legacy alarms remain enabled', async () => {
+  const h = harness(true);
+  h.sql.exec(`INSERT INTO medicines(id,name,dosage_form,created_at_ms) VALUES('m','Existing','Tablet',1);
+    INSERT INTO schedules(id,medicine_id,time_local_minute,recurring_pattern,dose_amount_q,created_at_ms)
+      VALUES('finite','m',480,'{"kind":"daily","startDate":"2020-01-01","endDate":"2099-01-01"}',1000000,1);`);
+  assert.equal((await h.db.fetchMedicineDetails('m')).schedules[0].reminderEnabled, false);
+  const ids = await h.add('daily', {}, 'Tracking only');
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).schedules[0].reminderEnabled, false);
+  await h.db.updateScheduleReminderEnabled(ids.scheduleId, true);
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).schedules[0].reminderEnabled, true);
+  await h.db.updateScheduleReminderEnabled(ids.scheduleId, false);
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).schedules[0].reminderEnabled, false);
+  await assert.rejects(h.db.updateScheduleReminderEnabled('finite', true), /ongoing daily or weekday/);
+  await assert.rejects(h.db.addMedicine({ medicine: { name: 'Unsupported', dosageForm: 'Tablet' },
+    schedule: { pattern: { kind: 'daily', startDate: '2020-01-01', endDate: '2099-01-01' }, timeLocalMinute: 480, doseAmount: 1, reminderEnabled: true } }), /ongoing daily or weekday/);
 });
 test('reminder issue log records only structured local diagnostics and erases with app data', async () => {
   const h = harness();
@@ -218,3 +235,41 @@ test('undoDoseLog deletes history entry, restores stock if taken, and restores u
   assert.deepEqual(await h.db.fetchHistoryByMonth(), []);
 });
 
+test('undo restores only stock actually deducted when a dose exceeds remaining stock', async () => {
+  const h = harness();
+  const ids = await h.db.addMedicine({
+    medicine: { name: 'Low stock', dosageForm: 'Tablet', stockRemaining: 1 },
+    schedule: { timeLocalMinute: 480, doseAmount: 2, pattern: { kind: 'daily', startDate: '2020-01-01' } },
+  });
+  const [dose] = await h.db.fetchScheduledDoses('2020-01-01');
+  const ref = { scheduleId: ids.scheduleId, date: dose.date, scheduledAtMs: dose.scheduledAtMs };
+  await h.db.logDose({ ...ref, status: 'Taken', actualTakenAtMs: Date.now() });
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 0);
+  await h.db.undoDoseLog(ref);
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 1);
+});
+test('editing a Taken time preserves date, status, and stock', async () => {
+  const h = harness();
+  const ids = await h.add();
+  const date = '2020-01-01';
+  const original = new Date(2020, 0, 1, 8, 30).getTime();
+  const historyId = await h.db.logDose({ scheduleId: ids.scheduleId, date, status: 'Taken', actualTakenAtMs: original });
+  const corrected = new Date(2020, 0, 1, 9, 15).getTime();
+  await h.db.updateDoseLogTime({ historyId, actualTakenAtMs: corrected });
+  const record = (await h.db.fetchHistoryByMonth())[0].records[0];
+  assert.equal(record.actualTakenAtMs, corrected);
+  assert.equal(record.status, 'Taken');
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 9);
+  await assert.rejects(h.db.updateDoseLogTime({ historyId, actualTakenAtMs: new Date(2020, 0, 2, 9).getTime() }), /recorded dose date/);
+  await assert.rejects(h.db.updateDoseLogTime({ historyId, actualTakenAtMs: Date.now() + 60000 }), /future/);
+});
+test('legacy Taken undo reports that tracked stock needs manual correction', async () => {
+  const h = harness(); const ids = await h.add();
+  const [dose] = await h.db.fetchScheduledDoses('2020-01-01');
+  const ref = { scheduleId: ids.scheduleId, date: dose.date, scheduledAtMs: dose.scheduledAtMs };
+  const historyId = await h.db.logDose({ ...ref, status: 'Taken', actualTakenAtMs: Date.now() });
+  h.sql.prepare('UPDATE history SET stock_deducted_q = NULL WHERE id = ?').run(historyId);
+  const result = await h.db.undoDoseLog(ref);
+  assert.equal(result.manualStockCorrectionNeeded, true);
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 9);
+});

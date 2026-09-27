@@ -10,7 +10,10 @@ export default function WelcomeScreen() {
   const illustrationMaxHeight = Math.round(Math.min(height * 0.24, 175));
 
   if (data.completed) return <Redirect href="/" />;
-  return <Page>
+  return <Page footer={<View style={[styles.footer, { paddingTop: 0 }]}>
+    <Button title="Get started" icon="arrow-right" onPress={() => router.push('/profile')} />
+    <PrivacyNote />
+  </View>}>
     <View style={{ paddingTop: 10, paddingHorizontal: 16, marginBottom: 8, alignItems: 'center' }}>
       <Image source={require('../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 52, height: 52, alignSelf: 'center', marginBottom: 8 }} />
       <Text accessibilityRole="header" style={[styles.title, { textAlign: 'center', fontSize: 28, lineHeight: 34 }]}>DoseTracker</Text>
@@ -24,10 +27,6 @@ export default function WelcomeScreen() {
     </View>
     <View accessibilityLabel="Introduction, page 1 of 3" style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, paddingVertical: 14 }}>
       {[0, 1, 2].map((dot) => <View key={dot} style={{ width: 8, height: 8, borderRadius: 8, backgroundColor: dot === 0 ? '#0B2540' : '#C4C6C8' }} />)}
-    </View>
-    <View style={[styles.footer, { paddingTop: 0 }]}>
-      <Button title="Get started" icon="arrow-right" onPress={() => router.push('/profile')} />
-      <PrivacyNote />
     </View>
   </Page>;
 }

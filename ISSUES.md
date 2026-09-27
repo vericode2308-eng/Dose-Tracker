@@ -1,5 +1,28 @@
 # DoseTracker App — Remediation Issues & Resolution Log
 
+## Independent verification update — 2026-09-27
+
+The original **RESOLVED** labels below record the coder's implementation claims. The table here records a separate code, automated, web-preview, and Android emulator check after follow-up corrections.
+
+| Issue | Current assessment | Independent evidence / remaining check |
+| :--- | :--- | :--- |
+| P0-1 | Verified on Android | Sticky Add Medicine footer remained visible through all four steps in the Expo web preview and on the Pixel 9 emulator, including Review and save. |
+| P0-2 | Verified in preview | Dark theme was checked on Profile, Add Medicine, and reminder/settings subpages in the web preview. Android dark-theme screenshots on every route remain a release check. |
+| P0-3 | Verified on Android | A Pixel 9 back-key test with only Strength entered produced the discard dialog. The guard now covers all editable fields, not only medicine name. |
+| P1-1 | Implemented; small-device check pending | Welcome, Notifications, and Ready now pin their actions outside the scrollable content. Check the full first-run sequence on a compact Android device before release. |
+| P1-2 | Verified on Android | Android's system time picker opened from the History correction sheet; the same native picker component is used by medicine schedule fields. Date picker still needs direct device interaction before release. |
+| P1-3 | Verified on Android | Optional Stock step advanced with tracking off and blank inputs in the Pixel 9 emulator. |
+| P1-4 | Verified on Android | Pixel 9 emulator received a scheduled QA notification with Take Now, Snooze 15m, and Skip. With the app in the background, Take Now dismissed the notification and recorded the dose as Taken. The temporary QA medicine was removed. Snooze and Skip have unit coverage but still need individual native shade checks. |
+| P1-5 | Code verified | Settings status message has a four-second timer and cleanup. |
+| P2-1 | Code verified | Haptic calls are wired to core actions. Physical tactile feedback cannot be judged on an emulator. |
+| P2-2 | Preview verified | Ring and completed-card transitions render. Animation smoothness remains a physical-device visual check. |
+| P2-3 | Verified on Android and in tests | Taken record offers Edit logged time; native picker and save flow worked. Undo now restores only the stock actually deducted. For pre-migration Taken logs whose exact deduction was never stored, Undo reports that stock needs manual correction. |
+| P2-4 | Code verified | Multi-word initials use first and last words; single-word initials use the first two letters. |
+
+Additional Android hardening: the notification config now includes a white, transparent 96×96 icon based on the existing app mark. The Android project was regenerated from `app.json`, rebuilt, and installed. `expo-doctor` passed 21/21 checks.
+
+Reminder UX follow-up: dose tracking and notification intent are now separate. New schedules default to tracking only. A person can turn on supported reminders in Add Medicine or the medicine detail screen. Schema v6 retains existing supported reminder alarms and leaves unsupported courses in tracking-only mode. The app no longer renders reminder errors above every screen; Reminder status explains the state only when someone has requested reminders. The Expo preview showed the profile page free of the banner, the new switch off by default, the switch disabled for finite courses, and a calm tracking-only Reminder status. All 46 automated tests, lint, and TypeScript pass; tests cover migration, permission avoidance, and removing an old alarm. Native device confirmation of the new switch and migration remains a release check.
+
 This document tracks all identified UX, Android, and functional issues, their status, root cause analysis, and the concrete technical actions taken to resolve them.
 
 ---
@@ -331,8 +354,4 @@ This document tracks all identified UX, Android, and functional issues, their st
   - Tested "Senior Tester" in Add Profile: avatar and swatches immediately displayed **"ST"**.
   - Tested "Alice": avatar and swatches immediately displayed **"AL"**.
   - All 39 automated unit tests pass; TypeScript check passes with zero errors.
-
-
-
-
 

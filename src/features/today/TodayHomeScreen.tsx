@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
+import Animated, { FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 import { fetchScheduledDoses, type ScheduledDose } from '@/database';
 import { recordMedicationDose, snoozeMedicationDose, undoMedicationDose } from '@/notificationManager';
 import { useProfiles } from '@/features/profiles/context';
@@ -139,7 +140,7 @@ function ProfileToday() {
   }, [reload]);
   function card(dose: ScheduledDose) {
     const snoozed = !dose.status && !!dose.snoozedUntilMs && dose.snoozedUntilMs > data.now;
-    return <View key={dose.id} className={`mb-2 rounded-[22px] border-2 p-4 ${selected(dose) ? 'border-[#079D9D]' : 'border-transparent'}`} style={{ backgroundColor: colors.surface }}>
+    return <Animated.View key={`${dose.id}:${dose.status || 'pending'}`} entering={FadeInDown.duration(220)} exiting={FadeOutUp.duration(180)} layout={LinearTransition.duration(220)} className={`mb-2 rounded-[22px] border-2 p-4 ${selected(dose) ? 'border-[#079D9D]' : 'border-transparent'}`} style={{ backgroundColor: colors.surface }}>
       {selected(dose) && <Text className="mb-2 text-sm font-semibold text-[#079D9D]">Opened from reminder · {dose.date}</Text>}
       <View className="flex-row gap-3"><View className="h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: dose.medicine.color || '#079D9D' }}><MaterialCommunityIcons name="pill" size={25} color="white" /></View><View className="flex-1">
         <Text className="text-lg font-semibold" style={{ color: colors.ink }}>{dose.medicine.name}</Text>
@@ -167,7 +168,7 @@ function ProfileToday() {
           </Pressable>
         </View>
       )}
-    </View>;
+    </Animated.View>;
   }
   return <SafeAreaView className="flex-1" edges={['top']} style={{ backgroundColor: colors.background }}><ScrollView contentContainerClassName="px-4 pb-6 pt-4">
     <ProfileSwitcherTrigger showOtherProfiles />
@@ -182,4 +183,3 @@ function ProfileToday() {
     </>}
   </ScrollView></SafeAreaView>;
 }
-

@@ -33,6 +33,8 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#08B8BE",
           "sounds": [
             "./assets/sounds/gentle.wav",
             "./assets/sounds/clear.wav"
@@ -86,7 +88,8 @@
           "project": "dose-tracker",
           "organization": "vericode-an"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

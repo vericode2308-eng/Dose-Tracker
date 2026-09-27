@@ -1,16 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Modal, View, Text, Pressable, StyleSheet, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { Modal, View, Text, Pressable, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/features/theme/ThemeContext';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
-];
-
-const MONTH_SHORT = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ];
 
 const WEEKDAY_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -85,21 +80,11 @@ export function DatePickerModal({
 }: DatePickerModalProps) {
   const { colors, isDark } = useTheme();
 
-  const parsed = useMemo(() => parseDateString(initialDate), [initialDate, visible]);
+  const parsed = useMemo(() => parseDateString(initialDate), [initialDate]);
   const [selectedYear, setSelectedYear] = useState(parsed.year);
   const [selectedMonth, setSelectedMonth] = useState(parsed.month);
   const [selectedDay, setSelectedDay] = useState(parsed.day);
   const [viewMode, setViewMode] = useState<'calendar' | 'years'>('calendar');
-
-  useEffect(() => {
-    if (visible) {
-      const p = parseDateString(initialDate);
-      setSelectedYear(p.year);
-      setSelectedMonth(p.month);
-      setSelectedDay(p.day);
-      setViewMode('calendar');
-    }
-  }, [visible, initialDate]);
 
   const daysInMonth = useMemo(() => {
     return new Date(selectedYear, selectedMonth + 1, 0).getDate();
@@ -113,11 +98,6 @@ export function DatePickerModal({
     const now = new Date();
     return formatDateString(now.getFullYear(), now.getMonth(), now.getDate());
   }, []);
-
-  const selectedDateStr = useMemo(() => {
-    const validDay = Math.min(selectedDay, daysInMonth);
-    return formatDateString(selectedYear, selectedMonth, validDay);
-  }, [selectedYear, selectedMonth, selectedDay, daysInMonth]);
 
   const formattedDisplay = useMemo(() => {
     const validDay = Math.min(selectedDay, daysInMonth);
@@ -417,21 +397,11 @@ export function TimePickerModal({
 }: TimePickerModalProps) {
   const { colors, isDark } = useTheme();
 
-  const parsed = useMemo(() => parseTimeString(initialTime), [initialTime, visible]);
+  const parsed = useMemo(() => parseTimeString(initialTime), [initialTime]);
   const [hour, setHour] = useState(parsed.hour);
   const [minute, setMinute] = useState(parsed.minute);
   const [period, setPeriod] = useState<'AM' | 'PM'>(parsed.period);
   const [activeTab, setActiveTab] = useState<'hour' | 'minute'>('hour');
-
-  useEffect(() => {
-    if (visible) {
-      const p = parseTimeString(initialTime);
-      setHour(p.hour);
-      setMinute(p.minute);
-      setPeriod(p.period);
-      setActiveTab('hour');
-    }
-  }, [visible, initialTime]);
 
   const formattedTime = useMemo(() => {
     return formatTimeString(hour, minute, period);
@@ -774,13 +744,29 @@ export function DatePickerField({
 }: DatePickerFieldProps) {
   const { colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+  async function openPicker() {
+    if (Platform.OS !== 'android') { setModalVisible(true); return; }
+    const { DateTimePickerAndroid } = await import('@react-native-community/datetimepicker');
+    const chosen = parseDateString(value);
+    const initial = new Date(chosen.year, chosen.month, chosen.day);
+    const parseBound = (bound: string) => {
+      const parsed = parseDateString(bound);
+      return new Date(parsed.year, parsed.month, parsed.day);
+    };
+    DateTimePickerAndroid.open({
+      mode: 'date', value: initial,
+      ...(minDate ? { minimumDate: parseBound(minDate) } : {}),
+      ...(maxDate ? { maximumDate: parseBound(maxDate) } : {}),
+      onValueChange: (_event, selected) => onChange(formatDateString(selected.getFullYear(), selected.getMonth(), selected.getDate())),
+    });
+  }
 
   return (
     <>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${value || placeholder}`}
-        onPress={() => setModalVisible(true)}
+        onPress={() => void openPicker()}
         style={[
           styles.fieldCard,
           { backgroundColor: colors.card || '#FFFFFF', borderColor: colors.border || '#E8EAF0' },
@@ -802,7 +788,7 @@ export function DatePickerField({
         </View>
       </Pressable>
 
-      <DatePickerModal
+      {modalVisible && <DatePickerModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onSelect={onChange}
@@ -811,7 +797,7 @@ export function DatePickerField({
         minDate={minDate}
         maxDate={maxDate}
         allowClear={allowClear}
-      />
+      />}
     </>
   );
 }
@@ -833,13 +819,24 @@ export function TimePickerField({
 }: TimePickerFieldProps) {
   const { colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+  async function openPicker() {
+    if (Platform.OS !== 'android') { setModalVisible(true); return; }
+    const { DateTimePickerAndroid } = await import('@react-native-community/datetimepicker');
+    const parsed = parseTimeString(value);
+    const initial = new Date();
+    initial.setHours(parsed.hour % 12 + (parsed.period === 'PM' ? 12 : 0), parsed.minute, 0, 0);
+    DateTimePickerAndroid.open({
+      mode: 'time', value: initial,
+      onValueChange: (_event, selected) => onChange(formatTimeString(selected.getHours() % 12 || 12, selected.getMinutes(), selected.getHours() < 12 ? 'AM' : 'PM')),
+    });
+  }
 
   return (
     <>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${value || placeholder}`}
-        onPress={() => setModalVisible(true)}
+        onPress={() => void openPicker()}
         style={[
           styles.fieldCard,
           { backgroundColor: colors.card || '#FFFFFF', borderColor: colors.border || '#E8EAF0' },
@@ -861,13 +858,13 @@ export function TimePickerField({
         </View>
       </Pressable>
 
-      <TimePickerModal
+      {modalVisible && <TimePickerModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onSelect={onChange}
         initialTime={value}
         title={title || label}
-      />
+      />}
     </>
   );
 }

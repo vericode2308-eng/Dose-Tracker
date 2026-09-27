@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Image, Modal, Platform, Pressable, ScrollView, Switch, Text, useColorScheme, View } from 'react-native';
+import { Alert, Image, Modal, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { openExactAlarmSettings, openNotificationSettings, reconcileReminders, eraseMedicineDataWithReminders, scheduleTestReminder } from '@/notificationManager';
 import { useOnboarding } from '@/features/onboarding/context';
@@ -15,7 +15,6 @@ import { useTheme } from '@/features/theme/ThemeContext';
 
 type Menu = 'snooze' | 'backup' | 'restore' | 'erase' | 'about' | null;
 const NAVY = '#0B2540';
-const MUTED = '#536073';
 
 export default function SettingsHomeScreen() {
   const { reset } = useOnboarding();

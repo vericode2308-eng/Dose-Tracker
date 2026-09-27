@@ -18,7 +18,7 @@ function withWriteTransaction(db, task) {
 
 // All data stays in the app's private on-device SQLite directory.
 export const DATABASE_NAME = 'dosetracker.db';
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 6;
 const QUANTITY_SCALE = 1_000_000;
 
 let databasePromise;
@@ -173,6 +173,22 @@ async function migrate(db) {
         PRAGMA user_version = 4;
       `);
     }
+    if (version < 5) {
+      await transaction.execAsync(`
+        ALTER TABLE history ADD COLUMN stock_deducted_q INTEGER;
+        PRAGMA user_version = 5;
+      `);
+    }
+    if (version < 6) {
+      await transaction.execAsync(`
+        ALTER TABLE schedules ADD COLUMN reminder_enabled INTEGER NOT NULL DEFAULT 0 CHECK(reminder_enabled IN (0, 1));
+        UPDATE schedules SET reminder_enabled = 1
+          WHERE json_extract(recurring_pattern, '$.kind') IN ('daily', 'weekdays')
+            AND json_extract(recurring_pattern, '$.endDate') IS NULL
+            AND json_extract(recurring_pattern, '$.startDate') <= date('now', 'localtime');
+        PRAGMA user_version = 6;
+      `);
+    }
   });
 }
 
@@ -235,6 +251,11 @@ export async function addMedicine({ medicine, schedule, profileId }) {
       (schedule.pattern.kind !== 'prn' && (!Number.isInteger(time) || time < 0 || time > 1439)))) {
     throw new Error('A scheduled dose needs a valid local time; as-needed doses have no fixed time.');
   }
+  const reminderEnabled = schedule.reminderEnabled === true;
+  if (reminderEnabled && (schedule.pattern.endDate || schedule.pattern.startDate > dateKey(new Date()) ||
+      !['daily', 'weekdays'].includes(schedule.pattern.kind))) {
+    throw new Error('Reminders currently support ongoing daily or weekday schedules starting today.');
+  }
   const stock = quantityToUnits(medicine.stockRemaining, 'Stock remaining');
   const threshold = quantityToUnits(medicine.lowStockThreshold, 'Low-stock threshold');
   const amount = quantityToUnits(schedule.doseAmount, 'Dose amount');
@@ -257,8 +278,8 @@ export async function addMedicine({ medicine, schedule, profileId }) {
     );
     await transaction.runAsync(
       `INSERT INTO schedules (id, medicine_id, time_local_minute, recurring_pattern,
-         dose_amount_q, special_instructions, created_at_ms) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [scheduleId, medicineId, time, pattern, amount, optionalText(schedule.specialInstructions), now]
+         dose_amount_q, special_instructions, created_at_ms, reminder_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [scheduleId, medicineId, time, pattern, amount, optionalText(schedule.specialInstructions), now, reminderEnabled ? 1 : 0]
     );
   });
   return { medicineId, scheduleId };
@@ -268,7 +289,7 @@ export async function addMedicine({ medicine, schedule, profileId }) {
 export async function fetchAllMedicines({ profileId, includeArchivedProfiles = false } = {}) {
   const db = await initializeDatabase();
   const rows = await db.getAllAsync(`
-    SELECT m.*, s.id AS schedule_id, s.time_local_minute, s.recurring_pattern,
+    SELECT m.*, s.id AS schedule_id, s.time_local_minute, s.recurring_pattern, s.reminder_enabled,
            s.dose_amount_q, s.special_instructions
       FROM medicines m JOIN profiles p ON p.id = m.profile_id LEFT JOIN schedules s ON s.medicine_id = m.id
      WHERE (? IS NULL OR m.profile_id = ?) AND (? = 1 OR p.status = 'Active')
@@ -286,7 +307,7 @@ export async function fetchAllMedicines({ profileId, includeArchivedProfiles = f
 export async function fetchMedicineDetails(medicineId) {
   const db = await initializeDatabase();
   const rows = await db.getAllAsync(`
-    SELECT m.*, s.id AS schedule_id, s.time_local_minute, s.recurring_pattern,
+    SELECT m.*, s.id AS schedule_id, s.time_local_minute, s.recurring_pattern, s.reminder_enabled,
            s.dose_amount_q, s.special_instructions
       FROM medicines m LEFT JOIN schedules s ON s.medicine_id = m.id
      WHERE m.id = ? ORDER BY s.time_local_minute
@@ -318,6 +339,22 @@ export async function updateMedicine(medicineId, patch) {
   changed();
 }
 
+/** Change notification intent without changing the dose tracking schedule. */
+export async function updateScheduleReminderEnabled(scheduleId, enabled) {
+  if (typeof enabled !== 'boolean') throw new Error('Choose whether reminders are on or off.');
+  const db = await initializeDatabase();
+  const id = requiredText(scheduleId, 'Schedule ID');
+  const row = await db.getFirstAsync('SELECT recurring_pattern FROM schedules WHERE id = ?', [id]);
+  if (!row) throw new Error('Schedule not found.');
+  const pattern = JSON.parse(row.recurring_pattern);
+  if (enabled && (pattern.endDate || pattern.startDate > dateKey(new Date()) || !['daily', 'weekdays'].includes(pattern.kind))) {
+    throw new Error('Reminders currently support ongoing daily or weekday schedules starting today.');
+  }
+  const result = await db.runAsync('UPDATE schedules SET reminder_enabled = ? WHERE id = ?', [enabled ? 1 : 0, id]);
+  if (!result.changes) throw new Error('Schedule not found.');
+  changed();
+}
+
 export async function deleteMedicine(medicineId) {
   const db = await initializeDatabase();
   // Foreign keys cascade to the medicine's schedules and dose history.
@@ -342,7 +379,7 @@ async function validatedOccurrence(transaction, scheduleId, date, scheduledAtMs)
 
 async function existingDose(transaction, scheduleId, date, at, calendarDose) {
   // Version 1 only recorded one dose per schedule/day. Keep those records visible.
-  return transaction.getFirstAsync(`SELECT id, status FROM history WHERE schedule_id = ? AND date = ?
+  return transaction.getFirstAsync(`SELECT id, status, stock_deducted_q FROM history WHERE schedule_id = ? AND date = ?
     AND (? = 1 OR scheduled_at_ms = ? OR scheduled_at_ms IS NULL) ORDER BY created_at_ms LIMIT 1`, [scheduleId, date, calendarDose ? 1 : 0, at]);
 }
 
@@ -360,13 +397,17 @@ export async function logDose({ scheduleId, date, scheduledAtMs, actualTakenAtMs
     const calendarDose = JSON.parse(schedule.recurring_pattern).kind !== 'hour_interval';
     const existing = await existingDose(transaction, id, date, at, calendarDose);
     if (existing) { historyId = existing.id; return; }
-    await transaction.runAsync(
-      'INSERT INTO history (id, schedule_id, date, scheduled_at_ms, actual_taken_at_ms, status, created_at_ms) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [historyId, id, date, at, actualTakenAtMs, status, Date.now()]);
-    await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ? AND date = ? AND (? = 1 OR scheduled_at_ms = ?)', [id, date, calendarDose ? 1 : 0, at]);
+    let stockDeducted = null;
     if (status === 'Taken') {
-      await transaction.runAsync(`UPDATE medicines SET stock_remaining_q = max(0, stock_remaining_q - ?)
-        WHERE id = ? AND stock_remaining_q IS NOT NULL`, [schedule.dose_amount_q, schedule.medicine_id]);
+      const medicine = await transaction.getFirstAsync('SELECT stock_remaining_q FROM medicines WHERE id = ?', [schedule.medicine_id]);
+      if (medicine?.stock_remaining_q != null) stockDeducted = Math.min(medicine.stock_remaining_q, schedule.dose_amount_q);
+    }
+    await transaction.runAsync(
+      'INSERT INTO history (id, schedule_id, date, scheduled_at_ms, actual_taken_at_ms, status, created_at_ms, stock_deducted_q) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [historyId, id, date, at, actualTakenAtMs, status, Date.now(), stockDeducted]);
+    await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ? AND date = ? AND (? = 1 OR scheduled_at_ms = ?)', [id, date, calendarDose ? 1 : 0, at]);
+    if (stockDeducted != null) {
+      await transaction.runAsync('UPDATE medicines SET stock_remaining_q = stock_remaining_q - ? WHERE id = ?', [stockDeducted, schedule.medicine_id]);
     }
   });
   return historyId;
@@ -376,20 +417,37 @@ export async function undoDoseLog({ scheduleId, date, scheduledAtMs }) {
   const id = requiredText(scheduleId, 'Schedule ID');
   if (!isCalendarDate(date)) throw new Error('Dose date must be a valid YYYY-MM-DD date.');
   const db = await initializeDatabase();
+  let manualStockCorrectionNeeded = false;
   await withWriteTransaction(db, async transaction => {
     const row = await transaction.getFirstAsync(
-      `SELECT s.*, m.id as medicine_id FROM schedules s JOIN medicines m ON m.id = s.medicine_id WHERE s.id = ?`, [id]);
+      `SELECT s.*, m.id as medicine_id, m.stock_remaining_q FROM schedules s JOIN medicines m ON m.id = s.medicine_id WHERE s.id = ?`, [id]);
     if (!row) throw new Error('Schedule not found.');
     const calendarDose = JSON.parse(row.recurring_pattern).kind !== 'hour_interval';
     const existing = await existingDose(transaction, id, date, scheduledAtMs, calendarDose);
     if (!existing) return;
-    if (existing.status === 'Taken') {
+    manualStockCorrectionNeeded = existing.status === 'Taken' && existing.stock_deducted_q == null && row.stock_remaining_q != null;
+    if (existing.status === 'Taken' && existing.stock_deducted_q != null) {
       await transaction.runAsync(`UPDATE medicines SET stock_remaining_q = stock_remaining_q + ?
-        WHERE id = ? AND stock_remaining_q IS NOT NULL`, [row.dose_amount_q, row.medicine_id]);
+        WHERE id = ? AND stock_remaining_q IS NOT NULL`, [existing.stock_deducted_q, row.medicine_id]);
     }
     await transaction.runAsync('DELETE FROM history WHERE id = ?', [existing.id]);
   });
   changed();
+  return { manualStockCorrectionNeeded };
+}
+
+export async function updateDoseLogTime({ historyId, actualTakenAtMs }) {
+  const id = requiredText(historyId, 'History ID');
+  if (!Number.isSafeInteger(actualTakenAtMs) || actualTakenAtMs < 0 || actualTakenAtMs > Date.now()) {
+    throw new Error('Choose a valid time that is not in the future.');
+  }
+  const db = await initializeDatabase();
+  await withWriteTransaction(db, async transaction => {
+    const record = await transaction.getFirstAsync('SELECT date, status FROM history WHERE id = ?', [id]);
+    if (!record || record.status !== 'Taken') throw new Error('Only a recorded Taken dose can have its time edited.');
+    if (dateKey(new Date(actualTakenAtMs)) !== record.date) throw new Error('The time must be on the recorded dose date.');
+    await transaction.runAsync('UPDATE history SET actual_taken_at_ms = ? WHERE id = ?', [actualTakenAtMs, id]);
+  });
 }
 
 export async function snoozeDose({ scheduleId, date, scheduledAtMs, untilMs }) {
@@ -487,7 +545,7 @@ function medicineFromRow(row) {
 
 function scheduleFromRow(row) {
   return {
-    id: row.schedule_id, timeLocalMinute: row.time_local_minute,
+    id: row.schedule_id, timeLocalMinute: row.time_local_minute, reminderEnabled: row.reminder_enabled === 1,
     pattern: JSON.parse(row.recurring_pattern), doseAmount: row.dose_amount_q / QUANTITY_SCALE,
     specialInstructions: row.special_instructions,
   };

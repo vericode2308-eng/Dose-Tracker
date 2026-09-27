@@ -1,19 +1,21 @@
 import Feather from '@expo/vector-icons/Feather';
 import { useRouter } from 'expo-router';
-import { useState, type ComponentProps, type ReactNode } from 'react';
+import { type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
+import { useTheme } from '@/features/theme/ThemeContext';
 
 type IconName = ComponentProps<typeof Feather>['name'];
 export function Icon({ name, size = 22, color = theme.palette.navy }: { name: IconName; size?: number; color?: string }) {
   return <Feather name={name} size={size} color={color} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />;
 }
 
-export function Page({ children }: { children: ReactNode }) {
-  return <SafeAreaView className="flex-1 bg-luminous" edges={['top', 'bottom', 'left', 'right']}>
+export function Page({ children, footer, backgroundColor = theme.colors.background }: { children: ReactNode; footer?: ReactNode; backgroundColor?: string }) {
+  return <SafeAreaView className="flex-1" style={{ backgroundColor }} edges={['top', 'bottom', 'left', 'right']}>
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>{children}</ScrollView>
+      <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>{children}</ScrollView>
+      {footer && <View style={{ width: '100%', maxWidth: 430, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, backgroundColor }}>{footer}</View>}
     </KeyboardAvoidingView>
   </SafeAreaView>;
 }
@@ -29,12 +31,14 @@ export function StepHeader({ step }: { step: number }) {
 export function Button({ title, onPress, secondary = false, busy = false, icon }: {
   title: string; onPress: () => void; secondary?: boolean; busy?: boolean; icon?: IconName;
 }) {
+  const { colors, isDark } = useTheme();
+  const foreground = secondary ? colors.ink : '#FFFFFF';
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={onPress}
     className={secondary ? 'rounded-pill border border-border bg-surface active:opacity-70' : 'rounded-pill bg-medical active:opacity-70'}
-    style={[styles.button, { opacity: busy ? 0.7 : 1 }]}>
-    {busy ? <ActivityIndicator color={secondary ? theme.palette.navy : '#FFFFFF'} /> : <>
-      <Text style={[styles.buttonText, { color: secondary ? theme.palette.textDark : '#FFFFFF' }]}>{title}</Text>
-      {icon && <Icon name={icon} color={secondary ? theme.palette.navy : '#FFFFFF'} />}
+    style={[styles.button, { opacity: busy ? 0.7 : 1, backgroundColor: secondary ? colors.surface : isDark ? colors.accent : theme.palette.navy, borderColor: colors.border }]}>
+    {busy ? <ActivityIndicator color={foreground} /> : <>
+      <Text style={[styles.buttonText, { color: foreground }]}>{title}</Text>
+      {icon && <Icon name={icon} color={foreground} />}
     </>}
   </Pressable>;
 }

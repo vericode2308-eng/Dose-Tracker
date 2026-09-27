@@ -18,7 +18,10 @@ export default function ReadyScreen() {
     catch { setError('Setup couldn’t be saved. Please try again.'); }
     finally { lock.current = false; setBusy(false); }
   }
-  return <Page>
+  return <Page footer={<View style={[styles.footer, { paddingTop: 8 }]}>
+    {!data.completed ? <Button title="Finish setup" icon="check" busy={busy} onPress={() => void finish()} /> : <Button title={data.profile ? 'Edit profile' : 'Create a profile'} icon="user" onPress={() => router.push('/profile')} />}
+    <PrivacyNote />
+  </View>}>
     {!data.completed && <StepHeader step={3} />}
     <View className="items-center" style={{ paddingVertical: 20 }}>
       <Image source={require('../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 72, height: 72, marginBottom: 14 }} />
@@ -30,9 +33,5 @@ export default function ReadyScreen() {
       <Feature icon="bell" title={data.notificationChoice === 'granted' ? 'Notification permission enabled' : 'Notifications are optional'}>{data.notificationChoice === 'granted' ? 'Permission is ready. Reminders begin only after you add and schedule medicines.' : 'You can enable notifications later in your device settings.'}</Feature>
     </View>
     <ErrorMessage message={error} />
-    <View style={[styles.footer, { paddingTop: 8 }]}>
-      {!data.completed ? <Button title="Finish setup" icon="check" busy={busy} onPress={() => void finish()} /> : <Button title={data.profile ? 'Edit profile' : 'Create a profile'} icon="user" onPress={() => router.push('/profile')} />}
-      <PrivacyNote />
-    </View>
   </Page>;
 }
