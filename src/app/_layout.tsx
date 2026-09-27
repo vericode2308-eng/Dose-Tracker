@@ -15,6 +15,8 @@ Sentry.init({
   dsn: 'https://4260ebfe901b6d04bda9c7356b2e29e2@o4512147247071232.ingest.de.sentry.io/4512156478537808',
   sendDefaultPii: false,
   enableLogs: true,
+  tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+  tracePropagationTargets: [],
 });
 
 function RootLayout() {
@@ -22,7 +24,7 @@ function RootLayout() {
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     let active = true;
-    initializeDatabase().then(() => {
+    Sentry.startSpan({ name: 'Initialize local database', op: 'db.initialize' }, initializeDatabase).then(() => {
       if (active) {
         Sentry.logger.info('Local database ready', { subsystem: 'database' });
         setDatabaseState('ready');
