@@ -23,6 +23,8 @@ Additional Android hardening: the notification config now includes a white, tran
 
 Reminder UX follow-up: dose tracking and notification intent are now separate. New schedules default to tracking only. A person can turn on supported reminders in Add Medicine or the medicine detail screen. Schema v6 retains existing supported reminder alarms and leaves unsupported courses in tracking-only mode. The app no longer renders reminder errors above every screen; Reminder status explains the state only when someone has requested reminders. The Expo preview showed the profile page free of the banner, the new switch off by default, the switch disabled for finite courses, and a calm tracking-only Reminder status. All 46 automated tests, lint, and TypeScript pass; tests cover migration, permission avoidance, and removing an old alarm. Native device confirmation of the new switch and migration remains a release check.
 
+Android onboarding warning follow-up: an intermittent React “state update on a component that hasn't mounted yet” warning appeared after installing and opening the development build. A JavaScript stack traced it to Expo Router 57.0.23's initial-link callback in its forked navigation container, which could update state before mount. `patch-package` now defers that callback until the container's first effect. The original path reproduced the warning on two of five installs; the corrected patch produced no warning on eight consecutive reinstall-and-open runs on the Pixel 9 emulator. The Welcome screen and Get started button remained visible. Recheck this patch when upgrading Expo Router.
+
 This document tracks all identified UX, Android, and functional issues, their status, root cause analysis, and the concrete technical actions taken to resolve them.
 
 ---
@@ -354,4 +356,3 @@ This document tracks all identified UX, Android, and functional issues, their st
   - Tested "Senior Tester" in Add Profile: avatar and swatches immediately displayed **"ST"**.
   - Tested "Alice": avatar and swatches immediately displayed **"AL"**.
   - All 39 automated unit tests pass; TypeScript check passes with zero errors.
-

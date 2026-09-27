@@ -71,6 +71,8 @@ Use this guide before changing the Android app. It records lessons from the Sept
 
 Run a local native build with `npx expo run:android` or an EAS development profile. Expo Go cannot validate arbitrary native modules. For EAS commands in this npm project, use `npx eas-cli@latest <command>`. Keep generated native projects out of source edits.
 
+Expo Router 57.0.23 has an intermittent Android cold-start race when the development client opens an initial URL: its navigation container can update state before mounting, producing React's “state update on a component that hasn't mounted yet” LogBox warning over onboarding. This project applies `patches/expo-router+57.0.23.patch` during `npm install`. Keep the patch when reinstalling dependencies, recheck it when upgrading Expo Router, and verify first-run screens with repeated cold installs/launches rather than a single Metro reload. A normal app-icon launch may look clean while the development-client URL launch still reproduces the warning.
+
 As of the September 2026 audit, the icon and action task build were installed on a Pixel 9 emulator, Expo Doctor passed 21/21, and the follow-up suite passed 46 tests plus lint and type checking. These are point-in-time results; rerun checks after changes. Remaining release checks: compact first-run flow, every dark route on Android, native date picker interaction, native Snooze and Skip, tactile and animation quality on a physical device, and the new per-medicine reminder switch/schema migration on a development build.
 
 ## 9. Maintain an honest issue log
