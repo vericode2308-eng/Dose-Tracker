@@ -63,13 +63,13 @@ if let iconImage = NSImage(contentsOfFile: iconPath) {
     borderPath.stroke()
 }
 
-// 3. Draw Brand Name "DoseTracker"
+// 3. Draw Brand Name "Dose Tracker"
 let titleFont = NSFont.systemFont(ofSize: 66, weight: .bold)
 let titleAttrs: [NSAttributedString.Key: Any] = [
     .font: titleFont,
     .foregroundColor: NSColor.white
 ]
-let titleStr = NSAttributedString(string: "DoseTracker", attributes: titleAttrs)
+let titleStr = NSAttributedString(string: "Dose Tracker", attributes: titleAttrs)
 titleStr.draw(at: NSPoint(x: 395, y: 295))
 
 // 4. Draw Tagline "Private & Offline Medication Reminder"

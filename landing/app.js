@@ -295,17 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'Instant Protection: Your alarms arm immediately with no complicated settings.'
       ]
     },
-    reminders: {
-      img: './assets/design/09-notification-reminder-and-confirm-dose.png',
-      badge: 'On-Time Reminders',
-      title: 'Heads-Up Reminders That Respect You',
-      desc: 'Reminders appear reliably on your screen with quick buttons to confirm or snooze without having to search through your phone.',
-      highlights: [
-        'Confirm from Lock Screen: Mark a dose taken directly with a single tap.',
-        'Privacy Protection: Choose to hide medication names so others cannot see your prescriptions.',
-        'Calm Chimes: Gentle tones that alert you politely without loud jarring alarms.'
-      ]
-    },
     profiles: {
       img: './assets/design/people and profile.png',
       badge: 'Caregiver Hub',

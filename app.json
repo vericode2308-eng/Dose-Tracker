@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "DoseTracker",
-    "slug": "DoseTrackerApp",
+    "name": "Dose Tracker",
+    "slug": "dosetracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "dosetrackerapp",
+    "scheme": "dosetracker",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png"
@@ -21,7 +21,7 @@
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.vericode.dosetracker",
+      "package": "com.vericodestudio.dosetracker",
       "versionCode": 1
     },
     "web": {
