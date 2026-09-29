@@ -115,3 +115,6 @@ export function fetchProfileState(): Promise<{ profiles: ProfileSummary[]; activ
 export function selectProfile(profileId: string): Promise<void>;
 export function saveProfile(profile: Omit<LocalProfile, 'id' | 'status'> & { id?: string }): Promise<string>;
 export function setProfileArchived(profileId: string, archived: boolean): Promise<void>;
+
+export type MedicineEditInput = { medicine: MedicineInput; schedule: ScheduleInput; scheduleId: string; expectedStockRemaining?: number | null };
+export function editMedicine(medicineId: string, input: MedicineEditInput): Promise<void>;

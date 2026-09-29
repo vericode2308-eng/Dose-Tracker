@@ -722,6 +722,7 @@ export function TimePickerModal({
 // ==========================================
 
 export interface DatePickerFieldProps {
+  required?: boolean;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -733,6 +734,7 @@ export interface DatePickerFieldProps {
 }
 
 export function DatePickerField({
+  required = false,
   label,
   value,
   onChange,
@@ -765,14 +767,14 @@ export function DatePickerField({
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${value || placeholder}`}
+        accessibilityLabel={`${label}${required ? ', required' : ''}: ${value || placeholder}`}
         onPress={() => void openPicker()}
         style={[
           styles.fieldCard,
           { backgroundColor: colors.card || '#FFFFFF', borderColor: colors.border || '#E8EAF0' },
         ]}
       >
-        <Text style={[styles.fieldLabel, { color: colors.secondary }]}>{label}</Text>
+        <Text style={[styles.fieldLabel, { color: colors.secondary }]}>{label}{required ? ' *' : ''}</Text>
         <View style={styles.fieldValueRow}>
           <Text
             style={[
@@ -803,6 +805,7 @@ export function DatePickerField({
 }
 
 export interface TimePickerFieldProps {
+  required?: boolean;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -811,6 +814,7 @@ export interface TimePickerFieldProps {
 }
 
 export function TimePickerField({
+  required = false,
   label,
   value,
   onChange,
@@ -835,14 +839,14 @@ export function TimePickerField({
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${value || placeholder}`}
+        accessibilityLabel={`${label}${required ? ', required' : ''}: ${value || placeholder}`}
         onPress={() => void openPicker()}
         style={[
           styles.fieldCard,
           { backgroundColor: colors.card || '#FFFFFF', borderColor: colors.border || '#E8EAF0' },
         ]}
       >
-        <Text style={[styles.fieldLabel, { color: colors.secondary }]}>{label}</Text>
+        <Text style={[styles.fieldLabel, { color: colors.secondary }]}>{label}{required ? ' *' : ''}</Text>
         <View style={styles.fieldValueRow}>
           <Text
             style={[

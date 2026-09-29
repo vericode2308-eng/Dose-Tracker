@@ -1,5 +1,24 @@
 # SQLite screen integration
 
+## Full medicine editor — 2026-09-29
+
+Edit Medicine reuses the four-step creation form with persisted values. Full edits update
+medicine metadata and the selected schedule in one transaction, retaining IDs and ownership.
+Other schedules and the medicine's Active/Paused/Archived status are preserved. Schema v7
+adds `history.dose_snapshot`; edits snapshot prior dose amount, scheduled time, form, and unit
+so history is not relabelled with the new dose. A dose-unit change invalidates automatic stock
+restoration for older entries, which uses the existing manual-correction warning.
+
+The notification manager serializes the edit with reconciliation, cancels old requests, and
+restores unchanged schedules if persistence fails. Changed schedules clear their pending
+snoozes. A stock change while the editor is open rejects the save instead of overwriting a
+concurrent dose deduction. Existing unsupported recurrence restrictions still apply.
+
+In-app browser verification covered a labelled QA record: full detail changes, weekday/time/dose
+changes, reminder intent, fractional stock, reload persistence, finite interval courses, stock
+off, required-weekday validation, and discarding unsaved edits. The QA record remains locally.
+58 automated tests passed; actual Android delivery still needs a native device build.
+
 ## Connected screens
 
 - Today calls `fetchScheduledDoses(localDate)` for actual SQLite medicines,

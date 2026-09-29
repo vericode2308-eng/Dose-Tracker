@@ -1,6 +1,6 @@
 import { Linking, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo-modules-core';
-import { fetchAllMedicines, fetchMedicineDetails, updateMedicine, updateScheduleReminderEnabled, deleteMedicine, clearDatabase, logDose, undoDoseLog, snoozeDose, fetchPendingSnoozes, fetchScheduledDoses, fetchProfiles, selectProfile, setProfileArchived, recordReminderIssue, fetchRecentReminderIssues } from './database';
+import { fetchAllMedicines, fetchMedicineDetails, editMedicine, updateMedicine, updateScheduleReminderEnabled, deleteMedicine, clearDatabase, logDose, undoDoseLog, snoozeDose, fetchPendingSnoozes, fetchScheduledDoses, fetchProfiles, selectProfile, setProfileArchived, recordReminderIssue, fetchRecentReminderIssues } from './database';
 import { readSettings } from './features/settings/storage';
 
 export const MEDICATION_CHANNEL = 'medication-reminders';
@@ -248,7 +248,7 @@ export function setProfileArchivedWithReminders(profileId, archived) {
 
 // Serialize edits with foreground reconciliation so a stale snapshot cannot re-arm
 // a paused/deleted medicine. Cancel before changing its eligibility in SQLite.
-function changeMedicine(medicineId, mutation) {
+function changeMedicine(medicineId, mutation, requestPermission = false) {
   return serialized(async () => {
     if (Platform.OS !== 'web') {
       const api = await notifications();
@@ -264,7 +264,7 @@ function changeMedicine(medicineId, mutation) {
       await scheduleSavedMedicines(await fetchAllMedicines(), false, true).catch(() => undefined);
       throw error;
     }
-    try { return await scheduleSavedMedicines(await fetchAllMedicines(), false, true); }
+    try { return await scheduleSavedMedicines(await fetchAllMedicines(), requestPermission, true); }
     catch {
       // The DB commit succeeded. Do not invite a retry that duplicates a refill.
       return { scheduled: 0, allowed: false, exact: null, message: 'Medicine saved.',
@@ -275,6 +275,10 @@ function changeMedicine(medicineId, mutation) {
 
 export function updateMedicineWithReminders(medicineId, patch) {
   return changeMedicine(medicineId, () => updateMedicine(medicineId, patch));
+}
+
+export function editMedicineWithReminders(medicineId, input) {
+  return changeMedicine(medicineId, () => editMedicine(medicineId, input), input.schedule.reminderEnabled === true);
 }
 
 export function deleteMedicineWithReminders(medicineId) {

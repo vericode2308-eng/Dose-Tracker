@@ -52,6 +52,7 @@ function harness(options = {}) {
     setProfileArchived: async (id, archived) => { calls.push('archive'); profiles.find(p => p.id === id).status = archived ? 'Archived' : 'Active'; },
     fetchAllMedicines: async ({ profileId, includeArchivedProfiles = false } = {}) => medicines.filter(m => (!profileId || m.profileId === profileId) && (!m.profileId || includeArchivedProfiles || profiles.find(p => p.id === m.profileId).status === 'Active')),
     fetchMedicineDetails: async id => medicines.find(m => m.id === id) || null,
+    editMedicine: async (id, input) => { calls.push('edit'); if (options.failEdit) throw Error('Edit failed'); const m = medicines.find(m => m.id === id); Object.assign(m, input.medicine); Object.assign(m.schedules.find(s => s.id === input.scheduleId), input.schedule); },
     updateMedicine: async (id, patch) => { calls.push('update'); Object.assign(medicines.find(m => m.id === id), patch); },
     updateScheduleReminderEnabled: async (id, enabled) => { const schedule = medicines.flatMap(m => m.schedules).find(s => s.id === id); if (!schedule) throw Error('Schedule not found.'); schedule.reminderEnabled = enabled; },
     deleteMedicine: async id => { calls.push('delete'); medicines = medicines.filter(m => m.id !== id); },
@@ -351,4 +352,17 @@ test('interactive action Skip logs dose as Skipped without deducting stock', asy
   assert.equal(h.history[0].status, 'Skipped');
   assert.ok(h.calls.includes('dismissNotification:dosetracker:dose:schedule-1:daily'));
   dispose();
+});
+
+test('full editor replaces old alarms and preserves the prior alarm on a failed save', async () => {
+  const h = harness(); await h.manager.reconcileReminders();
+  await h.manager.editMedicineWithReminders(h.medicine.id, { medicine: { name: 'Edited' }, scheduleId: 'schedule-1', schedule: { timeLocalMinute: 615, doseAmount: 2, reminderEnabled: true } });
+  assert.equal(h.stored.size, 1); const request = [...h.stored.values()][0];
+  assert.equal(request.trigger.hour, 10); assert.equal(request.trigger.minute, 15);
+  assert.match(request.content.body + request.content.title, /Edited/); assert.ok(h.calls.indexOf('cancel') < h.calls.indexOf('edit'));
+  await h.manager.editMedicineWithReminders(h.medicine.id, { medicine: {}, scheduleId: 'schedule-1', schedule: { reminderEnabled: false } });
+  assert.equal(h.stored.size, 0);
+  const failed = harness({ failEdit: true }); await failed.manager.reconcileReminders();
+  await assert.rejects(failed.manager.editMedicineWithReminders(failed.medicine.id, { medicine: {}, scheduleId: 'schedule-1', schedule: {} }), /Edit failed/);
+  assert.equal(failed.stored.size, 1); assert.equal([...failed.stored.values()][0].trigger.hour, 8);
 });

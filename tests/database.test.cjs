@@ -36,7 +36,7 @@ test('schema upgrades version 1 without losing medicine or dose history', async 
     INSERT INTO history(id,schedule_id,date,status,created_at_ms) VALUES('h','s','2020-01-01','Skipped',1);`);
   const doses = await h.db.fetchScheduledDoses('2020-01-01');
   assert.equal(doses[0].status, 'Skipped');
-  assert.equal(h.sql.prepare('PRAGMA user_version').get().user_version, 6);
+  assert.equal(h.sql.prepare('PRAGMA user_version').get().user_version, 7);
   assert.equal((await h.db.fetchMedicineDetails('m')).schedules[0].reminderEnabled, true);
   await h.db.logDose({ scheduleId: 's', date: '2020-01-01', status: 'Taken', actualTakenAtMs: Date.now() });
   assert.equal((await h.db.fetchHistoryByMonth())[0].records.length, 1);
@@ -272,4 +272,78 @@ test('legacy Taken undo reports that tracked stock needs manual correction', asy
   const result = await h.db.undoDoseLog(ref);
   assert.equal(result.manualStockCorrectionNeeded, true);
   assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 9);
+});
+
+function fullEdit(medicine, overrides = {}) {
+  const schedule = medicine.schedules[0];
+  return { medicine: { ...medicine, strength: medicine.strength ?? undefined, purpose: medicine.purpose ?? '', instructions: medicine.instructions ?? '', notes: medicine.notes ?? '', color: medicine.color ?? '' },
+    schedule: { ...schedule }, scheduleId: schedule.id, expectedStockRemaining: medicine.stockRemaining, ...overrides };
+}
+test('full medicine edit persists all details, preserves IDs and historical dose values', async () => {
+  const h = harness(); const ids = await h.add();
+  await h.db.logDose({ scheduleId: ids.scheduleId, date: '2020-01-01', status: 'Taken', actualTakenAtMs: Date.now() });
+  const before = await h.db.fetchMedicineDetails(ids.medicineId);
+  const input = fullEdit(before);
+  Object.assign(input.medicine, { name: 'Edited', dosageForm: 'Liquid', doseUnit: 'mL', strength: '', purpose: 'QA purpose', instructions: 'QA instructions', notes: 'QA notes', color: '#3297FF', stockRemaining: 25.5, lowStockThreshold: 3 });
+  Object.assign(input.schedule, { doseAmount: 2.5, timeLocalMinute: 600, reminderEnabled: true, pattern: { kind: 'weekdays', weekdays: [1, 3], startDate: '2020-01-01' } });
+  await h.db.editMedicine(ids.medicineId, input);
+  const after = await h.db.fetchMedicineDetails(ids.medicineId);
+  assert.equal(after.id, ids.medicineId); assert.equal(after.profileId, before.profileId);
+  assert.equal(after.status, 'Active'); assert.equal(after.name, 'Edited'); assert.equal(after.strength, null);
+  assert.equal(after.dosageForm, 'Liquid'); assert.equal(after.doseUnit, 'mL'); assert.equal(after.purpose, 'QA purpose');
+  assert.equal(after.instructions, 'QA instructions'); assert.equal(after.notes, 'QA notes'); assert.equal(after.color, '#3297FF');
+  assert.equal(after.stockRemaining, 25.5); assert.equal(after.lowStockThreshold, 3);
+  assert.equal(after.schedules[0].id, ids.scheduleId); assert.equal(after.schedules[0].timeLocalMinute, 600);
+  assert.equal(after.schedules[0].doseAmount, 2.5); assert.equal(after.schedules[0].reminderEnabled, true);
+  const history = (await h.db.fetchHistoryByMonth())[0].records[0];
+  assert.equal(history.doseAmount, 1); assert.equal(history.scheduledTimeLocalMinute, 480);
+  assert.equal(history.dosageForm, 'Tablet'); assert.equal(history.doseUnit, 'tablet');
+  assert.equal((await h.db.fetchAllMedicines()).length, 1);
+});
+test('full edits reject invalid schedules, foreign schedule IDs and stale stock without partial writes', async () => {
+  const h = harness(); const ids = await h.add(); const other = await h.add('daily', {}, 'Other');
+  const before = await h.db.fetchMedicineDetails(ids.medicineId);
+  const input = fullEdit(before); input.medicine.name = 'Must not save'; input.schedule.doseAmount = 0;
+  await assert.rejects(h.db.editMedicine(ids.medicineId, input), /greater than zero/);
+  input.schedule.doseAmount = 1; input.scheduleId = other.scheduleId;
+  await assert.rejects(h.db.editMedicine(ids.medicineId, input), /not found/);
+  input.scheduleId = ids.scheduleId; input.expectedStockRemaining = 3;
+  await assert.rejects(h.db.editMedicine(ids.medicineId, input), /Stock changed/);
+  assert.deepEqual(await h.db.fetchMedicineDetails(ids.medicineId), before);
+  input.expectedStockRemaining = before.stockRemaining; input.schedule.pattern = { kind: 'prn', startDate: '2020-01-01' }; input.schedule.timeLocalMinute = null; input.schedule.reminderEnabled = true;
+  await assert.rejects(h.db.editMedicine(ids.medicineId, input), /Reminders currently support/);
+  input.schedule.reminderEnabled = false; input.medicine.stockRemaining = null; input.medicine.lowStockThreshold = null;
+  await h.db.editMedicine(ids.medicineId, input);
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, null);
+});
+test('metadata edits retain snoozes; schedule edits clear only the edited schedule snoozes', async () => {
+  const h = harness(); const ids = await h.add(); const other = await h.add('daily', {}, 'Other');
+  for (const dose of await h.db.fetchScheduledDoses('2020-01-01')) await h.db.snoozeDose({ scheduleId: dose.schedule.id, date: dose.date, scheduledAtMs: dose.scheduledAtMs, untilMs: Date.now() + 600000 });
+  const input = fullEdit(await h.db.fetchMedicineDetails(ids.medicineId)); input.medicine.notes = 'Updated';
+  await h.db.editMedicine(ids.medicineId, input); assert.equal((await h.db.fetchPendingSnoozes()).length, 2);
+  input.schedule.timeLocalMinute = 600;
+  await h.db.editMedicine(ids.medicineId, input);
+  const pending = await h.db.fetchPendingSnoozes(); assert.equal(pending.length, 1); assert.equal(pending[0].scheduleId, other.scheduleId);
+});
+test('failed metadata edit rolls back history snapshots and other field changes', async () => {
+  const h = harness(); const ids = await h.add();
+  await h.db.logDose({ scheduleId: ids.scheduleId, date: '2020-01-01', status: 'Taken', actualTakenAtMs: Date.now() });
+  const before = await h.db.fetchMedicineDetails(ids.medicineId);
+  const input = fullEdit(before); input.medicine.name = 'Rollback'; input.medicine.notes = '   ';
+  await assert.rejects(h.db.editMedicine(ids.medicineId, input), /Text is required/);
+  assert.deepEqual(await h.db.fetchMedicineDetails(ids.medicineId), before);
+  assert.equal(h.sql.prepare('SELECT dose_snapshot FROM history').get().dose_snapshot, null);
+});
+test('editing one schedule preserves other schedules and paused status; repeated edits retain history', async () => {
+  const h = harness(); const ids = await h.add();
+  h.sql.prepare(`INSERT INTO schedules(id,medicine_id,time_local_minute,recurring_pattern,dose_amount_q,created_at_ms) VALUES(?,?,?,?,?,?)`).run('second', ids.medicineId, 1080, '{"kind":"daily","startDate":"2020-01-01"}', 3000000, 1);
+  await h.db.logDose({ scheduleId: ids.scheduleId, date: '2020-01-01', status: 'Taken', actualTakenAtMs: Date.now() });
+  await h.db.updateMedicine(ids.medicineId, { status: 'Paused' });
+  const before = await h.db.fetchMedicineDetails(ids.medicineId);
+  const input = fullEdit(before); input.schedule.doseAmount = 2;
+  await h.db.editMedicine(ids.medicineId, input);
+  input.schedule.doseAmount = 4; await h.db.editMedicine(ids.medicineId, input);
+  const after = await h.db.fetchMedicineDetails(ids.medicineId);
+  assert.equal(after.status, 'Paused'); assert.deepEqual(after.schedules.find(s => s.id === 'second'), before.schedules.find(s => s.id === 'second'));
+  assert.equal((await h.db.fetchHistoryByMonth())[0].records[0].doseAmount, 1);
 });

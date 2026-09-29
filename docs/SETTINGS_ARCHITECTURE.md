@@ -7,7 +7,7 @@ This describes the implemented Expo SDK 57 code as of September 2026. DoseTracke
 | Data | Owner | Persistence |
 | --- | --- | --- |
 | Theme, reminders enabled, default snooze minutes, privacy, sound, vibration | `src/features/settings/storage.ts` | AsyncStorage `@dosetracker/settings/v1`; defaults `system`, `true`, `10`, `show`, `default`, `true`. Old `soundAndVibration` values migrate on read. These are preferences, not encrypted health records. |
-| Profile, medicines, schedules, dose history, snooze occurrence/deadline | `src/database.js` | App-private `expo-sqlite` database `dosetracker.db`, schema v4. `settings.active_profile_id` stores the selected profile. `dose_snoozes` stores `schedule_id`, `date`, `scheduled_at_ms`, `until_ms`. |
+| Profile, medicines, schedules, dose history, snooze occurrence/deadline | `src/database.js` | App-private `expo-sqlite` database `dosetracker.db`, schema v7. `settings.active_profile_id` stores the selected profile. `dose_snoozes` stores `schedule_id`, `date`, `scheduled_at_ms`, `until_ms`. |
 | Observed reminder setup/scheduling issues | `src/database.js` | SQLite `reminder_issues`, keyed by UTC day and code with first/last timestamps and count. Status reads the last seven days. Messages intentionally omit medicine names. |
 | Device app lock | `src/features/security/SecurityManager.js` | `expo-secure-store` key `doseTracker.appLock.v1`, device-only protected storage. The unlock itself uses the phone's local authentication. |
 | Onboarding completion and permission choice | `src/features/onboarding/storage.ts` | AsyncStorage `@dosetracker/onboarding/v1`. This is an app flow marker, not the authoritative OS permission state. |

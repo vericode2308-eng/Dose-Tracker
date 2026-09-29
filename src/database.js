@@ -18,7 +18,7 @@ function withWriteTransaction(db, task) {
 
 // All data stays in the app's private on-device SQLite directory.
 export const DATABASE_NAME = 'dosetracker.db';
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 const QUANTITY_SCALE = 1_000_000;
 
 let databasePromise;
@@ -189,6 +189,9 @@ async function migrate(db) {
         PRAGMA user_version = 6;
       `);
     }
+    if (version < 7) {
+      await transaction.execAsync('ALTER TABLE history ADD COLUMN dose_snapshot TEXT; PRAGMA user_version = 7;');
+    }
   });
 }
 
@@ -236,13 +239,7 @@ export async function clearDatabase() {
   });
 }
 
-/**
- * Add one medicine and its first schedule atomically.
- * schedule.pattern: { kind, startDate, endDate?, weekdays?, interval? }.
- * timeLocalMinute is 0–1439, or null for an as-needed schedule.
- * Quantities are decimal values in the medicine's dose/stock unit.
- */
-export async function addMedicine({ medicine, schedule, profileId }) {
+function validateMedicineForm(medicine, schedule) {
   const name = requiredText(medicine?.name, 'Medicine name');
   const dosageForm = requiredText(medicine?.dosageForm, 'Dosage form');
   const pattern = validatePattern(schedule?.pattern);
@@ -260,6 +257,17 @@ export async function addMedicine({ medicine, schedule, profileId }) {
   const threshold = quantityToUnits(medicine.lowStockThreshold, 'Low-stock threshold');
   const amount = quantityToUnits(schedule.doseAmount, 'Dose amount');
   if (amount === null || amount === 0) throw new Error('Dose amount must be greater than zero.');
+  return { name, dosageForm, pattern, time, reminderEnabled, stock, threshold, amount };
+}
+
+/**
+ * Add one medicine and its first schedule atomically.
+ * schedule.pattern: { kind, startDate, endDate?, weekdays?, interval? }.
+ * timeLocalMinute is 0–1439, or null for an as-needed schedule.
+ * Quantities are decimal values in the medicine's dose/stock unit.
+ */
+export async function addMedicine({ medicine, schedule, profileId }) {
+  const { name, dosageForm, pattern, time, reminderEnabled, stock, threshold, amount } = validateMedicineForm(medicine, schedule);
   const medicineId = Crypto.randomUUID();
   const scheduleId = Crypto.randomUUID();
   const now = Date.now();
@@ -316,6 +324,41 @@ export async function fetchMedicineDetails(medicineId) {
   const medicine = medicineFromRow(rows[0]);
   medicine.schedules = rows.filter(row => row.schedule_id).map(scheduleFromRow);
   return medicine;
+}
+
+/** Save the full form atomically, preserving medicine/schedule IDs and logged doses. */
+export async function editMedicine(medicineId, { medicine, schedule, scheduleId, expectedStockRemaining }) {
+  const { name, dosageForm, pattern, time, reminderEnabled, stock, threshold, amount } = validateMedicineForm(medicine, schedule);
+  const id = requiredText(medicineId, 'Medicine ID');
+  const sid = requiredText(scheduleId, 'Schedule ID');
+  const db = await initializeDatabase();
+  await withWriteTransaction(db, async transaction => {
+    const current = await transaction.getFirstAsync('SELECT * FROM medicines WHERE id = ?', [id]);
+    const oldSchedule = await transaction.getFirstAsync('SELECT * FROM schedules WHERE id = ? AND medicine_id = ?', [sid, id]);
+    if (!current || !oldSchedule) throw new Error('Medicine or schedule not found. Reopen the editor.');
+    // A dose may be taken while this form is open. Never overwrite its stock deduction.
+    if (expectedStockRemaining !== undefined && current.stock_remaining_q !== quantityToUnits(expectedStockRemaining, 'Previous stock')) {
+      throw new Error('Stock changed while editing. Reopen the medicine to load its current stock.');
+    }
+    await transaction.runAsync(`UPDATE history SET dose_snapshot = (
+      SELECT json_object('amount', s.dose_amount_q, 'time', s.time_local_minute,
+        'form', m.dosage_form, 'unit', m.dose_unit)
+      FROM schedules s JOIN medicines m ON m.id = s.medicine_id WHERE s.id = history.schedule_id)
+      WHERE dose_snapshot IS NULL AND schedule_id IN (SELECT id FROM schedules WHERE medicine_id = ?)`, [id]);
+    if (current.dose_unit !== optionalText(medicine.doseUnit)) {
+      await transaction.runAsync('UPDATE history SET stock_deducted_q = NULL WHERE schedule_id IN (SELECT id FROM schedules WHERE medicine_id = ?)', [id]);
+    }
+    await transaction.runAsync(`UPDATE medicines SET name = ?, dosage_form = ?, strength_text = ?, dose_unit = ?,
+      purpose = ?, instructions = ?, notes = ?, color = ?, stock_remaining_q = ?, low_stock_threshold_q = ? WHERE id = ?`,
+      [name, dosageForm, optionalText(medicine.strength), optionalText(medicine.doseUnit), optionalText(medicine.purpose),
+        optionalText(medicine.instructions), optionalText(medicine.notes), optionalText(medicine.color), stock, threshold, id]);
+    await transaction.runAsync(`UPDATE schedules SET time_local_minute = ?, recurring_pattern = ?, dose_amount_q = ?,
+      reminder_enabled = ?, special_instructions = ? WHERE id = ? AND medicine_id = ?`,
+      [time, pattern, amount, reminderEnabled ? 1 : 0, optionalText(schedule.specialInstructions), sid, id]);
+    if (oldSchedule.time_local_minute !== time || oldSchedule.recurring_pattern !== pattern || oldSchedule.dose_amount_q !== amount) {
+      await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ?', [sid]);
+    }
+  });
 }
 
 /** Editable metadata only; changing a schedule requires a separate schedule editor. */
@@ -508,7 +551,7 @@ export async function fetchHistoryByMonth({ from, to, medicineId, profileId } = 
   if ((from && !isCalendarDate(from)) || (to && !isCalendarDate(to))) throw new Error('Invalid history date range.');
   const db = await initializeDatabase();
   const rows = await db.getAllAsync(`
-    SELECT h.id, h.date, h.scheduled_at_ms, h.actual_taken_at_ms, h.status, h.schedule_id,
+    SELECT h.id, h.date, h.scheduled_at_ms, h.actual_taken_at_ms, h.status, h.schedule_id, h.dose_snapshot,
            s.time_local_minute, s.dose_amount_q, m.id AS medicine_id,
            m.name AS medicine_name, m.dosage_form, m.dose_unit
       FROM history h JOIN schedules s ON s.id = h.schedule_id
@@ -518,15 +561,16 @@ export async function fetchHistoryByMonth({ from, to, medicineId, profileId } = 
   `, [from ?? null, from ?? null, to ?? null, to ?? null, medicineId ?? null, medicineId ?? null, profileId ?? null, profileId ?? null]);
   const byMonth = new Map();
   for (const row of rows) {
+    const snapshot = row.dose_snapshot ? JSON.parse(row.dose_snapshot) : null;
     const month = row.date.slice(0, 7);
     if (!byMonth.has(month)) byMonth.set(month, { month, records: [] });
     byMonth.get(month).records.push({
       id: row.id, date: row.date, scheduledAtMs: row.scheduled_at_ms, actualTakenAtMs: row.actual_taken_at_ms,
       status: row.status, scheduleId: row.schedule_id,
-      scheduledTimeLocalMinute: row.time_local_minute,
-      doseAmount: row.dose_amount_q / QUANTITY_SCALE,
+      scheduledTimeLocalMinute: snapshot ? snapshot.time : row.time_local_minute,
+      doseAmount: (snapshot ? snapshot.amount : row.dose_amount_q) / QUANTITY_SCALE,
       medicineId: row.medicine_id, medicineName: row.medicine_name,
-      dosageForm: row.dosage_form, doseUnit: row.dose_unit,
+      dosageForm: snapshot ? snapshot.form : row.dosage_form, doseUnit: snapshot ? snapshot.unit : row.dose_unit,
     });
   }
   return [...byMonth.values()];

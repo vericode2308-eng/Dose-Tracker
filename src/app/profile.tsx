@@ -81,10 +81,11 @@ export default function ProfileScreen() {
       <Text accessibilityRole="header" style={[styles.title, { color: colors.ink }]}>{creating ? 'Add Profile' : editing ? 'Edit profile' : 'Create your first profile'}</Text>
       <Text style={[styles.subtitle, { color: colors.secondary }]}>{editing ? 'Update your profile details saved on this device.' : creating ? 'Add someone whose medicines you manage on this device.' : 'Let’s set up a profile. You can add more family members later.'}</Text>
     </View>
+    <Text style={{ color: colors.secondary, marginBottom: 10 }}>* Required to save a profile</Text>
     <View style={[styles.card, { padding: 14, gap: 14, backgroundColor: colors.surface, borderColor: colors.border }]}>
       <View>
-        <Text style={[s.label, { color: colors.ink }]}>Name</Text>
-        <TextInput ref={nameInput} accessibilityLabel="Name" style={[s.input, { color: colors.ink, backgroundColor: colors.background, borderColor: colors.border }]} placeholder="Your name" placeholderTextColor={colors.secondary} value={profile.name} maxLength={80} autoCapitalize="words" autoComplete="name" returnKeyType="next" onChangeText={(name) => setProfile({ ...profile, name })} onSubmitEditing={() => birthdayInput.current?.focus()} />
+        <Text style={[s.label, { color: colors.ink }]}>Name *</Text>
+        <TextInput ref={nameInput} accessibilityLabel="Name, required" style={[s.input, { color: colors.ink, backgroundColor: colors.background, borderColor: colors.border }]} placeholder="Your name" placeholderTextColor={colors.secondary} value={profile.name} maxLength={80} autoCapitalize="words" autoComplete="name" returnKeyType="next" onChangeText={(name) => setProfile({ ...profile, name })} onSubmitEditing={() => birthdayInput.current?.focus()} />
       </View>
       <View><Text style={[s.label, { color: colors.ink }]}>Relationship (optional)</Text><TextInput accessibilityLabel="Relationship" value={profile.relationship} maxLength={40} placeholder="e.g. Mother, Son, You" placeholderTextColor={colors.secondary} style={[s.input, { color: colors.ink, backgroundColor: colors.background, borderColor: colors.border }]} onChangeText={relationship => setProfile({ ...profile, relationship })} /></View>
       <View>

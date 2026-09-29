@@ -1,4 +1,4 @@
-import type { StoredMedicine, StoredSchedule, MedicinePatch, DoseReference, ReminderIssue } from './database';
+import type { StoredMedicine, StoredSchedule, MedicinePatch, MedicineEditInput, DoseReference, ReminderIssue } from './database';
 import type { Href } from 'expo-router';
 import type { NotificationResponse } from 'expo-notifications';
 export const MEDICATION_CHANNEL: string;
@@ -35,3 +35,5 @@ export function recordMedicationDose(dose: DoseReference, status: 'Taken' | 'Ski
 export function undoMedicationDose(dose: DoseReference): Promise<{ message: string }>;
 
 export function setProfileArchivedWithReminders(profileId: string, archived: boolean): Promise<ReminderResult>;
+
+export function editMedicineWithReminders(medicineId: string, input: MedicineEditInput): Promise<ReminderResult>;

@@ -10,7 +10,7 @@ import { updateMedicineWithReminders, deleteMedicineWithReminders, setScheduleRe
 
 const NAVY = '#071629';
 type Icon = ComponentProps<typeof Feather>['name'];
-type Panel = 'options' | 'edit' | 'refill' | 'archive' | 'delete' | number | null;
+type Panel = 'options' | 'refill' | 'archive' | 'delete' | number | null;
 
 function MetadataRow({ icon, label, value }: { icon: Icon | 'infinity' | 'pill'; label: string; value?: string }) {
   return <View className="min-h-[29px] flex-row items-center gap-4">
@@ -39,9 +39,6 @@ export default function MedicineDetailScreen() {
   const { data: records } = useLocalQuery(historyQuery, []);
   const [panel, setPanel] = useState<Panel>(null);
   const [quantity, setQuantity] = useState('30');
-  const [draftName, setDraftName] = useState('');
-  const [draftDosage, setDraftDosage] = useState('');
-  const [draftNotes, setDraftNotes] = useState('');
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
   const close = () => { setPanel(null); setError(''); };
@@ -87,7 +84,7 @@ export default function MedicineDetailScreen() {
   }
   function edit() {
     if (!medicine) return;
-    setDraftName(medicine.name); setDraftDosage(medicine.strength || ''); setDraftNotes(medicine.notes ?? ''); setPanel('edit');
+    close(); router.push({ pathname: '/edit-medicine', params: { id: medicine.id } });
   }
   if (!medicine) return <SafeAreaView className="flex-1 items-center justify-center gap-5 bg-[#FBF8F3] p-6"><Text className="text-xl text-[#071629]">Medicine not found</Text><View className="h-11 w-full"><Action title="Back to Medicines" onPress={() => router.dismissTo('/medicines')} /></View></SafeAreaView>;
   const lowStock = medicine.stock !== undefined && medicine.stock <= (medicine.stockThreshold ?? 10);
@@ -134,9 +131,9 @@ export default function MedicineDetailScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end bg-black/30">
         <SafeAreaView edges={['bottom']} className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px] bg-[#FBF8F3]">
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
-            <View className="mb-4 flex-row items-center justify-between"><Text className="flex-1 text-[22px] font-semibold text-[#071629]">{panel === 'refill' ? 'Log Refill' : panel === 'edit' ? 'Edit Medicine' : panel === 'archive' ? 'Archive Medicine?' : panel === 'delete' ? 'Delete Medicine?' : typeof panel === 'number' ? 'Dose record' : 'Medicine options'}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 items-center justify-center rounded-full bg-white"><Feather name="x" size={22} color={NAVY} /></Pressable></View>
-            {panel === 'refill' && <><Text className="mb-3 text-base text-[#536073]">How many tablets did you add?</Text><TextInput accessibilityLabel="Tablets added" keyboardType="number-pad" value={quantity} onChangeText={setQuantity} className="mb-4 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save refill" dark onPress={() => { const amount = Number(quantity); if (!/^\d+$/.test(quantity) || !Number.isSafeInteger(amount) || amount < 1 || amount > 10000) { setError('Enter a whole number between 1 and 10,000.'); return; } void update({ stock: (medicine.stock ?? 0) + amount }); }} /></>}
-            {panel === 'edit' && <><TextInput accessibilityLabel="Medicine name" value={draftName} onChangeText={setDraftName} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Strength" placeholder="Strength (optional)" value={draftDosage} onChangeText={setDraftDosage} className="mb-3 rounded-2xl bg-white p-4 text-base text-[#071629]" /><TextInput accessibilityLabel="Notes" multiline value={draftNotes} onChangeText={setDraftNotes} placeholder="Notes" className="mb-4 min-h-20 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save changes" dark onPress={() => { if (!draftName.trim()) { setError('Enter a medicine name.'); return; } void update({ name: draftName.trim(), strength: draftDosage.trim(), dosage: [draftDosage.trim(), medicine.form].filter(Boolean).join(' '), notes: draftNotes.trim() }); }} /></>}
+            <View className="mb-4 flex-row items-center justify-between"><Text className="flex-1 text-[22px] font-semibold text-[#071629]">{panel === 'refill' ? 'Log Refill' : panel === 'archive' ? 'Archive Medicine?' : panel === 'delete' ? 'Delete Medicine?' : typeof panel === 'number' ? 'Dose record' : 'Medicine options'}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 items-center justify-center rounded-full bg-white"><Feather name="x" size={22} color={NAVY} /></Pressable></View>
+            {panel === 'refill' && <Text className="mb-3 text-sm text-[#536073]">* Required</Text>}
+            {panel === 'refill' && <><Text className="mb-3 text-base text-[#536073]">How many tablets did you add? *</Text><TextInput accessibilityLabel="Tablets added, required" keyboardType="number-pad" value={quantity} onChangeText={setQuantity} className="mb-4 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save refill" dark onPress={() => { const amount = Number(quantity); if (!/^\d+$/.test(quantity) || !Number.isSafeInteger(amount) || amount < 1 || amount > 10000) { setError('Enter a whole number between 1 and 10,000.'); return; } void update({ stock: (medicine.stock ?? 0) + amount }); }} /></>}
             {(panel === 'archive' || panel === 'delete') && <><Text className="mb-5 text-base leading-6 text-[#536073]">{panel === 'archive' ? `${medicine.name} will move to Archived. You can restore it later.` : `Permanently delete ${medicine.name}, its dose history and its reminders?`}</Text><View className="flex-row gap-3"><Action title="Cancel" onPress={close} /><Action title={panel === 'archive' ? 'Confirm archive' : 'Confirm delete'} danger={panel === 'delete'} dark={panel === 'archive'} onPress={() => { if (panel === 'archive') { void update({ status: 'Archived' }); } else { void remove(); } }} /></View></>}
             {panel === 'options' && <View className="gap-3"><Action title="Edit medicine" icon="edit-2" onPress={edit} /><Action title="Log refill" icon="archive" onPress={() => setPanel('refill')} /><Action title="View dose history" icon="clock" onPress={() => { close(); router.push('/history'); }} /></View>}
             {typeof panel === 'number' && <View className="gap-3 rounded-2xl bg-white p-5"><Text className="text-lg font-semibold text-[#071629]">{medicine.name}</Text><Text className="text-base text-[#536073]">{records[panel]?.date}</Text><Text className="text-base text-[#536073]">{records[panel]?.time} · {records[panel]?.status}</Text><Text className="text-base text-[#536073]">Dose: {records[panel]?.amount}</Text></View>}
