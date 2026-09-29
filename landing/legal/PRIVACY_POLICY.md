@@ -1,110 +1,55 @@
 # DoseTracker Privacy Policy
 
-**Draft for owner and qualified legal review — do not publish until bracketed items are completed.**  
-Effective date: **[EFFECTIVE DATE, e.g., October 1, 2026]**  
-Operator: **[LEGAL ENTITY OR INDIVIDUAL NAME]** (“we,” “us,” or “our”)  
-Contact: **[PRIVACY / SUPPORT EMAIL]**; **[PHYSICAL POSTAL ADDRESS IF APPLICABLE]**
+Operator: VeriCode (vericodestudio.com)
 
----
+Privacy and support contact: support@vericodestudio.com
 
-## 1. Overview and Core Philosophy
+Effective: first public release of DoseTracker 1.0.0. Prepared September 29, 2026 for the release currently in testing.
 
-DoseTracker is an offline-first medication management mobile application. We built DoseTracker on a simple premise: **your medical regimens, prescription history, and personal health data belong entirely to you, not on remote cloud servers.**
+## What this policy covers
 
-- **Zero Remote Accounts:** You do not need to register, provide an email address, enter a phone number, or create a password to use the app (`src/app/welcome.tsx:17-19`).
-- **No Remote Servers or Databases:** We do not operate a cloud backend for your health data. All profile, medication, schedule, and dose adherence data is stored strictly on your local device (`src/database.js:19-20, 83-125`).
-- **No Third-Party Telemetry or Ad Networks:** The app contains no advertising SDKs, tracking pixels, or third-party behavioral analytics services (`package.json:5-48`).
+This policy explains how DoseTracker handles information in the Android app and how the accompanying website and support email work. DoseTracker is for adults aged 18 or older. Adults may manage profiles for children or other dependents when authorized to do so. Local profiles are not online accounts.
 
----
+## Information stored on your device
 
-## 2. Information You Enter and How It Is Handled
+You may enter profile names, relationships, dates of birth, notes and selected photos; medicine names, strengths, dose amounts, instructions, schedules and stock counts; and taken, skipped or snoozed dose records. The app uses these to organize your profiles, display schedules and history, track recorded stock and request local reminders. This information is stored in the app’s private device storage. We do not provide health-record uploads, cloud sync or remote accounts.
 
-All information processed by DoseTracker is provided directly by you or by someone managing your care:
+App preferences and the optional diagnostics choice are stored locally. The app-lock setting uses secure device storage. Local reminder issue records help explain scheduling and permission problems; they are separate from the optional reports described below.
 
-### A. Profiles
-- **Data Collected:** Profile name, relationship label, optional profile photo, date of birth, and personal notes (`src/app/profile.tsx:75-114`; `src/database.js:517-538`).
-- **Storage:** Names, birth dates, and notes are stored in an app-private local database (`dosetracker.db`). Photos selected via your device photo picker are copied into the app's local document sandbox (`src/features/onboarding/photos.ts:17-25`).
-- **Purpose:** To organize schedules and history separately for each person or dependent you manage.
+## Optional diagnostics through Sentry
 
-### B. Medications and Prescriptions
-- **Data Collected:** Medication name, strength, dosage form (e.g., tablet, capsule), dose instructions, purpose, custom notes, schedule recurrence (daily, specific weekdays, or as-needed), and inventory stock counts (`src/features/medicines/AddMedicineScreen.tsx:55-75, 100-117`; `src/database.js:83-125`).
-- **Storage:** Stored locally in the app-private database on your device.
-- **Purpose:** To display your daily schedule, manage stock levels, and trigger local reminder notifications.
+Diagnostics are off by default. Only after you choose “Enable optional diagnostics” in Settings does the app send limited JavaScript error reports to Sentry on behalf of VeriCode, to help investigate software faults. Reports contain an event identifier, error time, app version, operating-system platform (such as Android), and code line/column numbers when available.
 
-### C. Dose Adherence and History Records
-- **Data Collected:** Timestamps when a dose is taken or skipped, snooze deadlines, and inventory adjustments (`src/database.js:349-385`; `src/features/today/TodayHomeScreen.tsx:44-72`).
-- **Storage:** Stored locally in the app-private database on your device.
-- **Purpose:** To maintain an adherence calendar and history log on your device.
+The app removes error-message text, profile and medicine information, local variables, breadcrumbs, device identifiers and arbitrary event context from these reports. Native crash dumps, screenshots, screen recordings, session replay, performance tracing and remote logs are disabled. Reports are sent over HTTPS without a persistent offline report queue. Sentry necessarily receives connection information, including an IP address, to receive network requests; default personal-information collection is disabled in the SDK.
 
-### D. Operational and Diagnostics Logs
-- **Data Collected:** The app records internal scheduling issue logs (such as permission discrepancies or unsupported recurrence alarms) (`src/database.js:160-173`; `src/app/reminder-status.tsx:24-34`).
-- **Privacy Safeguard:** Operational logs are stored solely in local SQLite and do not record medication names (`AGENTS.md`). They are never automatically transmitted over the internet.
+You can decline diagnostics and use tracking and reminders normally. Turn diagnostics off in Settings to stop new reports; the app also aborts outstanding report requests where possible. It cannot recall requests already received by Sentry. “Erase all data” also turns diagnostics off. The consent choice is not included in preferences exports or restored from them.
 
----
+Reports already received remain in Sentry until the project’s configured retention expires or VeriCode deletes them. Contact support@vericodestudio.com for retention details or to request deletion. Include the approximate error time and app version if known; do not send medicine names or other health information. Because reports exclude a user or device identifier, we may need additional non-sensitive details to locate a particular report. We do not use these reports for advertising or sell them.
 
-## 3. Storage, Encryption, and Device Security
+## Permissions, reminders and device security
 
-- **Storage Location:** All health records, schedules, and profiles are stored in an app-private local database within your device's isolated application storage (`src/database.js:19-20, 201-212`). Non-sensitive application preferences (sound choices, notification visibility, snooze intervals) and onboarding completion status are stored in device local storage (`src/features/settings/storage.ts:3-45`; `src/features/onboarding/storage.ts:4-19`).
-- **Device App Lock:** You can activate an optional biometric or passcode app lock (`src/features/security/SecurityManager.js:5-46`). The lock status flag is stored in your device's encrypted hardware keystore (`expo-secure-store`). *Important notice:* App lock gates the screen upon launch, but it does not encrypt the underlying local database file itself (`src/features/security/DeviceAuthenticationSettingsScreen.tsx:45-51`). Anyone with access to your device PIN or an enrolled biometric credential on your device may unlock the app.
-- **Cloud Backup Disabled:** Android automated cloud backup is explicitly disabled in the app configuration (`app.json:14`), helping prevent unintended uploading of your local database to platform cloud backups.
-- **Notification Privacy Levels:** Android notifications can display dose information on your lock screen. In Settings, you may choose *Show all details*, *Hide medication details*, or *Do not show information* to conceal medicine names from bystanders (`src/features/settings/storage.ts:14-20`; `src/notificationManager.js:75-83`).
+Notification permission lets the app send reminders. Android Alarms & reminders access enables requests for more precise timing; you may decline it. Delivery still depends on system settings and restrictions. The photo picker gives the app access to the photo you select; a copy is saved privately for your profile. File selection and the share sheet support preferences import/export. The app does not need camera, microphone, location, contacts or broad access to your photo library.
 
----
+The optional app lock uses your device’s biometric or screen-lock authentication. The app does not receive biometric templates. Anyone with an enrolled credential or the device screen-lock secret may unlock it. App lock protects screen access; it does not separately encrypt the health database. Android cloud backup is disabled in the app configuration.
 
-## 4. Third-Party Services and Data Sharing
+Reminder details can appear on a locked screen. The initial setting shows medicine details. Change Settings → Notification privacy to hide details; your device’s notification settings also apply. Store your device securely and review notification settings before entering sensitive information.
 
-- **No Remote Analytics or Trackers:** DoseTracker does not integrate Google Analytics, Firebase Analytics, Meta Pixel, crash-reporting SDKs, or any remote telemetry (`package.json:5-48`).
-- **No Data Sales or Commercialization:** Because we do not collect or receive your personal or health data, we do not sell, rent, license, or share your data with advertisers, data brokers, or pharmaceutical marketers.
-- **Device Operating System Integrations:** The app communicates with standard device system APIs to perform its intended functions:
-  - **Alarm and Notification Services:** The device's built-in alarm and notification system schedules your reminders locally.
-  - **Biometrics / Screen Lock:** Device hardware authentication validates your fingerprint or face scan locally; biometric data is processed by the OS and is never accessible to the app.
-  - **Photo and Document Selection:** Handled entirely by the device's system file pickers.
-  - **Operating System Share Sheet:** When you export your non-sensitive settings preferences, the app opens your device's native share menu (`src/features/settings/backup.ts:21-37`). The destination you choose (such as email, messaging, or cloud storage) is governed by that third party's privacy policy.
+## Retention, deletion and exports
 
----
+Local records remain until you delete them, erase app data or uninstall. Archiving a profile preserves its records and stops its supported reminders. Deleting a medicine removes its schedules and associated dose history. Settings → Erase all data removes local profiles, medicines, dose records, settings, stored profile photos and the app-lock flag, cancels reminders and disables diagnostics. If erasure is interrupted or reports an error, retry it.
 
-## 5. Your Rights and Data Management Controls
+Exports contain preferences only, not medicine records, profiles or dose history. When you choose a sharing destination, that service controls the copy it receives under its own policies. In-app erasure does not delete exported copies, emails or reports previously received by Sentry. There is no remote app account to delete.
 
-Because DoseTracker operates entirely locally on your device, you have immediate, direct control over your information:
+## Website and support communications
 
-- **Editing and Updating:** You can modify profile details, medicine details, and schedules directly in the app at any time.
-- **Deleting Medications:** Deleting a medicine permanently deletes its associated dosage history and cancel its local reminders (`src/database.js:99-114, 321-325`; `src/notificationManager.js:218-249`).
-- **Archiving Profiles:** Archiving a profile stops its active reminders while preserving records locally until deleted (`src/app/profile.tsx:121-122`; `src/database.js:540-552`).
-- **Complete Local Purge (“Erase All Data”):** You can purge all data at any time in **Settings $\rightarrow$ Erase all data**. This deletes all local profiles, medications, dose records, preferences, stored profile photos, and the app-lock setting, and cancels all scheduled notifications (`src/features/settings/SettingsHomeScreen.tsx:97-115, 165`; `src/notificationManager.js:160-169`).
-- **Exporting Data:** The current app supports exporting application preferences as a JSON file (`src/features/settings/backup.ts:7-33`). *Note:* Medication and adherence history exports are not implemented in the current build (`src/features/settings/SettingsHomeScreen.tsx:163-165`).
-- **App Deletion:** Uninstalling DoseTracker from your device permanently removes the app-private database and all locally stored records.
+Opening help or legal pages uses your browser and internet connection. The website is hosted on Cloudflare Pages; the host processes network requests and connection information needed to serve the site. The landing and support pages load fonts from Google Fonts. Those providers receive ordinary network-request information. The website stores your light/dark theme preference in your browser. The standalone privacy page does not load external fonts or analytics scripts.
 
----
+The support form prepares a draft in your email app; it does not send or upload the form by itself. If you send an email, VeriCode and its email provider receive your email address and whatever you include. We use correspondence to respond to your request and retain it while needed to resolve the inquiry and maintain a support record, or as legally required. Contact us to request deletion. Please do not include health records, prescriptions or medicine names.
 
-## 6. Children's Privacy
+## Children and dependent profiles
 
-DoseTracker allows caregivers and parents to create local profiles for children (`src/app/profile.tsx:75-114`). However:
-- The app does not verify the age of users or profile subjects.
-- All information entered about a minor stays strictly on the parent's or caregiver's device.
-- We do not solicit, collect, or transmit personal data from children.
-- **[CONFIRM TARGET AUDIENCE AND MINIMUM AGE REQUIREMENT FOR APP OPERATOR TERMS, E.g., 18 OR 13 WITH GUARDIAN SUPERVISION]**.
+The app is intended to be operated by adults 18+. It is not directed at children. An authorized adult may keep a dependent’s information locally. Optional diagnostics exclude these profile records. Contact VeriCode if you believe a child has submitted personal information directly to us.
 
----
+## Changes and contact
 
-## 7. Changes to This Privacy Policy
-
-We may update this Privacy Policy from time to time to reflect changes in legal requirements or future application updates. Any updated version will be posted **[CONFIRM WEBSITE URL OR APP DISTRIBUTION STORE LINK]** with a revised effective date.
-
----
-
-## 8. Contact Us
-
-If you have questions, concerns, or requests regarding this Privacy Policy, please contact us at:
-
-- **Email:** **[PRIVACY / SUPPORT EMAIL, e.g., privacy@dosetrackerapp.com]**  
-- **Operator Name:** **[LEGAL ENTITY OR INDIVIDUAL NAME]**  
-- **Postal Address:** **[POSTAL ADDRESS IF REQUIRED BY JURISDICTION]**
-
----
-
-## Reviewer Notes — Remove Before Publication
-- **Gaps & Assumptions Flagged:**
-  1. Operator name, jurisdiction, contact email, and postal address are bracketed and must be filled by the operator.
-  2. The policy reflects the actual codebase: no remote accounts, no cloud sync, no tracking SDKs, no ads. If cloud sync or analytics are added in a future release, this policy must be re-audited and updated.
-  3. The current export feature covers *preferences only*; medication and history export is not implemented in current code. Do not promise medical record export in marketing until shipped.
-  4. Ensure a qualified privacy attorney reviews this draft against applicable jurisdiction laws (e.g., GDPR, CCPA/CPRA, FTC Health Breach Notification Rule, state consumer health data laws).
+We will publish changes to this policy on this page with an updated effective date. Material changes to optional diagnostics will require an updated disclosure and consent where applicable. For privacy questions, access or deletion requests, email support@vericodestudio.com.

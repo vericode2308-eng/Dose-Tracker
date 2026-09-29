@@ -47,7 +47,7 @@ export default function NotificationsScreen() {
       <Text style={[styles.subtitle, { textAlign: 'center', fontSize: 15, lineHeight: 20, marginTop: 4 }]}>We’ll notify you when it’s time to take your medicines.</Text>
     </View>
     <View style={[styles.card, { gap: 12, paddingVertical: 14, paddingHorizontal: 14 }]}>
-      <Feature icon="bell" title="Never miss a dose">Get timely reminders for you and your family.</Feature>
+      <Feature icon="bell" title="Reminders for scheduled doses">Delivery depends on your phone’s permissions and system settings.</Feature>
       <Feature icon="settings" title="Uses Android permissions">Notifications require permission to send alerts. Exact alarms may be needed for precise timing.</Feature>
       <Feature icon="shield" title="Tracking still works" green>If you don’t allow notifications, you can still track your medicines in the app.</Feature>
     </View>

@@ -61,7 +61,7 @@ The app avoids creating a new alert channel if the currently selected channel is
 | Restore preferences | Imports a validated JSON file | `expo-document-picker` / `expo-file-system` read a size-limited file, accepts current and migrated legacy settings, writes AsyncStorage, and reconciles reminders. |
 | Erase all data | Deletes app-owned local information, then returns to onboarding | Cancels/dismisses native notifications, clears SQLite medicines/schedules/history/snoozes/profiles/reminder issues, removes Settings and onboarding AsyncStorage, deletes matching local profile photos, clears the app-lock SecureStore key, and returns to onboarding. |
 | Offline-first | Opens About text | Informational copy only; no separate preference. SQLite and Settings/Onboarding AsyncStorage are local. Exports are user-directed. |
-| Privacy Policy | Opens `https://dosetracker.pages.dev/?legal=privacy` in the browser | Expo Router external link; the published site automatically selects the Privacy Policy. Internet access required. No app data is sent in the URL. |
+| Privacy Policy | Opens `https://dosetracker.pages.dev/privacy.html` in the browser | Expo Router external link; the standalone page presents the full Privacy Policy without JavaScript. Internet access required. No app data is sent in the URL. |
 | Terms of Service | Opens `https://dosetracker.pages.dev/?legal=terms` in the browser | Expo Router external link; the published site automatically selects the Terms of Service. Internet access required. No backend setting. |
 
 ## Gaps and polish priorities
@@ -80,3 +80,7 @@ The app avoids creating a new alert channel if the currently selected channel is
 - A Pixel 9 Android emulator development build was regenerated from app config and installed. Native `dumpsys notification` showed the Clear chime channel using `android.resource://.../raw/clear`, a no-vibration channel with `mVibrationEnabled=false`, and a Silent channel with `mSound=null`.
 - The real ten-second test appeared in the Android notification shade with `DoseTracker` / `Open the app for details.` under No info. The native status links opened the app-specific notification page and Alarms & reminders special access page. After granting exact access and refreshing status, the exact-access warning disappeared.
 - This is emulator confirmation of configuration and a test notification, not a long-duration reliability or physical-device Doze certification.
+
+## Optional diagnostics (2026-09-29)
+
+Settings → Privacy → Optional diagnostics explains the Sentry data flow before an explicit enable action. Consent defaults off and is stored separately at `@dosetracker/diagnostics-consent/v1`; exports/imports never carry consent. Local erasure revokes it. `src/features/diagnostics/diagnostics.ts` lazily loads the SDK, permits only sanitized JavaScript errors, drops arbitrary context and attachments, disables native telemetry and uses a consent-gated HTTPS transport with no disk queue. Withdrawal aborts active requests where possible; it cannot recall reports already received. Update the disclosure and consent version if the collected data expands.

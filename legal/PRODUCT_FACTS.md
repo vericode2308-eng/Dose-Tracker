@@ -1,5 +1,7 @@
 # DoseTracker Terms: code evidence inventory
 
+> Historical drafting notes. Superseded on 2026-09-29 where inconsistent with the current Privacy Policy and `docs/GOOGLE_PLAY_POLICY_AUDIT.md`. VeriCode / support@vericodestudio.com and adult operation (18+) are confirmed. Sentry now uses explicit opt-in for limited JavaScript errors. Older no-telemetry and missing-policy-link statements below are no longer current.
+
 Audit date: 26 September 2026. Scope: shipped application source in `src/`, Android module in `modules/`, app configuration, dependencies, and current UI. `PLAN.md` describes future work and is not evidence that a feature has shipped. This inventory is a product audit, not a conclusion about regulatory status or applicable law.
 
 | Term-relevant finding | Code evidence and implication |

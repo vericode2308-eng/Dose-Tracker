@@ -100,9 +100,9 @@
         <div class="guide-card glass-card">
           <div class="guide-header">
             <div class="guide-badge">Recommended Checklist</div>
-            <h2 class="guide-title">How to ensure alarms ring reliably every time</h2>
+            <h2 class="guide-title">Check your reminder settings</h2>
             <p class="guide-desc">
-              Android includes battery-saving features that can occasionally pause notifications when your phone is stationary. Follow these 3 simple checks to guarantee your medicine reminders sound on time:
+              Android includes battery-saving features that can occasionally pause notifications when your phone is stationary. These checks can help, but cannot guarantee on-time delivery. Keep a separate plan for time-critical medication:
             </p>
           </div>
 
@@ -172,7 +172,7 @@
             <div class="category-faq-item">
               <h4 class="faq-q">How does the Snooze feature work?</h4>
               <p class="faq-a">
-                When you tap "Snooze" on a reminder or from the Today screen, you can delay the notification by 5, 10, 15, or 30 minutes. The app sets a fresh reminder without marking the dose as taken.
+                In-app snooze uses your chosen duration (5, 10, 15, or 30 minutes). The notification action snoozes for 15 minutes. A snooze requests another local reminder without marking the dose taken; permissions and system restrictions still apply.
               </p>
             </div>
 
@@ -223,7 +223,7 @@
             <div class="category-faq-item">
               <h4 class="faq-q">How does DoseTracker know when I'm running low?</h4>
               <p class="faq-a">
-                Every time you tap "Take Dose", the app subtracts that dose from your current pill count. When your remaining supply falls below your warning threshold (e.g. 5 pills), a gentle refill warning appears on the card.
+                When you record a taken dose, the app subtracts it from your recorded stock. An in-app warning appears at or below your threshold. Update refills and counts yourself. These warnings do not send background refill notifications.
               </p>
             </div>
 
@@ -259,7 +259,7 @@
             <div class="category-faq-item">
               <h4 class="faq-q">Do you have access to my prescription list?</h4>
               <p class="faq-a">
-                No. DoseTracker operates 100% offline with zero cloud servers. We have no access to your medications, names, schedules, or health records.
+                Your health records stay on your device. If you opt in under Settings → Optional diagnostics, limited technical error reports go to Sentry for VeriCode. Diagnostics are off by default and exclude health records. See our privacy policy for details.
               </p>
             </div>
           </div>
@@ -277,7 +277,7 @@
             <span class="section-tag">Direct Assistance</span>
             <h2 class="contact-title">Still have questions? We're here to help.</h2>
             <p class="contact-subtitle">
-              Send us a message below or email us directly. Please do not include sensitive health details or prescription names in your message.
+              Prepare an email below, then send it from your email app. Please do not include sensitive health details or prescription names in your message.
             </p>
           </div>
 
@@ -321,27 +321,27 @@
 
               <div class="form-actions">
                 <button type="submit" class="btn btn-primary btn-lg" id="support-submit-btn">
-                  <span>Send Message</span>
+                  <span>Open Email Draft</span>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="22" y1="2" x2="11" y2="13"></line>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                   </svg>
                 </button>
                 <div class="contact-direct-link">
-                  Or email directly: <a href="mailto:support@dosetrackerapp.com" class="direct-email-link">support@dosetrackerapp.com</a>
+                  Or email directly: <a href="mailto:support@vericodestudio.com" class="direct-email-link">support@vericodestudio.com</a>
                 </div>
               </div>
 
             </form>
 
             <!-- Success Confirmation Message -->
-            <div class="contact-success-box hidden" id="contact-success-box">
+            <div class="contact-success-box hidden" id="contact-success-box" role="status">
               <div class="success-icon">✓</div>
-              <h3 class="success-title">Message Received!</h3>
+              <h3 class="success-title">Finish in Your Email App</h3>
               <p class="success-desc">
-                Thank you for reaching out. We will review your inquiry and reply to your email address promptly.
+                Your email app should open with a draft. This website has not sent your message. Review and send it there, or use the direct email link if no email app opens.
               </p>
-              <button class="btn btn-secondary btn-sm" id="btn-send-another">Send Another Message</button>
+              <button class="btn btn-secondary btn-sm" id="btn-send-another">Clear Draft</button>
             </div>
           </div>
 
@@ -361,10 +361,10 @@
           <span>DoseTracker</span>
         </div>
         <p class="footer-tagline">
-          The completely private, offline medication manager. Designed for peace of mind, family care, and zero surveillance.
+          Medicine tracking on your device, with optional reminders and separate care profiles.
         </p>
         <p class="footer-copyright">
-          &copy; 2026 DoseTracker. All your data stays strictly on your device.
+          &copy; 2026 VeriCode. Health records are stored on your device. Diagnostics are optional.
         </p>
       </div>
 
@@ -372,7 +372,7 @@
         <div class="footer-col">
           <h4 class="footer-heading">Features</h4>
           <a href="./index.html#features">Today Schedule</a>
-          <a href="./index.html#features">On-Time Alarms</a>
+          <a href="./index.html#features">Local Reminders</a>
           <a href="./index.html#features">Refill Warnings</a>
           <a href="./index.html#features">Family Profiles</a>
           <a href="./index.html#chimes">Calm Chimes</a>
@@ -383,14 +383,14 @@
           <a href="#troubleshooting">Alarm Troubleshooting</a>
           <a href="#faq">Frequently Asked Questions</a>
           <a href="#contact">Contact Support</a>
-          <a href="mailto:support@dosetrackerapp.com">Email Support Team</a>
+          <a href="mailto:support@vericodestudio.com">Email Support Team</a>
         </div>
 
         <div class="footer-col">
           <h4 class="footer-heading">Legal &amp; Privacy</h4>
-          <a href="./legal/PRIVACY_POLICY.md" target="_blank">Privacy Policy</a>
-          <a href="./legal/TERMS_OF_SERVICE.md" target="_blank">Terms of Service</a>
-          <a href="./index.html#privacy">Privacy Comparison</a>
+          <a href="./privacy.html">Privacy Policy</a>
+          <a href="./index.html?legal=terms">Terms of Service</a>
+          <a href="./index.html#privacy">Privacy Controls</a>
         </div>
       </div>
     </div>

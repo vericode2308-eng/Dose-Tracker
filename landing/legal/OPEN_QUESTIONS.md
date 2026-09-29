@@ -1,5 +1,7 @@
 # Terms decisions requiring owner and counsel confirmation
 
+> Historical drafting notes. Superseded on 2026-09-29 where inconsistent with the current Privacy Policy and `docs/GOOGLE_PLAY_POLICY_AUDIT.md`. VeriCode / support@vericodestudio.com and adult operation (18+) are confirmed. Sentry now uses explicit opt-in for limited JavaScript errors. Older no-telemetry and missing-policy-link statements below are no longer current.
+
 The repository cannot establish the following legal or commercial choices. Bracketed placeholders in `TERMS_OF_SERVICE.md` correspond to these questions. No choice below has been treated as a settled product fact.
 
 Owner direction: leave warranty, liability, dispute-resolution/arbitration, and indemnity choices for counsel. The current app is free, so no refund clause is drafted. Operator and jurisdiction details will be supplied separately.

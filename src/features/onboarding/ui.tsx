@@ -53,7 +53,7 @@ export function Feature({ icon, title, children, green = false }: { icon: IconNa
 export function PrivacyNote() {
   return <View className="flex-row items-center justify-center" style={{ gap: 6, paddingTop: 12 }}>
     <Icon name="cloud-off" size={13} color={theme.palette.textSecondary} />
-    <Text style={{ fontSize: 11, color: theme.palette.textSecondary }}>On-device only · No account · Works offline</Text>
+    <Text style={{ fontSize: 11, color: theme.palette.textSecondary }}>Local health records · Optional diagnostics</Text>
   </View>;
 }
 

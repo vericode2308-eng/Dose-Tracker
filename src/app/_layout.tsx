@@ -1,24 +1,16 @@
 import { Stack } from "expo-router";
-import * as Sentry from '@sentry/react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { OnboardingProvider, useOnboarding } from '@/features/onboarding/context';
 import { NotificationLifecycle } from '@/features/notifications/NotificationLifecycle';
+import { initializeDiagnostics, reportStartupError } from '@/features/diagnostics/diagnostics';
 import { initializeDatabase } from '@/database';
 import { ProfilesProvider } from '@/features/profiles/context';
 import { ProfileSwitcher } from '@/features/profiles/ProfileSwitcher';
 import { AppLock } from '@/features/security/AppLock';
 import { ThemeProvider, useTheme } from '@/features/theme/ThemeContext';
 import '../../global.css';
-
-Sentry.init({
-  dsn: 'https://4260ebfe901b6d04bda9c7356b2e29e2@o4512147247071232.ingest.de.sentry.io/4512156478537808',
-  sendDefaultPii: false,
-  enableLogs: true,
-  tracesSampleRate: __DEV__ ? 1.0 : 0.2,
-  tracePropagationTargets: [],
-});
 
 function ThemedStatusBar() {
   const { isDark } = useTheme();
@@ -30,15 +22,14 @@ function RootLayout() {
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     let active = true;
-    Sentry.startSpan({ name: 'Initialize local database', op: 'db.initialize' }, initializeDatabase).then(() => {
+    void initializeDiagnostics().catch(() => undefined);
+    initializeDatabase().then(() => {
       if (active) {
-        Sentry.logger.info('Local database ready', { subsystem: 'database' });
         setDatabaseState('ready');
       }
     }).catch(() => {
+      reportStartupError();
       if (active) {
-        // Keep health and profile data out of remote operational logs.
-        Sentry.logger.error('Local database initialization failed', { subsystem: 'database' });
         setDatabaseState('error');
       }
     });
@@ -50,7 +41,7 @@ function RootLayout() {
       <Text className="text-center text-base text-[#102238]">
         {databaseState === 'loading' ? 'Opening your local data…' : 'Your local data could not be opened.'}
       </Text>
-      {databaseState === 'error' && <Pressable accessibilityRole="button" onPress={() => { Sentry.logger.warn('Local database retry requested', { subsystem: 'database' }); setDatabaseState('loading'); setRetry(value => value + 1); }} className="mt-5 rounded-full bg-[#102238] px-6 py-3">
+      {databaseState === 'error' && <Pressable accessibilityRole="button" onPress={() => { setDatabaseState('loading'); setRetry(value => value + 1); }} className="mt-5 rounded-full bg-[#102238] px-6 py-3">
         <Text className="font-semibold text-white">Try again</Text>
       </Pressable>}
     </View>;
@@ -70,7 +61,7 @@ function RootLayout() {
   </ThemeProvider>;
 }
 
-export default Sentry.wrap(RootLayout);
+export default RootLayout;
 
 function RootNavigator() {
   const { data } = useOnboarding();

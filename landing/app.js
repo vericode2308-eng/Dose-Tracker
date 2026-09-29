@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
       img: './assets/design/01-today-dashboard-dose-schedule.png',
       badge: 'Main Screen',
       title: 'Today Schedule & Daily Checklist',
-      desc: 'Your daily routine laid out clearly. Each medication card shows exact dosage, instructions (such as with food or water), and quick one-tap buttons to confirm or snooze.',
+      desc: 'Cards show the dose and instructions you entered, with controls to record or snooze. Check these details against your prescription.',
       highlights: [
         'Clear Status Colors: See at a glance what is taken, due now, or coming up later.',
         'Quick Snooze: Busy or away from your pills? Snooze for 10 or 15 minutes with one touch.',
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
       img: './assets/design/03-medicine-details-low-stock.png',
       badge: 'Supply & Refills',
       title: 'Medicine Details & Refill Alerts',
-      desc: 'Never get surprised by an empty prescription bottle. DoseTracker automatically updates your pill count and alerts you days in advance.',
+      desc: 'Recording taken doses updates your recorded stock. See in-app warnings at or below your chosen threshold; enter refills and check counts yourself.',
       highlights: [
         'Remaining Supply Meter: Visual bar shows how many days of medication you have left.',
         'One-Tap Refill: Quickly top up your pill count whenever you pick up a new bottle.',
@@ -288,11 +288,11 @@ document.addEventListener('DOMContentLoaded', () => {
       img: './assets/design/08-add-medicine-step-4-review.png',
       badge: 'Quick Setup',
       title: 'Easy 4-Step Medication Assistant',
-      desc: 'Adding a new medicine takes less than a minute. Simple questions guide you through dosage, timing, and pill counts without medical jargon.',
+      desc: 'Add a medicine step by step. Simple questions guide you through dosage, timing, and pill counts without medical jargon.',
       highlights: [
         'Choose Pill Form: Select tablets, capsules, liquids, drops, or inhalers.',
         'Custom Schedules: Set reminders for specific times of day or days of the week.',
-        'Instant Protection: Your alarms arm immediately with no complicated settings.'
+        'Optional Reminders: Enable reminders for supported schedules and check system permissions.'
       ]
     },
     profiles: {
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
       highlights: [
         'Fingerprint & Face Lock: Require your phone biometric scan to open the app.',
         'Notification Privacy: Select whether medicine names show on your locked screen.',
-        'Erase Anytime: You can wipe all records with one tap whenever you choose.'
+        'Erase Local Data: Confirm erasure in Settings to remove local records.'
       ]
     }
   };
@@ -447,7 +447,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // App Settings links open the requested document immediately.
   const requestedLegalDocument = new URLSearchParams(window.location.search).get('legal');
   if (requestedLegalDocument === 'privacy' || requestedLegalDocument === 'terms') {
-    openLegalModal(requestedLegalDocument);
+    if (requestedLegalDocument === 'privacy') window.location.replace('./privacy.html');
+    else openLegalModal(requestedLegalDocument);
     legalModalClose?.focus({ preventScroll: true });
   }
 
@@ -522,9 +523,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (supportForm) {
     supportForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      supportForm.classList.add('hidden');
+      const emailLink = document.querySelector('.direct-email-link');
+      if (!emailLink) return;
+      const value = id => document.getElementById(id)?.value.trim() || '';
+      const subject = `DoseTracker support: ${value('contact-topic')}`;
+      const body = [
+        `Name: ${value('contact-name')}`,
+        `Reply email: ${value('contact-email')}`,
+        `Device: ${value('contact-device')}`,
+        '', value('contact-message'),
+      ].join('\n');
+      window.location.href = `${emailLink.getAttribute('href')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       contactSuccessBox?.classList.remove('hidden');
-      launchConfetti();
     });
   }
 

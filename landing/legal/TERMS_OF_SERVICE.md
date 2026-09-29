@@ -1,9 +1,9 @@
 # DoseTracker Terms of Service
 
-**Draft for owner and qualified legal review — do not publish until bracketed items are completed.**  
-Effective date: **[EFFECTIVE DATE]**  
-Operator: **[LEGAL NAME OF OPERATOR]** (“we,” “us,” or “our”)  
-Contact: **[LEGAL/SUPPORT EMAIL]**; **[POSTAL ADDRESS IF REQUIRED]**
+**Draft for owner and qualified legal review — do not publish until bracketed items are completed.**
+Effective date: **First public release of DoseTracker 1.0.0**
+Operator: **VeriCode** (“we,” “us,” or “our”)
+Contact: **support@vericodestudio.com**; **[POSTAL ADDRESS IF REQUIRED]**
 
 ## 1. Acceptance and scope
 
@@ -13,11 +13,11 @@ The App is a local medicine-organization tool. You can create profiles for yours
 
 ## 2. Who may use the App
 
-You must meet **[MINIMUM AGE AND/OR PARENT/GUARDIAN RULE]** and be legally able to agree to these Terms. If you enter information about another person, you must have **[CONFIRM REQUIRED AUTHORITY OR CONSENT STANDARD]** to do so. You are responsible for deciding who may access the device and the profiles you create on it. Switching between profiles does not require a separate credential.
+You must be at least 18 years old and be legally able to agree to these Terms. If you enter information about another person, you must have **[CONFIRM REQUIRED AUTHORITY OR CONSENT STANDARD]** to do so. You are responsible for deciding who may access the device and the profiles you create on it. Switching between profiles does not require a separate credential.
 
 ## 3. Medication information and reminders
 
-You provide the medication names, doses, instructions, schedules, stock amounts, and dose-status entries in the App. Check that this information is accurate and current. The App does not verify a prescription, decide whether a medicine or dose is appropriate, check interactions, diagnose a condition, or replace advice from a qualified clinician or pharmacist. Follow your care team's instructions. For a medical emergency, use the appropriate emergency service.
+You provide the medication names, doses, instructions, schedules, stock amounts, and dose-status entries in the App. Check that this information is accurate and current. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment. The App does not verify a prescription, decide whether a medicine or dose is appropriate, check interactions, diagnose a condition, or replace advice from a qualified clinician or pharmacist. Follow your care team's instructions. For a medical emergency, use the appropriate emergency service.
 
 The App can request local notifications for supported ongoing daily and selected-weekday schedules. Other schedules can be saved for tracking without an automatic reminder. Notifications require device permission and depend on operating-system settings, channel settings, alarm access, battery behavior, device state, and other factors outside the App's control. A notification may be late or may not appear. Snoozing changes the reminder time; it does not record that a dose was taken. Use another dependable method when timely medication is critical. The App's reminder-status screen reports problems it can observe while scheduling or checking permissions; it cannot confirm delivery of every notification.
 
@@ -27,7 +27,7 @@ The App stores the profiles, medicine details, schedules, dose records, and pref
 
 Optional app lock uses the fingerprint, face, PIN, pattern, or passcode configured on your device. Anyone whose biometric credential is enrolled on that device, or who knows its screen lock, may be able to open the App. App lock does not encrypt the App's health database or files you export. Notification content may appear on a locked screen depending on your App and system privacy settings; the initial App preference is to show content. Review those settings if other people can see your device.
 
-The App's export and restore feature covers **preferences only**. It does not back up profiles, medicines, schedules, or dose history. If you export a preferences file and choose a sharing destination, that copy leaves the App's control and the destination may have its own terms and privacy practices. You are responsible for copies you share or store outside the App. **[LINK TO SEPARATE PRIVACY NOTICE.]**
+The App's export and restore feature covers **preferences only**. It does not back up profiles, medicines, schedules, or dose history. If you export a preferences file and choose a sharing destination, that copy leaves the App's control and the destination may have its own terms and privacy practices. You are responsible for copies you share or store outside the App. See the [Privacy Policy](https://dosetracker.pages.dev/privacy.html).
 
 ## 5. Appropriate use
 
@@ -63,7 +63,7 @@ These Terms are governed by **[GOVERNING LAW]**, except where mandatory law in y
 
 ## 12. Contact
 
-Questions about these Terms may be sent to **[LEGAL/SUPPORT EMAIL]** or **[POSTAL ADDRESS IF REQUIRED]**.
+Questions about these Terms may be sent to **support@vericodestudio.com** or **[POSTAL ADDRESS IF REQUIRED]**.
 
 ---
 
