@@ -1,0 +1,54 @@
+{
+  "root": "/tmp/dosetracker-security-export",
+  "fileCount": 114,
+  "sourceMaps": [],
+  "envFiles": [],
+  "bundles": [
+    {
+      "path": "_expo/static/js/web/index-bf3bb2f94c0d6211b123313b7bcdff68.js",
+      "bytes": 24072,
+      "sha256": "ce92017f74ca7f34a83ffa4af86a32fbf7ec3297cab9c046decb36073a8f70cc"
+    },
+    {
+      "path": "_expo/static/js/web/index-8501b8a7b75f72b04f5e0fd33a33aa6b.js",
+      "bytes": 2430,
+      "sha256": "c5614823e8664a214aa54924e6abcee809a2bc60f89ead3abc8e574ba6f831dc"
+    },
+    {
+      "path": "_expo/static/js/web/worker-475ee96f52fe90603ec6b34f22e27cb3.js",
+      "bytes": 132743,
+      "sha256": "b5057b27a80c05413cd97fd77f99b238cd6e38ca2a458266d0d4e7c48c09d26a"
+    },
+    {
+      "path": "_expo/static/js/web/index-b63a2c11c3687077073d983ae0e666cb.js",
+      "bytes": 2954913,
+      "sha256": "9ccec51df2ae190c297d744da6606ec5d65f8fdadc6d9a01ef87e75a4def98e9"
+    },
+    {
+      "path": "_expo/static/js/web/index-940ae7c6868360b6a3d8a5859e8eb187.js",
+      "bytes": 4103,
+      "sha256": "852dcbf9578017d91eca6f702b5290b6b184f3d64011bc628b07a0f35c5020e6"
+    },
+    {
+      "path": "_expo/static/js/web/index-3297bee2f2ddc5248f704877db3ca785.js",
+      "bytes": 3440,
+      "sha256": "ec61e6a56d0f64c269d4753b76d4a9e30d91b5efb5d0a4a3d8155359750cfb31"
+    },
+    {
+      "path": "_expo/static/js/web/index-dfd1f33c1fb1b59e04673cb771e250ee.js",
+      "bytes": 941116,
+      "sha256": "e001b69349e16a45040243aadfecd1432e69d69a21377df362427c95a7e8976f"
+    },
+    {
+      "path": "_expo/static/js/ios/index-73c9f72a94fd2064aaaee32ae661dae4.hbc",
+      "bytes": 6350504,
+      "sha256": "f920400494963962012ea9a9ef8cfbfed55620b4224688de5b89e5b59473a11e"
+    },
+    {
+      "path": "_expo/static/js/android/index-c66fe5e89bc9150cc9a535960f829327.hbc",
+      "bytes": 6564232,
+      "sha256": "629273ae7beedae1268c07e02a3306ff94b9c9965de5630f685b1b81792fdf14"
+    }
+  ],
+  "localBuildTokenFound": false
+}

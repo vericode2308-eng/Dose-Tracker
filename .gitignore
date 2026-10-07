@@ -30,8 +30,11 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Environment files; examples must contain placeholders only.
+.env
+.env.*
 .env*.local
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -46,4 +49,10 @@ example
 /modules/*/android/build/
 /modules/*/android/.gradle/
 
-.env.local
+# Private build output and signing material
+/release-artifacts/
+/credentials.json
+*.keystore
+*.aab
+*.apk
+*.apks

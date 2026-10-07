@@ -33,7 +33,7 @@ Run `npm test` for changes to SQLite, dose logic, Settings storage, or notificat
 ## Current DoseTracker architecture
 
 - Android is the primary release target. Keep iOS/web code paths safe where they already exist, but verify Android-specific reminder behavior in a native development build.
-- `src/database.js` owns app-private SQLite (`dosetracker.db`, schema v7): profiles, medicines, schedules, history, pending snoozes, and observed reminder issues. `settings.active_profile_id` is the selected profile. The old SQLite `settings.notification_preferences` JSON default is **not** the active Settings source of truth.
+- `src/database.js` owns app-private SQLite (`dosetracker.db`, schema v8): profiles, medicines, schedules, history, pending snoozes, and observed reminder issues. `settings.active_profile_id` is the selected profile. The old SQLite `settings.notification_preferences` JSON default is **not** the active Settings source of truth.
 - `src/features/settings/storage.ts` owns non-sensitive Settings preferences in AsyncStorage `@dosetracker/settings/v1`; `src/features/onboarding/storage.ts` owns the onboarding completion flag. `src/features/security/SecurityManager.js` stores the device app-lock flag in `expo-secure-store`. Do not move security flags or health records into AsyncStorage.
 - `src/notificationManager.js` owns native reminder requests and reconciliation. Supported recurring alarms are currently ongoing daily/weekday schedules; pending snoozes use one-shot date triggers. Unsupported recurrence must be reported explicitly. `src/features/notifications/NotificationLifecycle.tsx` reconciles on app launch/foreground. See [Settings architecture](docs/SETTINGS_ARCHITECTURE.md) for every Settings item and current gaps.
 - `modules/dose-alarm-access` is the tracked local Expo Android module. It checks exact-alarm access, opens app-specific notification and exact-alarm settings, and re-arms Expo requests after relevant system events. Edit this module instead of generated `android/` code. Keep Expo-version-coupled native integration under device/build tests when upgrading SDK.
@@ -47,6 +47,10 @@ Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submi
 Docs: https://docs.expo.dev/eas/index.md
 
 ## Rules
+
+- Preserve the security boundaries documented in [Security lessons](docs/SECURITY_LESSONS.md): notification actions must consult SecureStore inside the mutation queue, stricter privacy must clean presented notifications as well as future requests, and onboarding must migrate legacy profiles to SQLite before removing its AsyncStorage copy.
+- Expose only deliberately authored `UserFacingError` messages to screens; unexpected SQLite/native exceptions use generic messages. Keep profile image byte/dimension/header checks and preference-import size checks before application reads/copies.
+- Security dependency overrides and `patches/query-string+7.1.3.patch` are coupled. Keep the patched decoder's ESM default-export adapter until its CommonJS consumer is upgraded. Validate a clean install, malformed-query regression, all-platform bundles, and Expo Doctor before changing these pins; do not use `npm audit fix --force`.
 
 - Keep `docs/CORRECTIONS_LOG.md` updated for each user-requested correction. Record the date, request, implemented behavior, affected files, status, and verification; distinguish source changes from device verification or release.
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.

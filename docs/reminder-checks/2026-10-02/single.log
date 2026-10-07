@@ -1,0 +1,5 @@
+
+PASS single-alert mode: no looping flag or Stop control
+
+PASS phase=single
+

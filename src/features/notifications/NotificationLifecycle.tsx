@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { router } from 'expo-router';
 import { reconcileReminders, subscribeToReminderTaps } from '@/notificationManager';
+import { measureDiagnosticOperation } from '@/features/diagnostics/diagnostics';
 import { recordReminderIssue } from '@/database';
 
 export function NotificationLifecycle() {
@@ -15,7 +16,7 @@ export function NotificationLifecycle() {
     }).catch(recordTapError);
     async function reconcile() {
       try {
-        await reconcileReminders();
+        await measureDiagnosticOperation('reminders.reconcile', reconcileReminders);
       } catch { /* Reminder status remains available in Settings. */ }
     }
     void reconcile();

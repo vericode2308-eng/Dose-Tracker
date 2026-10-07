@@ -43,6 +43,8 @@ export type ScheduleInput = {
 };
 
 export type StoredSchedule = {
+  /** Original schedule creation time; used to exclude earlier unrecorded doses. */
+  createdAtMs?: number;
   id: string;
   reminderEnabled: boolean;
   timeLocalMinute: number | null;
@@ -71,7 +73,7 @@ export type StoredMedicine = {
 export function addMedicine(input: {
   profileId?: string;
   medicine: MedicineInput;
-  schedule: ScheduleInput;
+  schedule: ScheduleInput; additionalSchedules?: (ScheduleInput & { id?: string })[];
 }): Promise<{ medicineId: string; scheduleId: string }>;
 export function fetchAllMedicines(filters?: { profileId?: string; includeArchivedProfiles?: boolean }): Promise<StoredMedicine[]>;
 export function fetchMedicineDetails(medicineId: string): Promise<StoredMedicine | null>;
@@ -94,15 +96,21 @@ export type ScheduledDose = {
   actualTakenAtMs: number | null; snoozedUntilMs: number | null;
 };
 export type DoseReference = { scheduleId: string; date: string; scheduledAtMs: number };
+export type DoseAction = 'Taken' | 'Skipped' | 'Reset' | 'Snooze';
+export type DoseChangeInput = DoseReference & Pick<ScheduledDose, 'status' | 'actualTakenAtMs' | 'snoozedUntilMs'> & { medicineId: string };
+/** Opaque, short-lived receipt; never serialize it to preferences or diagnostics. */
+export type DoseChangeReceipt = { readonly dose: DoseChangeInput; readonly manualStockCorrectionNeeded: boolean; readonly __receipt: unique symbol };
+export function changeDoseWithUndo(dose: DoseChangeInput, action: DoseAction, untilMs?: number): Promise<DoseChangeReceipt>;
+export function restoreDoseChange(receipt: DoseChangeReceipt): Promise<void>;
 export type PendingSnooze = DoseReference & { medicineId: string; untilMs: number };
-export function snoozeDose(input: DoseReference & { untilMs: number }): Promise<void>;
+export function snoozeDose(input: DoseReference & { untilMs: number; notificationDeliveredAtMs?: number }): Promise<number>;
 export function undoDoseLog(input: DoseReference): Promise<{ manualStockCorrectionNeeded: boolean }>;
 export function updateDoseLogTime(input: { historyId: string; actualTakenAtMs: number }): Promise<void>;
 export function fetchPendingSnoozes(): Promise<PendingSnooze[]>;
 export function fetchScheduledDoses(date?: string, profileId?: string): Promise<ScheduledDose[]>;
 export type HistoryRecord = {
   id: string; date: string; scheduledAtMs: number | null; actualTakenAtMs: number | null;
-  status: 'Taken' | 'Skipped' | 'Missed'; scheduleId: string; scheduledTimeLocalMinute: number | null;
+  status: 'Taken' | 'Skipped / missed'; scheduleId: string; scheduledTimeLocalMinute: number | null;
   doseAmount: number; medicineId: string; medicineName: string; dosageForm: string; doseUnit: string | null;
 };
 export function fetchHistoryByMonth(filters?: { from?: string; to?: string; medicineId?: string; profileId?: string }): Promise<{ month: string; records: HistoryRecord[] }[]>;
@@ -116,5 +124,5 @@ export function selectProfile(profileId: string): Promise<void>;
 export function saveProfile(profile: Omit<LocalProfile, 'id' | 'status'> & { id?: string }): Promise<string>;
 export function setProfileArchived(profileId: string, archived: boolean): Promise<void>;
 
-export type MedicineEditInput = { medicine: MedicineInput; schedule: ScheduleInput; scheduleId: string; expectedStockRemaining?: number | null };
+export type MedicineEditInput = { medicine: MedicineInput; schedule: ScheduleInput; additionalSchedules?: (ScheduleInput & { id?: string })[]; scheduleId: string; expectedStockRemaining?: number | null };
 export function editMedicine(medicineId: string, input: MedicineEditInput): Promise<void>;

@@ -1,17 +1,21 @@
+import { publicErrorMessage } from '@/features/security/errors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Animated, { FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
-import { fetchScheduledDoses, type ScheduledDose } from '@/database';
-import { recordMedicationDose, snoozeMedicationDose, undoMedicationDose } from '@/notificationManager';
+import { fetchScheduledDoses, type ScheduledDose, type DoseAction, type DoseChangeReceipt } from '@/database';
+import { changeMedicationDose, undoMedicationChange } from '@/notificationManager';
 import { useProfiles } from '@/features/profiles/context';
 import { ProfileSwitcherTrigger } from '@/features/profiles/ProfileSwitcher';
 import { dateKey, isDateKey } from '@/features/doses/occurrences';
 import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { useTheme } from '@/features/theme/ThemeContext';
+
+import { UndoSnackbar } from '@/features/ui/UndoSnackbar';
+import { DoseOptionsMenu } from './DoseOptionsMenu';
 
 import { hapticImpactLight, hapticSuccess } from '@/features/ui/haptics';
 
@@ -103,6 +107,14 @@ function ProfileToday() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const busy = useRef(false);
   const [message, setMessage] = useState('');
+  const [menuDose, setMenuDose] = useState<ScheduledDose | null>(null);
+  const [snackbar, setSnackbar] = useState<{ dose: ScheduledDose; receipt: DoseChangeReceipt; message: string } | null>(null);
+  const dismissSnackbar = useCallback(() => setSnackbar(null), []);
+  const focused = useRef(false);
+  useFocusEffect(useCallback(() => {
+    focused.current = true;
+    return () => { focused.current = false; setSnackbar(null); setMenuDose(null); };
+  }, []));
   const query = useCallback(async () => {
     const now = Date.now();
     const today = dateKey(new Date(now));
@@ -120,54 +132,48 @@ function ProfileToday() {
     && (!params.scheduledAtMs || dose.scheduledAtMs === Number(params.scheduledAtMs));
   const due = data.doses.filter(dose => !dose.status && Math.max(dose.scheduledAtMs, dose.snoozedUntilMs || 0) <= data.now);
   const upcoming = data.doses.filter(dose => !dose.status && Math.max(dose.scheduledAtMs, dose.snoozedUntilMs || 0) > data.now);
-  const completed = data.doses.filter(dose => dose.status);
-  const act = useCallback(async (dose: ScheduledDose, action: 'Taken' | 'Skipped' | 'Snooze' | 'Undo') => {
+  const earlier = data.doses.filter(dose => dose.status);
+  const act = useCallback(async (dose: ScheduledDose, action: DoseAction | 'Undo', receipt?: DoseChangeReceipt) => {
     if (busy.current) return;
-    busy.current = true; setBusyId(dose.id); setMessage('');
+    busy.current = true; setBusyId(dose.id); setMessage(''); setSnackbar(null);
     try {
       if (action === 'Taken') void hapticSuccess();
       else void hapticImpactLight();
-      const reference = { medicineId: dose.medicine.id, scheduleId: dose.schedule.id, date: dose.date, scheduledAtMs: dose.scheduledAtMs };
-      const result = action === 'Snooze'
-        ? await snoozeMedicationDose(reference)
-        : action === 'Undo'
-        ? await undoMedicationDose(reference)
-        : await recordMedicationDose(reference, action);
-      setMessage(result.message);
-      await reload();
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'The dose could not be saved. Please retry.'); }
-    finally { busy.current = false; setBusyId(null); }
+      const reference = { medicineId: dose.medicine.id, scheduleId: dose.schedule.id, date: dose.date,
+        scheduledAtMs: dose.scheduledAtMs, status: dose.status, actualTakenAtMs: dose.actualTakenAtMs,
+        snoozedUntilMs: dose.snoozedUntilMs };
+      if (action === 'Undo' && receipt) {
+        const result = await undoMedicationChange(receipt);
+        setMessage(result.message);
+      } else if (action !== 'Undo') {
+        const result = await changeMedicationDose(reference, action);
+        setMessage(result.message);
+        if (focused.current) setSnackbar({ dose, receipt: result.receipt, message: action === 'Reset'
+          ? `${dose.medicine.name} reset to pending` : action === 'Snooze'
+          ? `${dose.medicine.name} snoozed` : `${dose.medicine.name} marked as ${action}` });
+      }
+    } catch (error) { setMessage(publicErrorMessage(error, 'The dose could not be saved. Please retry.')); }
+    finally { await reload(); busy.current = false; setBusyId(null); }
   }, [reload]);
   function card(dose: ScheduledDose) {
     const snoozed = !dose.status && !!dose.snoozedUntilMs && dose.snoozedUntilMs > data.now;
-    return <Animated.View key={`${dose.id}:${dose.status || 'pending'}`} entering={FadeInDown.duration(220)} exiting={FadeOutUp.duration(180)} layout={LinearTransition.duration(220)} className={`mb-2 rounded-[22px] border-2 p-4 ${selected(dose) ? 'border-[#079D9D]' : 'border-transparent'}`} style={{ backgroundColor: colors.surface }}>
+    return <Animated.View key={`${dose.id}:${dose.status || 'pending'}`} entering={FadeInDown.duration(220)} exiting={FadeOutUp.duration(180)} layout={LinearTransition.duration(220)} style={{ marginBottom: dose.status ? 10 : 16, paddingHorizontal: 16, paddingVertical: dose.status ? 10 : 16, borderRadius: 22, borderWidth: selected(dose) ? 2 : 1, borderColor: selected(dose) ? colors.accent : colors.border, backgroundColor: colors.surface }}>
       {selected(dose) && <Text className="mb-2 text-sm font-semibold text-[#079D9D]">Opened from reminder · {dose.date}</Text>}
-      <View className="flex-row gap-3"><View className="h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: dose.medicine.color || '#079D9D' }}><MaterialCommunityIcons name="pill" size={25} color="white" /></View><View className="flex-1">
+      <View className="flex-row gap-3"><View className="h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: dose.medicine.color || '#079D9D' }}><MaterialCommunityIcons name="pill" size={25} color="white" /></View><View className="min-w-0 flex-1">
         <Text className="text-lg font-semibold" style={{ color: colors.ink }}>{dose.medicine.name}</Text>
-        <Text className="mt-1 text-sm" style={{ color: colors.secondary }}>{[dose.medicine.strength, `${dose.schedule.doseAmount} ${dose.medicine.doseUnit || dose.medicine.dosageForm}`].filter(Boolean).join(' · ')}</Text>
-        <Text className="mt-2 font-medium" style={{ color: colors.ink }}>{time(dose.scheduledAtMs)} · {dose.status || (snoozed ? `Snoozed until ${time(dose.snoozedUntilMs!)}` : dose.scheduledAtMs > data.now ? 'Upcoming' : 'Due now')}</Text>
-        {dose.actualTakenAtMs && <Text className="mt-1 text-sm text-[#22C55E]">Taken at {time(dose.actualTakenAtMs)}</Text>}
+        <Text className={dose.status ? "text-sm" : "mt-1 text-sm"} style={{ color: colors.secondary }}>{[dose.medicine.strength, `${dose.schedule.doseAmount} ${dose.medicine.doseUnit || dose.medicine.dosageForm}`].filter(Boolean).join(' · ')}</Text>
+        <Text className={dose.status ? "mt-1 font-medium" : "mt-2 font-medium"} style={{ color: colors.ink }}>{time(dose.scheduledAtMs)} · {dose.status || (snoozed ? `Snoozed until ${time(dose.snoozedUntilMs!)}` : dose.scheduledAtMs > data.now ? 'Upcoming' : 'Due now')}</Text>
+        {dose.status === 'Taken' && dose.actualTakenAtMs != null && <Text className="text-sm" style={{ color: isDark ? '#22C55E' : '#15803D' }}>Taken at {time(dose.actualTakenAtMs)}</Text>}
         {!!dose.medicine.instructions && <Text className="mt-2 text-sm" style={{ color: colors.secondary }}>{dose.medicine.instructions}</Text>}
-      </View></View>
-      {!dose.status && dose.scheduledAtMs <= data.now && <View className="mt-3 flex-row gap-2">{(['Taken', 'Skipped', 'Snooze'] as const).map(action => <Pressable key={action} accessibilityRole="button" accessibilityLabel={`${action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action} ${dose.medicine.name}`} accessibilityState={{ disabled: busyId !== null }} disabled={busyId !== null} onPress={() => void act(dose, action)} className="min-h-12 flex-1 items-center justify-center rounded-full" style={{ backgroundColor: action === 'Taken' ? (isDark ? '#08B8BE' : '#071629') : colors.pill }}><Text className="text-sm font-semibold" style={{ color: action === 'Taken' ? '#FFFFFF' : colors.ink }}>{busyId === dose.id ? 'Saving…' : action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action}</Text></Pressable>)}</View>}
-      {!!dose.status && (
-        <View className="mt-3 flex-row justify-end">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Undo ${dose.status} for ${dose.medicine.name}`}
-            accessibilityState={{ disabled: busyId !== null }}
-            disabled={busyId !== null}
-            onPress={() => void act(dose, 'Undo')}
-            className="min-h-10 px-4 flex-row items-center gap-1.5 rounded-full border"
-            style={{ borderColor: colors.border, backgroundColor: colors.pill }}
-          >
-            <MaterialCommunityIcons name="undo" size={16} color={colors.ink} />
-            <Text className="text-xs font-semibold" style={{ color: colors.ink }}>
-              {busyId === dose.id ? 'Undoing…' : 'Undo'}
-            </Text>
-          </Pressable>
-        </View>
-      )}
+      </View>
+      {!!dose.status && <Pressable accessibilityRole="button" accessibilityLabel={`More options for ${dose.medicine.name}`}
+        accessibilityHint="Change or reset this dose" accessibilityState={{ disabled: busyId !== null, expanded: menuDose?.id === dose.id }}
+        disabled={busyId !== null} onPress={() => setMenuDose(dose)}
+        style={{ minWidth: 48, minHeight: 48, marginLeft: -4, marginRight: -8, marginTop: -6, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' }}>
+        <MaterialCommunityIcons name="dots-vertical" size={24} color={colors.secondary} />
+      </Pressable>}
+      </View>
+      {!dose.status && dose.scheduledAtMs <= data.now && <View className="mt-4 flex-row gap-2">{(['Taken', 'Skipped', 'Snooze'] as const).map(action => <Pressable key={action} accessibilityRole="button" accessibilityLabel={`${action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action} ${dose.medicine.name}`} accessibilityState={{ disabled: busyId !== null }} disabled={busyId !== null} onPress={() => void act(dose, action)} className="min-h-12 flex-1 items-center justify-center rounded-full" style={{ backgroundColor: action === 'Taken' ? (isDark ? '#08B8BE' : '#071629') : colors.pill }}><Text className="text-sm font-semibold" style={{ color: action === 'Taken' ? '#FFFFFF' : colors.ink }}>{action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action}</Text></Pressable>)}</View>}
     </Animated.View>;
   }
   return <SafeAreaView className="flex-1" edges={['top']} style={{ backgroundColor: colors.background }}><ScrollView contentContainerClassName="px-4 pb-6 pt-4">
@@ -179,7 +185,11 @@ function ProfileToday() {
     {!!(error || message) && <View className="mb-3 rounded-2xl bg-[#FFF0D8] p-3"><Text accessibilityRole="alert" className="text-[#713F12]">{error || message}</Text>{!!error && <Pressable accessibilityRole="button" onPress={() => void reload()} className="min-h-11 justify-center"><Text className="font-semibold" style={{ color: colors.ink }}>Retry</Text></Pressable>}</View>}
     {!!params.scheduleId && !loading && !data.doses.some(selected) && <Text className="mb-3 text-[#713F12]">This reminder is no longer active.</Text>}
     {loading ? <Text style={{ color: colors.secondary }}>Loading doses…</Text> : <>
-      {([['Due now', due], ['Upcoming', upcoming], ['Completed', completed]] as const).map(([title, doses]) => <View key={title}><Text accessibilityRole="header" className="mb-2 mt-3 text-lg font-semibold" style={{ color: colors.ink }}>{title} · {doses.length}</Text>{doses.map(card)}{title === 'Due now' && !doses.length && <Text className="rounded-2xl p-4" style={{ backgroundColor: colors.surface, color: colors.secondary }}>{data.doses.length ? 'You’re all caught up.' : 'No scheduled doses today. Add a medicine to get started.'}</Text>}</View>)}
+      {([['Due now', due], ['Upcoming', upcoming], ['Earlier', earlier]] as const).map(([title, doses]) => <View key={title}><Text accessibilityRole="header" className="mb-2 mt-3 text-lg font-semibold" style={{ color: colors.ink }}>{title} · {doses.length}</Text>{doses.map(card)}{title === 'Due now' && !doses.length && <Text className="rounded-2xl p-4" style={{ backgroundColor: colors.surface, color: colors.secondary }}>{data.doses.length ? 'You’re all caught up.' : 'No scheduled doses today. Add a medicine to get started.'}</Text>}</View>)}
     </>}
-  </ScrollView></SafeAreaView>;
+  </ScrollView>
+    {snackbar && <UndoSnackbar key={snackbar.message + snackbar.receipt.dose.scheduledAtMs} message={snackbar.message}
+      disabled={busyId !== null} onDismiss={dismissSnackbar} onUndo={() => void act(snackbar.dose, 'Undo', snackbar.receipt)} />}
+    {menuDose && <DoseOptionsMenu dose={menuDose} onClose={() => setMenuDose(null)} onAction={(dose, action) => void act(dose, action)} />}
+  </SafeAreaView>;
 }

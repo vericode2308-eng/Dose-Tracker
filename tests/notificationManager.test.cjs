@@ -7,11 +7,15 @@ const ts = require('typescript');
 const compiled = ts.transpileModule(fs.readFileSync('src/notificationManager.js', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
+const compiledBackgroundActions = ts.transpileModule(fs.readFileSync('src/features/notifications/backgroundActions.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
 const medicine = () => ({ id: 'medicine-1', name: 'Test medicine', dosageForm: 'Tablet', doseUnit: 'tablet', status: 'Active',
   schedules: [{ id: 'schedule-1', timeLocalMinute: 480, doseAmount: 1, pattern: { kind: 'daily', startDate: '2020-01-01' } }] });
 
 function harness(options = {}) {
   const stored = new Map();
+  const presented = new Map();
   let medicines = options.profiles ? [{ ...medicine(), profileId: 'p1' }, { ...medicine(), id: 'medicine-2', profileId: 'p2', schedules: [{ ...medicine().schedules[0], id: 'schedule-2' }] }] : [medicine()];
   const profiles = [{ id: 'p1', status: 'Active' }, { id: 'p2', status: 'Active' }];
   let selected = 'p2';
@@ -23,6 +27,7 @@ function harness(options = {}) {
   const api = {
     AndroidImportance: { HIGH: 4, NONE: 0 }, AndroidNotificationVisibility: { PUBLIC: 1, PRIVATE: 2, SECRET: 3 },
     IosAuthorizationStatus: { PROVISIONAL: 3 }, DEFAULT_ACTION_IDENTIFIER: 'default',
+    deleteNotificationCategoryAsync: async id => { if (options.failCategory) throw Error('Category unavailable'); api.lastCategory = { id, actions: [] }; return true; },
     setNotificationHandler: handler => { api.handler = handler; },
     setNotificationCategoryAsync: async (id, actions, options) => { api.lastCategory = { id, actions, options }; },
     setNotificationChannelAsync: async (id, config) => { calls.push('channel'); api.lastChannel = { id, config }; },
@@ -36,32 +41,52 @@ function harness(options = {}) {
     cancelScheduledNotificationAsync: async id => { calls.push('cancel'); stored.delete(id); },
     cancelAllScheduledNotificationsAsync: async () => { calls.push('cancelAll'); stored.clear(); },
     dismissAllNotificationsAsync: async () => { calls.push('dismiss'); },
-    getPresentedNotificationsAsync: async () => [],
-    dismissNotificationAsync: async id => { calls.push('dismissNotification:' + id); },
+    getPresentedNotificationsAsync: async () => [...presented.values()],
+    dismissNotificationAsync: async id => { if (options.failDismiss) throw Error('OS dismissal failed'); calls.push('dismissNotification:' + id); presented.delete(id); },
     addNotificationResponseReceivedListener: callback => { listener = callback; return { remove: () => { listener = undefined; } }; },
     getLastNotificationResponseAsync: async () => options.lastResponse || null,
     clearLastNotificationResponseAsync: async () => { calls.push('clearResponse'); },
   };
   const db = {
+    changeDoseWithUndo: async (dose, action, untilMs) => {
+      if (options.failLog) throw Error('Database write failed');
+      calls.push('change:' + action);
+      const receipt = { dose, snoozes: [...snoozes], history: [...history], manualStockCorrectionNeeded: false };
+      snoozes = snoozes.filter(z => z.scheduledAtMs !== dose.scheduledAtMs);
+      if (action === 'Snooze') snoozes.push({ ...dose, untilMs });
+      else if (action !== 'Reset') history.push({ ...dose, status: action });
+      return receipt;
+    },
+    restoreDoseChange: async receipt => {
+      calls.push('restore'); snoozes = [...receipt.snoozes]; history.splice(0, history.length, ...receipt.history);
+    },
     fetchPendingSnoozes: async () => snoozes.filter(z => medicines.some(m => m.id === z.medicineId && m.status === 'Active')),
-    snoozeDose: async dose => { snoozes = snoozes.filter(z => z.scheduledAtMs !== dose.scheduledAtMs); snoozes.push(dose); },
-    logDose: async dose => { history.push(dose); snoozes = snoozes.filter(z => z.scheduledAtMs !== dose.scheduledAtMs); },
+    snoozeDose: async dose => { calls.push('snooze'); snoozes = snoozes.filter(z => z.scheduledAtMs !== dose.scheduledAtMs); snoozes.push(dose); return options.savedSnoozeUntilMs ?? dose.untilMs; },
+    logDose: async dose => { if (options.failLog) throw Error('Database write failed'); history.push(dose); snoozes = snoozes.filter(z => z.scheduledAtMs !== dose.scheduledAtMs); },
     fetchScheduledDoses: async date => snoozes.filter(z => z.date === date).map(z => ({ ...z, schedule: { id: z.scheduleId } })),
     fetchProfiles: async () => profiles,
     selectProfile: async id => { selected = id; calls.push('select:' + id); },
     setProfileArchived: async (id, archived) => { calls.push('archive'); profiles.find(p => p.id === id).status = archived ? 'Archived' : 'Active'; },
     fetchAllMedicines: async ({ profileId, includeArchivedProfiles = false } = {}) => medicines.filter(m => (!profileId || m.profileId === profileId) && (!m.profileId || includeArchivedProfiles || profiles.find(p => p.id === m.profileId).status === 'Active')),
     fetchMedicineDetails: async id => medicines.find(m => m.id === id) || null,
-    editMedicine: async (id, input) => { calls.push('edit'); if (options.failEdit) throw Error('Edit failed'); const m = medicines.find(m => m.id === id); Object.assign(m, input.medicine); Object.assign(m.schedules.find(s => s.id === input.scheduleId), input.schedule); },
+    editMedicine: async (id, input) => { calls.push('edit'); if (options.failEdit) throw Error('Edit failed'); const m = medicines.find(m => m.id === id); Object.assign(m, input.medicine); Object.assign(m.schedules.find(s => s.id === input.scheduleId), input.schedule); for (const [index, extra] of (input.additionalSchedules || []).entries()) { if (extra.id) Object.assign(m.schedules.find(s => s.id === extra.id), extra); else m.schedules.push({ ...extra, id: `added-${index}` }); } },
     updateMedicine: async (id, patch) => { calls.push('update'); Object.assign(medicines.find(m => m.id === id), patch); },
     updateScheduleReminderEnabled: async (id, enabled) => { const schedule = medicines.flatMap(m => m.schedules).find(s => s.id === id); if (!schedule) throw Error('Schedule not found.'); schedule.reminderEnabled = enabled; },
     deleteMedicine: async id => { calls.push('delete'); medicines = medicines.filter(m => m.id !== id); },
     clearDatabase: async () => { calls.push('clearDB'); medicines = []; },
     recordReminderIssue: async () => {}, fetchRecentReminderIssues: async () => [],
   };
+  const errorTypes = {};
+  new Function('exports', ts.transpileModule(fs.readFileSync('src/features/security/errors.js', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(errorTypes);
   const dependencies = {
+    './features/security/errors': errorTypes,
+    './features/security/SecurityManager': {
+      isAuthEnabled: async () => { if (options.failLockRead) throw Error('SecureStore unavailable'); return !!options.lockEnabled; },
+      setAuthEnabled: async value => { if (options.failLockWrite) throw Error('SecureStore unavailable'); options.lockEnabled = value; },
+    },
     'react-native': { Platform: { OS: options.platform || 'android' }, Linking: { openSettings: async () => {} } },
-    'expo-modules-core': { requireOptionalNativeModule: () => ({ canScheduleExactAlarms: async () => options.exact !== false, openExactAlarmSettings: async () => {} }) },
+    'expo-modules-core': { requireOptionalNativeModule: () => ({ canScheduleExactAlarms: async () => options.exact !== false, openExactAlarmSettings: async () => {},
+      ...(options.oldNativeBuild ? {} : { supportsRinging: () => true }) }) },
     'expo-notifications': api, './database': db, './features/settings/storage': { readSettings: async () => prefs },
   };
   const manager = {};
@@ -69,12 +94,312 @@ function harness(options = {}) {
     assert.ok(name in dependencies, `Unexpected dependency: ${name}`);
     return dependencies[name];
   }, manager);
-  return { manager, stored, prefs, calls, api, history, emit: response => listener?.(response), get selected() { return selected; }, get medicine() { return medicines[0]; } };
+  let backgroundTask;
+  const taskDependencies = {
+    'react-native': dependencies['react-native'],
+    'expo-notifications': { registerTaskAsync: async () => {} },
+    'expo-task-manager': { isTaskDefined: () => false, defineTask: (_name, callback) => { backgroundTask = callback; } },
+    '@/notificationManager': manager,
+    '@/database': { recordReminderIssue: async code => { calls.push('issue:' + code); } },
+  };
+  new Function('require', 'exports', compiledBackgroundActions)(name => {
+    assert.ok(name in taskDependencies, `Unexpected task dependency: ${name}`);
+    return taskDependencies[name];
+  }, {});
+  return { manager, stored, presented, prefs, calls, api, history, runTask: data => backgroundTask({ data }), emit: response => listener?.(response), get selected() { return selected; }, get medicine() { return medicines[0]; } };
 }
 function response(date = new Date(2026, 8, 26, 8).getTime()) {
   return { actionIdentifier: 'default', notification: { date, request: { identifier: 'dosetracker:dose:schedule-1:daily',
     content: { data: { kind: 'medication-dose', version: 1, medicineId: 'medicine-1', scheduleId: 'schedule-1' } } } } };
 }
+function nativeResponse(action, date) {
+  const result = response(date);
+  result.actionIdentifier = action;
+  const content = result.notification.request.content;
+  content.dataString = JSON.stringify(content.data);
+  delete content.data;
+  return result;
+}
+
+test('ringing is opt-in, covers recurring, snoozed and test reminders, and preserves channels', async () => {
+  const h = harness();
+  await h.manager.reconcileReminders();
+  const previousChannel = h.api.lastChannel.id;
+  assert.equal([...h.stored.values()][0].content.data.alarmRinging, undefined);
+  h.prefs.reminderRinging = true;
+  await h.manager.reconcileReminders();
+  assert.equal([...h.stored.values()][0].content.data.alarmRinging, true);
+  assert.equal(h.api.lastChannel.id, previousChannel);
+  await h.manager.snoozeMedicationDose(doseReference(), 10);
+  await h.manager.scheduleTestReminder();
+  assert.equal(h.stored.size, 3);
+  for (const request of h.stored.values()) assert.equal(request.content.data.alarmRinging, true);
+  assert.equal(h.history.length, 0);
+});
+
+test('silent sound and iOS never request Android ringing', async () => {
+  for (const options of [{}, { platform: 'ios' }]) {
+    const h = harness(options);
+    h.prefs.reminderRinging = true;
+    if (!options.platform) h.prefs.reminderSound = 'silent';
+    await h.manager.reconcileReminders();
+    assert.equal([...h.stored.values()][0].content.data.alarmRinging, undefined);
+  }
+});
+
+test('old native builds report missing ringing support and cannot falsely confirm a ringing test', async () => {
+  const h = harness({ oldNativeBuild: true });
+  h.prefs.reminderRinging = true;
+  assert.equal(h.manager.isAlarmRingingAvailable(), false);
+  assert.match((await h.manager.getReminderStatus()).message, /updated Android build/);
+  await assert.rejects(h.manager.scheduleTestReminder(), /updated Android build/);
+  assert.equal(h.stored.size, 0);
+  assert.equal(harness().manager.isAlarmRingingAvailable(), true);
+  assert.equal(harness({ platform: 'ios' }).manager.isAlarmRingingAvailable(), false);
+});
+
+test('ringing preserves privacy redaction and secure-lock action restrictions', async () => {
+  const h = harness({ lockEnabled: true });
+  h.prefs.reminderRinging = true;
+  h.prefs.notificationPrivacy = 'none';
+  await h.manager.reconcileReminders();
+  const content = [...h.stored.values()][0].content;
+  assert.equal(content.data.alarmRinging, true);
+  assert.equal(content.categoryIdentifier, undefined);
+  assert.equal(content.title, 'DoseTracker');
+  assert.equal(content.body, 'Open the app for details.');
+  await h.manager.handleReminderAction(nativeResponse('take-now'));
+  assert.equal(h.history.length, 0);
+});
+
+for (const patch of [{ reminderRinging: false }, { remindersEnabled: false }, { reminderSound: 'silent' }]) {
+  test(`disabling ringing dismisses active ringing medication and test alerts: ${JSON.stringify(patch)}`, async () => {
+    const h = harness();
+    h.prefs.reminderRinging = true;
+    await h.manager.reconcileReminders();
+    await h.manager.scheduleTestReminder();
+    for (const request of h.stored.values()) {
+      const identifier = request.identifier || 'test-id';
+      h.presented.set(identifier, { request: { ...request, identifier } });
+    }
+    h.presented.set('unrelated', { request: { identifier: 'unrelated', content: {} } });
+    Object.assign(h.prefs, patch);
+    await h.manager.reconcileReminders();
+    assert.deepEqual([...h.presented.keys()], ['unrelated']);
+    assert.equal(h.history.length, 0);
+  });
+}
+
+for (const action of ['take-now', 'skip', 'snooze-15']) {
+  test(`app lock denies ${action} through both headless and UI entry points`, async () => {
+    const h = harness({ profiles: true, lockEnabled: true });
+    const raw = nativeResponse(action);
+    await h.runTask(raw);
+    await h.manager.handleReminderAction(raw);
+    assert.equal(h.history.length, 0);
+    assert.equal(h.stored.size, 0);
+    assert.equal(h.selected, 'p2');
+    assert.deepEqual(h.calls, []);
+  });
+  test(`unreadable secure preference denies ${action} and permits a later valid retry`, async () => {
+    const options = { failLockRead: true };
+    const h = harness(options);
+    const raw = nativeResponse(action);
+    await h.runTask(raw);
+    assert.equal(h.history.length, 0);
+    assert.equal(h.stored.size, 0);
+    assert.ok(h.calls.includes('issue:action_failed'));
+    options.failLockRead = false;
+    await h.runTask(raw);
+    assert.equal(h.history.length + h.stored.size, 1);
+  });
+}
+
+test('lock-on is serialized before queued actions and refreshes categories, tray and scheduled requests', async () => {
+  const h = harness();
+  await h.manager.reconcileReminders();
+  const request = structuredClone([...h.stored.values()][0]);
+  h.presented.set(request.identifier, { request });
+  const locking = h.manager.setAppLockWithReminders(true);
+  const action = h.manager.handleReminderAction(nativeResponse('take-now'));
+  await Promise.all([locking, action]);
+  assert.equal(h.history.length, 0);
+  assert.equal(h.presented.size, 0);
+  assert.deepEqual(h.api.lastCategory.actions, []);
+  assert.equal([...h.stored.values()][0].content.categoryIdentifier, undefined);
+  await h.manager.setAppLockWithReminders(false);
+  assert.equal(h.api.lastCategory.actions.length, 3);
+  assert.equal([...h.stored.values()][0].content.categoryIdentifier, h.manager.MEDICATION_CATEGORY);
+  await h.manager.handleReminderAction(nativeResponse('take-now'));
+  assert.equal(h.history.length, 1);
+});
+
+test('OS category refresh failure never rolls back a successfully enabled lock', async () => {
+  const options = { failCategory: true };
+  const h = harness(options);
+  const result = await h.manager.setAppLockWithReminders(true);
+  assert.equal(options.lockEnabled, true);
+  assert.match(result.message, /App lock was saved/);
+  await h.runTask(nativeResponse('take-now'));
+  assert.equal(h.history.length, 0);
+});
+
+test('failed lock writes do not report success or change the saved preference', async () => {
+  const options = { failLockWrite: true, lockEnabled: false };
+  const h = harness(options);
+  await assert.rejects(h.manager.setAppLockWithReminders(true));
+  assert.equal(options.lockEnabled, false);
+});
+
+test('per-request OS scheduling failures remain visible after the lock is saved', async () => {
+  const options = { failSchedule: true };
+  const h = harness(options);
+  const result = await h.manager.setAppLockWithReminders(true);
+  assert.equal(options.lockEnabled, true);
+  assert.match(result.message, /refresh notification controls/);
+  await h.runTask(nativeResponse('skip'));
+  assert.equal(h.history.length, 0);
+});
+
+for (const [before, after] of [['show', 'hide'], ['show', 'none'], ['hide', 'none']]) {
+  for (const condition of ['active', 'disabled', 'no-schedules', 'permission-denied']) {
+    test(`privacy ${before} -> ${after} clears stale tray content with ${condition}`, async () => {
+      const options = {};
+      const h = harness(options);
+      h.prefs.notificationPrivacy = before;
+      await h.manager.reconcileReminders();
+      const request = structuredClone([...h.stored.values()][0]);
+      h.presented.set(request.identifier, { request });
+      h.presented.set('unrelated', { request: { ...request, identifier: 'unrelated' } });
+      h.prefs.notificationPrivacy = after;
+      if (condition === 'disabled') h.prefs.remindersEnabled = false;
+      if (condition === 'no-schedules') h.medicine.schedules = [];
+      if (condition === 'permission-denied') options.granted = false;
+      await h.manager.reconcileReminders();
+      assert.deepEqual([...h.presented.keys()], ['unrelated']);
+      for (const pending of h.stored.values()) assert.doesNotMatch(pending.content.body, /Test medicine/);
+    });
+  }
+}
+
+test('privacy cleanup preserves already compliant reminders and reports dismissal failures', async () => {
+  const options = {};
+  const h = harness(options);
+  h.prefs.notificationPrivacy = 'hide';
+  await h.manager.reconcileReminders();
+  const request = structuredClone([...h.stored.values()][0]);
+  h.presented.set(request.identifier, { request });
+  await h.manager.reconcileReminders();
+  assert.equal(h.presented.size, 1);
+  request.content.body = 'Private stale medicine';
+  options.failDismiss = true;
+  await assert.rejects(h.manager.reconcileReminders(), /dismissal failed/);
+  assert.equal(h.presented.size, 1);
+  options.failDismiss = false;
+  await h.manager.reconcileReminders();
+  assert.equal(h.presented.size, 0);
+});
+
+for (const [action, status] of [['take-now', 'Taken'], ['skip', 'Skipped'], ['snooze-15', null]]) {
+  test(`Android headless ${action} consumes the native dataString payload without a UI listener`, async () => {
+    const h = harness({ profiles: true });
+    const raw = nativeResponse(action);
+    await h.runTask(raw);
+    assert.equal(h.selected, 'p1');
+    assert.equal(h.history.length, status ? 1 : 0);
+    if (status) {
+      assert.equal(h.history[0].status, status);
+      assert.equal(h.history[0].scheduledAtMs, raw.notification.date);
+    } else {
+      assert.equal(h.stored.size, 1);
+      const request = [...h.stored.values()][0];
+      assert.equal(request.trigger.type, 'date');
+      assert.equal(request.content.data.scheduledAtMs, raw.notification.date);
+    }
+    assert.ok(h.calls.includes('dismissNotification:' + raw.notification.request.identifier));
+    assert.ok(h.calls.includes('clearResponse'));
+    assert.equal(h.calls.some(call => call.startsWith('issue:')), false);
+  });
+
+  test(`${action} shares task/UI delivery and replay, while the next day's press still executes`, async () => {
+    const h = harness();
+    const raw = nativeResponse(action);
+    const mapped = response();
+    mapped.actionIdentifier = action;
+    const dispose = await h.manager.subscribeToReminderTaps(() => {});
+    const task = h.runTask(raw);
+    h.emit(mapped);
+    await task;
+    await h.manager.handleReminderAction(mapped);
+    assert.equal(h.history.length, status ? 1 : 0);
+    assert.equal(h.calls.filter(call => call === 'snooze').length, status ? 0 : 1);
+    assert.equal(h.calls.filter(call => call.startsWith('dismissNotification:')).length, 1);
+    await h.runTask(nativeResponse(action, new Date(2026, 8, 27, 8).getTime()));
+    assert.equal(h.history.length, status ? 2 : 0);
+    assert.equal(h.calls.filter(call => call === 'snooze').length, status ? 0 : 2);
+    dispose();
+  });
+}
+
+test('headless action failures are reported and the same press can be retried', async () => {
+  const options = { failLog: true };
+  const h = harness(options);
+  const raw = nativeResponse('take-now');
+  await h.runTask(raw);
+  assert.equal(h.history.length, 0);
+  assert.ok(h.calls.includes('issue:action_failed'));
+  assert.equal(h.calls.some(call => call.startsWith('dismissNotification:')), false);
+  assert.equal(h.calls.includes('clearResponse'), false);
+  options.failLog = false;
+  await h.runTask(raw);
+  assert.equal(h.history.length, 1);
+});
+
+test('notification snooze uses the SQLite deadline on replay and does not re-arm an expired snooze', async () => {
+  const savedSnoozeUntilMs = Date.now() + 60000;
+  const h = harness({ savedSnoozeUntilMs });
+  await h.runTask(nativeResponse('snooze-15'));
+  assert.equal([...h.stored.values()][0].trigger.date.getTime(), savedSnoozeUntilMs);
+  const expired = harness({ savedSnoozeUntilMs: Date.now() - 60000 });
+  await expired.runTask(nativeResponse('snooze-15'));
+  assert.equal(expired.stored.size, 0);
+  assert.ok(expired.calls.includes('clearResponse'));
+});
+
+test('raw snooze payload preserves the original occurrence across midnight', async () => {
+  const h = harness();
+  const raw = nativeResponse('take-now', new Date(2026, 8, 27, 0, 5).getTime());
+  const scheduledAtMs = new Date(2026, 8, 26, 8).getTime();
+  const content = raw.notification.request.content;
+  content.dataString = JSON.stringify({ ...JSON.parse(content.dataString), doseDate: '2026-09-26', scheduledAtMs });
+  await h.runTask(raw);
+  assert.equal(h.history[0].date, '2026-09-26');
+  assert.equal(h.history[0].scheduledAtMs, scheduledAtMs);
+});
+
+test('raw payload parsing rejects malformed, unrelated, and stale data without acting', async () => {
+  const h = harness();
+  const validData = JSON.parse(nativeResponse('skip').notification.request.content.dataString);
+  for (const dataString of ['{bad json', 'null', '[]', '42', JSON.stringify({ ...validData, version: 2 }),
+    JSON.stringify({ ...validData, kind: 'other' }), JSON.stringify({ ...validData, medicineId: 'deleted' }),
+    JSON.stringify({ ...validData, scheduleId: 'deleted' })]) {
+    const raw = nativeResponse('skip');
+    raw.notification.request.content.dataString = dataString;
+    await h.runTask(raw);
+  }
+  assert.equal(h.history.length, 0);
+  assert.equal(h.stored.size, 0);
+  assert.deepEqual(h.calls, []);
+});
+
+test('mapped content is used without accessing Expo’s deprecated dataString getter', async () => {
+  const h = harness();
+  const mapped = response();
+  Object.defineProperty(mapped.notification.request.content, 'dataString', { get() { throw Error('deprecated getter'); } });
+  const raw = nativeResponse('take-now');
+  assert.deepEqual(await h.manager.doseFromResponse(raw), await h.manager.doseFromResponse(mapped));
+  assert.deepEqual(await h.manager.doseRouteFromResponse(raw), await h.manager.doseRouteFromResponse(mapped));
+});
 
 test('time parsing handles noon, midnight and rejects ambiguous/invalid times', () => {
   const { manager } = harness();
@@ -202,7 +527,7 @@ test('failed OS scheduling is reported; successful DB edits are not reported as 
   const result = await h.manager.updateMedicineWithReminders('medicine-1', { name: 'Updated' });
   assert.equal(h.medicine.name, 'Updated');
   assert.equal(result.scheduled, 0);
-  assert.match(result.issues[0], /OS scheduling failed/);
+  assert.match(result.issues[0], /Reminder could not be scheduled/);
 });
 test('erase cancels and dismisses first; queued reconciliation cannot resurrect alarms', async () => {
   const h = harness();
@@ -365,4 +690,84 @@ test('full editor replaces old alarms and preserves the prior alarm on a failed 
   const failed = harness({ failEdit: true }); await failed.manager.reconcileReminders();
   await assert.rejects(failed.manager.editMedicineWithReminders(failed.medicine.id, { medicine: {}, scheduleId: 'schedule-1', schedule: {} }), /Edit failed/);
   assert.equal(failed.stored.size, 1); assert.equal([...failed.stored.values()][0].trigger.hour, 8);
+});
+
+test('9 AM and 6 PM reminders are independent, idempotent, and cancelled together on pause', async () => {
+  const h = harness();
+  h.medicine.schedules[0].timeLocalMinute = 540;
+  h.medicine.schedules.push({ ...h.medicine.schedules[0], id: 'evening-dose', timeLocalMinute: 1080, doseAmount: 2 });
+  await h.manager.scheduleMedicineReminders(h.medicine);
+  await h.manager.reconcileReminders();
+  assert.equal(h.stored.size, 2);
+  assert.deepEqual([...h.stored.values()].map(r => r.trigger.hour).sort((a,b) => a-b), [9, 18]);
+  assert.equal(new Set([...h.stored.values()].map(r => r.content.data.scheduleId)).size, 2);
+  await h.manager.setScheduleReminderEnabled('evening-dose', false);
+  assert.equal(h.stored.size, 1);
+  assert.equal([...h.stored.values()][0].trigger.hour, 9);
+  await h.manager.setScheduleReminderEnabled('evening-dose', true);
+  assert.equal(h.stored.size, 2);
+  await h.manager.updateMedicineWithReminders(h.medicine.id, { status: 'Paused' });
+  assert.equal(h.stored.size, 0);
+  await h.manager.updateMedicineWithReminders(h.medicine.id, { status: 'Active' });
+  assert.equal(h.stored.size, 2);
+});
+
+test('editing both dose times replaces both alarms without duplicate requests', async () => {
+  const h = harness();
+  h.medicine.schedules[0].timeLocalMinute = 540;
+  h.medicine.schedules.push({ ...h.medicine.schedules[0], id: 'evening', timeLocalMinute: 1080 });
+  await h.manager.scheduleMedicineReminders(h.medicine);
+  const input = { medicine: {}, scheduleId: h.medicine.schedules[0].id,
+    schedule: { ...h.medicine.schedules[0], timeLocalMinute: 600, reminderEnabled: true },
+    additionalSchedules: [{ ...h.medicine.schedules[1], timeLocalMinute: 1140, reminderEnabled: true }] };
+  await h.manager.editMedicineWithReminders(h.medicine.id, input);
+  await h.manager.reconcileReminders();
+  assert.equal(h.stored.size, 2);
+  assert.deepEqual([...h.stored.values()].map(r => r.trigger.hour).sort((a,b) => a-b), [10, 19]);
+});
+
+test('Today correction cancels its snooze and Undo re-arms the exact previous deadline', async () => {
+  const h = harness();
+  const at = new Date(2026, 8, 26, 8).getTime();
+  const dose = { medicineId: 'medicine-1', scheduleId: 'schedule-1', date: '2026-09-26', scheduledAtMs: at,
+    status: null, actualTakenAtMs: null, snoozedUntilMs: null };
+  const snoozed = await h.manager.changeMedicationDose(dose, 'Snooze');
+  const id = `dosetracker:dose:snooze:schedule-1:${at}`;
+  const request = [...h.stored.values()].find(item => item.identifier.includes('snooze:'));
+  assert.ok(request);
+  const deadline = request.trigger.date.getTime();
+  const taken = await h.manager.changeMedicationDose({ ...dose, snoozedUntilMs: deadline }, 'Taken');
+  assert.equal([...h.stored.values()].filter(item => item.identifier.includes('snooze:')).length, 0);
+  assert.equal(h.history.length, 1);
+  await h.manager.undoMedicationChange(taken.receipt);
+  const restored = [...h.stored.values()].find(item => item.identifier.includes('snooze:'));
+  assert.equal(restored.trigger.date.getTime(), deadline);
+  assert.equal(restored.identifier, request.identifier);
+  assert.equal(h.history.length, 0);
+  await h.manager.undoMedicationChange(snoozed.receipt);
+  assert.equal(h.stored.has(id), false);
+  assert.equal([...h.stored.values()].filter(item => item.identifier.includes('snooze:')).length, 0);
+});
+test('Today saved corrections retain Undo when native cleanup fails', async () => {
+  const h = harness({ failDismiss: true });
+  const notification = response();
+  h.presented.set(notification.notification.request.identifier, notification.notification);
+  const result = await h.manager.changeMedicationDose({ medicineId: 'medicine-1', scheduleId: 'schedule-1',
+    date: '2026-09-26', scheduledAtMs: notification.notification.date, status: null,
+    actualTakenAtMs: null, snoozedUntilMs: null }, 'Taken');
+  assert.ok(result.receipt);
+  assert.match(result.message, /cleanup needs a retry/);
+  assert.equal(h.history.length, 1);
+  await h.manager.undoMedicationChange(result.receipt);
+  assert.equal(h.history.length, 0);
+});
+test('Today write failure does not cancel an existing reminder; denied snooze never writes', async () => {
+  const h = harness({ failLog: true });
+  const dose = { medicineId: 'medicine-1', scheduleId: 'schedule-1', date: '2026-09-26',
+    scheduledAtMs: new Date(2026, 8, 26, 8).getTime(), status: null, actualTakenAtMs: null, snoozedUntilMs: null };
+  await assert.rejects(h.manager.changeMedicationDose(dose, 'Taken'), /Database write failed/);
+  assert.equal(h.calls.includes('cancel'), false);
+  const denied = harness({ granted: false });
+  await assert.rejects(denied.manager.changeMedicationDose(dose, 'Snooze'), /Enable reminder/);
+  assert.equal(denied.calls.some(call => call.startsWith('change:')), false);
 });

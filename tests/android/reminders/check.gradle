@@ -1,0 +1,10 @@
+allprojects { p ->
+  p.plugins.withId('com.facebook.react') { p.extensions.getByName('react').debuggableVariants.set([]) }
+  p.plugins.withId('com.android.application') {
+    def android = p.extensions.getByName('android')
+    android.defaultConfig.testInstrumentationRunner = 'check.RingingCheck'
+    def checks = new File(p.rootDir.parentFile, 'tests/android/reminders')
+    android.sourceSets.androidTest.java.srcDir(new File(checks, 'java'))
+    android.sourceSets.androidTest.manifest.srcFile(new File(checks, 'AndroidManifest.xml'))
+  }
+}

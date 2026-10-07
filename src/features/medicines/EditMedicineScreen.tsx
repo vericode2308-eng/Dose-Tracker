@@ -19,7 +19,7 @@ export default function EditMedicineScreen() {
       if (!active) return;
       if (!value || !value.schedules.length) { setError('This medicine or its schedule is no longer available.'); return; }
       setMedicine(value);
-      if (value.schedules.length === 1) setScheduleId(value.schedules[0].id);
+      if (value.schedules.length === 1 || value.schedules.every(s => ['daily', 'weekdays', 'day_interval'].includes(s.pattern.kind) && JSON.stringify(s.pattern) === JSON.stringify(value.schedules[0].pattern) && s.reminderEnabled === value.schedules[0].reminderEnabled)) setScheduleId(value.schedules[0].id);
     }).catch(() => { if (active) setError('Could not load the medicine. Please retry.'); });
     return () => { active = false; };
   }, [id, attempt]);

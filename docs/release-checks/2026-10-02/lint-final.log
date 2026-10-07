@@ -1,0 +1,2 @@
+env: load .env.local
+env: export SENTRY_AUTH_TOKEN

@@ -20,6 +20,7 @@ export default function NotificationPrivacyScreen() {
   async function choose(value: SettingsPreferences['notificationPrivacy']) {
     if (busy || value === prefs.notificationPrivacy) return;
     setBusy(true);
+    let saved = false;
     try {
       if (!(await canChangeReminderChannel())) {
         Alert.alert('Android notification settings', 'Android has disabled or changed medication reminder alerts. Review this app’s system notification settings before changing this option.', [
@@ -28,10 +29,15 @@ export default function NotificationPrivacyScreen() {
       }
       const next = { ...prefs, notificationPrivacy: value };
       await writeSettings(next);
+      saved = true;
       setPrefs(next);
       await reconcileReminders();
       router.back();
-    } catch { Alert.alert('Could not update privacy', 'Please try again.'); }
+    } catch {
+      Alert.alert(saved ? 'Privacy cleanup needs a retry' : 'Could not update privacy', saved
+        ? 'Your preference was saved, but existing notifications could not be fully refreshed. Open Reminder status in Settings and retry.'
+        : 'Please try again.');
+    }
     finally { setBusy(false); }
   }
   return <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }} edges={['top']}><View className="mx-auto w-full max-w-[440px] px-5">

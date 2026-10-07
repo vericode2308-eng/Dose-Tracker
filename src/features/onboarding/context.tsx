@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { initializeProfiles } from '@/database';
 import { INITIAL_DATA, type OnboardingData } from './model';
-import { clearOnboarding, readOnboarding, writeOnboarding } from './storage';
+import { clearOnboarding, onboardingFlags, writeOnboarding } from './storage';
+import { loadOnboarding } from './migration';
 
 type Context = { data: OnboardingData; save: (patch: Partial<OnboardingData>) => Promise<void>; reset: () => Promise<void> };
 const OnboardingContext = createContext<Context | null>(null);
@@ -14,8 +14,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [failed, setFailed] = useState(false);
   const load = useCallback(async () => {
     try {
-      const stored = await readOnboarding();
-      await initializeProfiles(stored.profile);
+      const stored = await loadOnboarding();
       current.current = stored;
       setData(stored);
       setFailed(false);
@@ -24,8 +23,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => {
     let active = true;
-    readOnboarding().then(async (stored) => {
-      await initializeProfiles(stored.profile);
+    loadOnboarding().then((stored) => {
       if (!active) return;
       current.current = stored;
       setData(stored);
@@ -38,7 +36,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, []);
   const save = useCallback(async (patch: Partial<OnboardingData>) => {
-    const next = { ...current.current, ...patch };
+    const next = onboardingFlags({ ...current.current, ...patch });
     await writeOnboarding(next);
     current.current = next;
     setData(next);

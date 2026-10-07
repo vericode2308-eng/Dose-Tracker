@@ -1,0 +1,7 @@
+
+PASS native delivery: looping sound remains active after 7 seconds, Stop first, 120-second timeout
+
+PASS volume-down silences audio and retains notification
+
+PASS phase=volume
+

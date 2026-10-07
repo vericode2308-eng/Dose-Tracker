@@ -1,3 +1,4 @@
+import { publicErrorMessage } from '@/features/security/errors';
 import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { AppState } from 'react-native';
@@ -15,7 +16,7 @@ export function useLocalQuery<T>(query: () => Promise<T>, initial: T, intervalMs
       const result = await query();
       if (request === generation.current) { setData(result); setError(''); }
     } catch (error) {
-      if (request === generation.current) setError(error instanceof Error ? error.message : 'Local data could not be loaded.');
+      if (request === generation.current) setError(publicErrorMessage(error, 'Local data could not be loaded.'));
     } finally { if (request === generation.current) setLoading(false); }
   }, [query]);
   useFocusEffect(useCallback(() => {

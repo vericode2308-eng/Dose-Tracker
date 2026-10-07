@@ -31,3 +31,9 @@ export function occurrencesOnDate(schedule, date) {
   start.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
   return [start.getTime()];
 }
+
+// Times are selected to the minute: saving during that minute keeps it eligible.
+// This is a fixed creation boundary, never a moving cutoff that hides overdue doses.
+export function isEligibleOccurrence(createdAtMs, scheduledAtMs) {
+  return createdAtMs == null || scheduledAtMs >= Math.floor(createdAtMs / 60000) * 60000;
+}

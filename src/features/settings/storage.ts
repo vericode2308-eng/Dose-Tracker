@@ -9,6 +9,7 @@ export type SettingsPreferences = {
   notificationPrivacy: 'show' | 'hide' | 'none';
   reminderSound: 'default' | 'gentle' | 'clear' | 'silent';
   vibrationEnabled: boolean;
+  reminderRinging?: boolean;
 };
 
 export const DEFAULT_SETTINGS: SettingsPreferences = {
@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: SettingsPreferences = {
   notificationPrivacy: 'show',
   reminderSound: 'default',
   vibrationEnabled: true,
+  reminderRinging: false,
 };
 
 export async function readSettings(): Promise<SettingsPreferences> {
@@ -37,7 +39,8 @@ export async function writeSettings(value: SettingsPreferences): Promise<void> {
 
 export function preferencesOnly(value: SettingsPreferences): SettingsPreferences {
   const { theme, remindersEnabled, snoozeMinutes, notificationPrivacy, reminderSound, vibrationEnabled } = value;
-  return { theme, remindersEnabled, snoozeMinutes, notificationPrivacy, reminderSound, vibrationEnabled };
+  return { theme, remindersEnabled, snoozeMinutes, notificationPrivacy, reminderSound, vibrationEnabled,
+    reminderRinging: value.reminderRinging ?? false };
 }
 
 export async function clearSettings(): Promise<void> {
@@ -52,14 +55,15 @@ export function isSettings(value: unknown): value is SettingsPreferences {
     [5, 10, 15, 30].includes(item.snoozeMinutes) &&
     ['show', 'hide', 'none'].includes(item.notificationPrivacy) &&
     ['default', 'gentle', 'clear', 'silent'].includes(item.reminderSound) &&
-    typeof item.vibrationEnabled === 'boolean';
+    typeof item.vibrationEnabled === 'boolean' &&
+    (item.reminderRinging === undefined || typeof item.reminderRinging === 'boolean');
 }
 
 export function migrateLegacySettings(value: unknown): SettingsPreferences {
   if (!isLegacySettings(value)) throw new Error('Invalid legacy preferences.');
   return { theme: value.theme, remindersEnabled: value.remindersEnabled ?? true,
     snoozeMinutes: value.snoozeMinutes, notificationPrivacy: value.notificationPrivacy,
-    reminderSound: value.soundAndVibration ? 'default' : 'silent', vibrationEnabled: value.soundAndVibration };
+    reminderSound: value.soundAndVibration ? 'default' : 'silent', vibrationEnabled: value.soundAndVibration, reminderRinging: false };
 }
 
 export function isLegacySettings(value: unknown): value is {

@@ -4,8 +4,15 @@ import Foundation
 let width: CGFloat = 1024
 let height: CGFloat = 500
 
-let image = NSImage(size: NSSize(width: width, height: height))
-image.lockFocus()
+guard let canvas = NSBitmapImageRep(
+    bitmapDataPlanes: nil, pixelsWide: Int(width), pixelsHigh: Int(height),
+    bitsPerSample: 8, samplesPerPixel: 3, hasAlpha: false,
+    isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: Int(width) * 4, bitsPerPixel: 32
+), let graphics = NSGraphicsContext(bitmapImageRep: canvas) else {
+    fatalError("Failed to create exact-size canvas")
+}
+NSGraphicsContext.saveGraphicsState()
+NSGraphicsContext.current = graphics
 
 guard let ctx = NSGraphicsContext.current?.cgContext else {
     print("Failed to get context")
@@ -72,20 +79,20 @@ let titleAttrs: [NSAttributedString.Key: Any] = [
 let titleStr = NSAttributedString(string: "Dose Tracker", attributes: titleAttrs)
 titleStr.draw(at: NSPoint(x: 395, y: 295))
 
-// 4. Draw Tagline "Private & Offline Medication Reminder"
+// 4. Draw Tagline "Medicines, reminders & dose history"
 let tagFont = NSFont.systemFont(ofSize: 25, weight: .medium)
 let tagAttrs: [NSAttributedString.Key: Any] = [
     .font: tagFont,
     .foregroundColor: NSColor(red: 147/255.0, green: 197/255.0, blue: 253/255.0, alpha: 1.0) // Soft sky blue
 ]
-let tagStr = NSAttributedString(string: "Private & Offline Medication Reminder", attributes: tagAttrs)
+let tagStr = NSAttributedString(string: "Medicines, reminders & dose history", attributes: tagAttrs)
 tagStr.draw(at: NSPoint(x: 395, y: 250))
 
 // 5. Draw 3 Feature Badges
 let features = [
-    ("🛡️", "100% On-Device Privacy"),
-    ("⏰", "Reliable Alarm Reminders"),
-    ("👥", "Family & Multi-Profile")
+    ("", "Dose history"),
+    ("", "Stock tracking"),
+    ("", "Care profiles")
 ]
 
 var curX: CGFloat = 395
@@ -94,7 +101,7 @@ let badgeHeight: CGFloat = 46
 
 for (icon, label) in features {
     let font = NSFont.systemFont(ofSize: 15, weight: .semibold)
-    let text = "\(icon)  \(label)"
+    let text = icon.isEmpty ? label : "\(icon)  \(label)"
     let textAttrs: [NSAttributedString.Key: Any] = [
         .font: font,
         .foregroundColor: NSColor(white: 0.95, alpha: 1.0)
@@ -125,14 +132,12 @@ let highlightAttrs: [NSAttributedString.Key: Any] = [
     .font: highlightFont,
     .foregroundColor: NSColor(white: 0.72, alpha: 1.0)
 ]
-let highlightStr = NSAttributedString(string: "No Accounts Required  •  Zero Cloud Tracking  •  Always Free", attributes: highlightAttrs)
+let highlightStr = NSAttributedString(string: "Local health records  •  No account required", attributes: highlightAttrs)
 highlightStr.draw(at: NSPoint(x: 395, y: 110))
 
-image.unlockFocus()
+NSGraphicsContext.restoreGraphicsState()
 
-guard let tiffData = image.tiffRepresentation,
-      let bitmap = NSBitmapImageRep(data: tiffData),
-      let pngData = bitmap.representation(using: .png, properties: [:]) else {
+guard let pngData = canvas.representation(using: .png, properties: [:]) else {
     print("Failed to encode PNG")
     exit(1)
 }

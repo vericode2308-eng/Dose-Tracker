@@ -1,0 +1,463 @@
+[
+  {
+    "name": "@expo/ui",
+    "version": "57.0.20",
+    "weeklyDownloads": 5162215,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-ui"
+    }
+  },
+  {
+    "name": "@expo/vector-icons",
+    "version": "15.1.1",
+    "weeklyDownloads": 6397914,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/vector-icons.git"
+    }
+  },
+  {
+    "name": "@react-native-async-storage/async-storage",
+    "version": "2.2.0",
+    "weeklyDownloads": 8472405,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/react-native-async-storage/async-storage.git",
+      "directory": "packages/default-storage-backend"
+    }
+  },
+  {
+    "name": "@react-native-community/datetimepicker",
+    "version": "9.1.0",
+    "weeklyDownloads": 2926021,
+    "periodEnd": "2026-09-29",
+    "repository": "https://github.com/react-native-datetimepicker/datetimepicker"
+  },
+  {
+    "name": "@sentry/react-native",
+    "version": "7.11.0",
+    "weeklyDownloads": 4176199,
+    "periodEnd": "2026-09-29",
+    "repository": "https://github.com/getsentry/sentry-react-native"
+  },
+  {
+    "name": "eslint",
+    "version": "9.39.5",
+    "weeklyDownloads": 188020176,
+    "periodEnd": "2026-09-29",
+    "repository": "eslint/eslint"
+  },
+  {
+    "name": "eslint-config-expo",
+    "version": "57.0.2",
+    "weeklyDownloads": 2729587,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/expo/expo.git",
+      "directory": "packages/eslint-config-expo"
+    }
+  },
+  {
+    "name": "expo",
+    "version": "57.0.25",
+    "weeklyDownloads": 10978245,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo"
+    }
+  },
+  {
+    "name": "expo-asset",
+    "version": "57.0.18",
+    "weeklyDownloads": 10827002,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-asset"
+    }
+  },
+  {
+    "name": "expo-audio",
+    "version": "57.0.5",
+    "weeklyDownloads": 2618058,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-audio"
+    }
+  },
+  {
+    "name": "expo-constants",
+    "version": "57.0.19",
+    "weeklyDownloads": 11851338,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-constants"
+    }
+  },
+  {
+    "name": "expo-crypto",
+    "version": "57.0.3",
+    "weeklyDownloads": 5077007,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-crypto"
+    }
+  },
+  {
+    "name": "expo-device",
+    "version": "57.0.2",
+    "weeklyDownloads": 4532344,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-device"
+    }
+  },
+  {
+    "name": "expo-document-picker",
+    "version": "57.0.2",
+    "weeklyDownloads": 3141492,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-document-picker"
+    }
+  },
+  {
+    "name": "expo-file-system",
+    "version": "57.0.7",
+    "weeklyDownloads": 11094784,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-file-system"
+    }
+  },
+  {
+    "name": "expo-font",
+    "version": "57.0.4",
+    "weeklyDownloads": 10899626,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-font"
+    }
+  },
+  {
+    "name": "expo-glass-effect",
+    "version": "57.0.4",
+    "weeklyDownloads": 6055928,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-glass-effect"
+    }
+  },
+  {
+    "name": "expo-haptics",
+    "version": "57.0.3",
+    "weeklyDownloads": 5032817,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-haptics"
+    }
+  },
+  {
+    "name": "expo-image",
+    "version": "57.0.5",
+    "weeklyDownloads": 5011685,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-image"
+    }
+  },
+  {
+    "name": "expo-image-picker",
+    "version": "57.0.20",
+    "weeklyDownloads": 5239965,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-image-picker"
+    }
+  },
+  {
+    "name": "expo-linking",
+    "version": "57.0.11",
+    "weeklyDownloads": 8740711,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-linking"
+    }
+  },
+  {
+    "name": "expo-local-authentication",
+    "version": "57.0.3",
+    "weeklyDownloads": 1632575,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-local-authentication"
+    }
+  },
+  {
+    "name": "expo-notifications",
+    "version": "57.0.21",
+    "weeklyDownloads": 5525430,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-notifications"
+    }
+  },
+  {
+    "name": "expo-router",
+    "version": "57.0.23",
+    "weeklyDownloads": 7619930,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "url": "https://github.com/expo/expo.git",
+      "type": "git",
+      "directory": "packages/expo-router"
+    }
+  },
+  {
+    "name": "expo-screen-capture",
+    "version": "57.0.3",
+    "weeklyDownloads": 525550,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-screen-capture"
+    }
+  },
+  {
+    "name": "expo-secure-store",
+    "version": "57.0.4",
+    "weeklyDownloads": 7264857,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-secure-store"
+    }
+  },
+  {
+    "name": "expo-sharing",
+    "version": "57.0.22",
+    "weeklyDownloads": 2973536,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-sharing"
+    }
+  },
+  {
+    "name": "expo-splash-screen",
+    "version": "57.0.9",
+    "weeklyDownloads": 6769040,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-splash-screen"
+    }
+  },
+  {
+    "name": "expo-sqlite",
+    "version": "57.0.3",
+    "weeklyDownloads": 1629600,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-sqlite"
+    }
+  },
+  {
+    "name": "expo-status-bar",
+    "version": "57.0.1",
+    "weeklyDownloads": 8256476,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-status-bar"
+    }
+  },
+  {
+    "name": "expo-symbols",
+    "version": "57.0.3",
+    "weeklyDownloads": 6266176,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-symbols"
+    }
+  },
+  {
+    "name": "expo-system-ui",
+    "version": "57.0.4",
+    "weeklyDownloads": 4833999,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-system-ui"
+    }
+  },
+  {
+    "name": "expo-task-manager",
+    "version": "57.0.20",
+    "weeklyDownloads": 1111207,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-task-manager"
+    }
+  },
+  {
+    "name": "expo-web-browser",
+    "version": "57.0.3",
+    "weeklyDownloads": 6307625,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/expo/expo.git",
+      "directory": "packages/expo-web-browser"
+    }
+  },
+  {
+    "name": "nativewind",
+    "version": "4.2.7",
+    "weeklyDownloads": 2088897,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/nativewind/nativewind.git"
+    }
+  },
+  {
+    "name": "react",
+    "version": "19.2.3",
+    "weeklyDownloads": 211730277,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/facebook/react.git",
+      "directory": "packages/react"
+    }
+  },
+  {
+    "name": "react-dom",
+    "version": "19.2.3",
+    "weeklyDownloads": 199707137,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/facebook/react.git",
+      "directory": "packages/react-dom"
+    }
+  },
+  {
+    "name": "react-native",
+    "version": "0.86.3",
+    "weeklyDownloads": 15747009,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/react/react-native.git",
+      "directory": "packages/react-native"
+    }
+  },
+  {
+    "name": "react-native-gesture-handler",
+    "error": "HTTPError"
+  },
+  {
+    "name": "react-native-reanimated",
+    "version": "4.5.1",
+    "weeklyDownloads": 10080156,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/software-mansion/react-native-reanimated.git",
+      "directory": "packages/react-native-reanimated"
+    }
+  },
+  {
+    "name": "react-native-safe-area-context",
+    "error": "HTTPError"
+  },
+  {
+    "name": "react-native-screens",
+    "error": "HTTPError"
+  },
+  {
+    "name": "react-native-svg",
+    "version": "15.15.4",
+    "weeklyDownloads": 9120108,
+    "periodEnd": "2026-09-29",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/react-native-community/react-native-svg"
+    }
+  },
+  {
+    "name": "react-native-web",
+    "error": "HTTPError"
+  },
+  {
+    "name": "react-native-worklets",
+    "error": "HTTPError"
+  },
+  {
+    "name": "tailwindcss",
+    "error": "HTTPError"
+  },
+  {
+    "name": "@types/react",
+    "error": "HTTPError"
+  },
+  {
+    "name": "patch-package",
+    "error": "HTTPError"
+  },
+  {
+    "name": "typescript",
+    "error": "HTTPError"
+  }
+]

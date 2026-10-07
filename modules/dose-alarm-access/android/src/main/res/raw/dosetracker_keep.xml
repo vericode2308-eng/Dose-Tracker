@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Expo resolves these bundled reminder sounds by name at runtime. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/gentle,@raw/clear" />

@@ -1,0 +1,43 @@
+// Credentials stay outside source and are supplied only to the build process.
+def uploadSigning = [
+    storeFile: System.getenv('DOSETRACKER_UPLOAD_STORE_FILE'),
+    storePassword: System.getenv('DOSETRACKER_UPLOAD_STORE_PASSWORD'),
+    keyAlias: System.getenv('DOSETRACKER_UPLOAD_KEY_ALIAS'),
+    keyPassword: System.getenv('DOSETRACKER_UPLOAD_KEY_PASSWORD')
+]
+if (uploadSigning.values().any { it } && !uploadSigning.values().every { it }) {
+    throw new GradleException('All four DOSETRACKER_UPLOAD signing variables must be supplied together.')
+}
+if (uploadSigning.values().every { it }) {
+    android.signingConfigs.create('doseTrackerUpload') {
+        storeFile file(uploadSigning.storeFile)
+        storePassword uploadSigning.storePassword
+        keyAlias uploadSigning.keyAlias
+        keyPassword uploadSigning.keyPassword
+    }
+    android.buildTypes.release.signingConfig = android.signingConfigs.doseTrackerUpload
+}
+
+android.buildTypes.release.ndk.debugSymbolLevel = 'SYMBOL_TABLE'
+
+tasks.register('verifyDoseTrackerRelease') {
+    doLast {
+        def release = android.buildTypes.release
+        if (!release.minifyEnabled || !release.shrinkResources) {
+            throw new GradleException('DoseTracker releases require R8 and resource shrinking.')
+        }
+        def signing = release.signingConfig
+        def debugSigning = signing == null || signing.name == 'debug' || signing.keyAlias == 'androiddebugkey'
+        def localQa = project.findProperty('dosetracker.allowDebugRelease') == 'true' && System.getenv('EAS_BUILD') != 'true'
+        if (System.getenv('EXPO_PUBLIC_DIAGNOSTICS_MODE') != 'public' && !(debugSigning && localQa)) {
+            throw new GradleException('Set EXPO_PUBLIC_DIAGNOSTICS_MODE=public for distribution builds.')
+        }
+        if (debugSigning && !localQa) {
+            throw new GradleException('Debug signing is forbidden for distribution. Supply the approved DOSETRACKER_UPLOAD signing variables. Local QA only: -Pdosetracker.allowDebugRelease=true.')
+        }
+        if (debugSigning) logger.warn('LOCAL QA ONLY: this release uses a debug key and MUST NOT be uploaded to Play.')
+    }
+}
+tasks.matching { it.name == 'preReleaseBuild' }.configureEach {
+    dependsOn('verifyDoseTrackerRelease')
+}

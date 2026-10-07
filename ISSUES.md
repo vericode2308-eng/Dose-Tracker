@@ -1,5 +1,9 @@
 # DoseTracker App — Remediation Issues & Resolution Log
 
+## Today action label flash — 2026-09-29
+
+The Android screenshot's “Saving…” text came from the shared Today screen's busy-state JSX. Take, Skip, Snooze, and Undo now retain their labels during work, while the existing repeat-tap guard, disabled accessibility state, database operations, and error handling remain intact. The reusable UI rule is recorded in `ANDROID_GUIDEBOOK.md`, section 7. Lint, typecheck, and all 63 existing tests passed. In-app browser testing covered Take/Undo/Skip/Undo/Snooze and observed original labels while the controls were disabled in flight. This is source/browser verification; the updated installed Android app still needs device verification. See `docs/CORRECTIONS_LOG.md` for scope and test data.
+
 ## Independent verification update — 2026-09-27
 
 The original **RESOLVED** labels below record the coder's implementation claims. The table here records a separate code, automated, web-preview, and Android emulator check after follow-up corrections.

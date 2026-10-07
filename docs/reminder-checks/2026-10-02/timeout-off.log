@@ -1,0 +1,15 @@
+
+PASS native delivery: looping sound remains active after 7 seconds, Stop first, 120-second timeout
+
+Timeout check: 32 seconds elapsed, present=true, sound=true
+
+Timeout check: 57 seconds elapsed, present=true, sound=true
+
+Timeout check: 82 seconds elapsed, present=true, sound=true
+
+Timeout check: 107 seconds elapsed, present=true, sound=true
+
+PASS two-minute OS cutoff: notification cleared and sound stopped
+
+PASS phase=timeout-off
+

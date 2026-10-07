@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:label="DoseTracker reminder checks"/><instrumentation android:name="check.RingingCheck" android:targetPackage="com.vericodestudio.dose_tracker"/></manifest>

@@ -37,17 +37,20 @@ export async function importPreferences(): Promise<SettingsPreferences | null> {
   const result = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true });
   if (result.canceled) return null;
   const asset = result.assets[0];
-  if (!asset || (asset.size != null && asset.size > MAX_BACKUP_BYTES)) throw new Error('Backup file is too large.');
+  if (!asset) throw new Error('Backup file could not be opened.');
 
   let content: string;
   if (Platform.OS === 'web') {
     if (!asset.file) throw new Error('Backup file could not be opened.');
+    if (!Number.isFinite(asset.file.size) || asset.file.size < 0 || asset.file.size > MAX_BACKUP_BYTES
+      || (asset.size != null && asset.size > MAX_BACKUP_BYTES)) throw new Error('Backup file is too large.');
     content = await asset.file.text();
   } else {
     const { File } = await import('expo-file-system');
     const file = new File(asset.uri);
     try {
-      if (file.size > MAX_BACKUP_BYTES) throw new Error('Backup file is too large.');
+      if (!Number.isFinite(file.size) || file.size < 0 || file.size > MAX_BACKUP_BYTES
+        || (asset.size != null && asset.size > MAX_BACKUP_BYTES)) throw new Error('Backup file is too large.');
       content = await file.text();
     } finally {
       if (file.exists) file.delete();

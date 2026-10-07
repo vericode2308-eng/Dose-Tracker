@@ -6,7 +6,7 @@ export const MEDICATION_CATEGORY: string;
 export const ACTION_TAKE: string;
 export const ACTION_SNOOZE: string;
 export const ACTION_SKIP: string;
-export type ReminderStatus = { allowed: boolean; exact: boolean | null; message: string; channelId?: string; channel?: unknown };
+export type ReminderStatus = { allowed: boolean; exact: boolean | null; message: string; channelId?: string; channel?: unknown; ringingAvailable?: boolean };
 export type ReminderDiagnostics = ReminderStatus & { enabled: boolean; requested: number; scheduled: number; issues: ReminderIssue[] };
 export type ReminderResult = ReminderStatus & { scheduled: number; issues: string[] };
 export function localDate(date?: Date): string;
@@ -14,6 +14,7 @@ export function parseReminderTime(value: number | string): number;
 export function recurringTriggers(schedule: StoredSchedule, now?: Date): object[];
 export function getReminderStatus(requestPermission?: boolean): Promise<ReminderStatus>;
 export function canChangeReminderChannel(): Promise<boolean>;
+export function isAlarmRingingAvailable(): boolean;
 export function scheduleTestReminder(soundOverride?: 'default' | 'gentle' | 'clear' | 'silent'): Promise<string>;
 export function getReminderDiagnostics(): Promise<ReminderDiagnostics>;
 export function openExactAlarmSettings(): Promise<void>;
@@ -30,10 +31,13 @@ export function doseFromResponse(response: NotificationResponse): Promise<(DoseR
 export function handleReminderAction(response: NotificationResponse): Promise<void>;
 export function subscribeToReminderTaps(onDose: (route: Href) => void, onError?: (error: unknown) => void): Promise<() => void>;
 
-export function snoozeMedicationDose(dose: DoseReference & { medicineId: string }, minutes?: number): Promise<{ untilMs: number; message: string }>;
+export function snoozeMedicationDose(dose: DoseReference & { medicineId: string }, minutes?: number, notificationDeliveredAtMs?: number): Promise<{ untilMs: number; message: string }>;
 export function recordMedicationDose(dose: DoseReference, status: 'Taken' | 'Skipped'): Promise<{ message: string }>;
 export function undoMedicationDose(dose: DoseReference): Promise<{ message: string }>;
+export function changeMedicationDose(dose: import('./database').DoseChangeInput, action: import('./database').DoseAction): Promise<{ receipt: import('./database').DoseChangeReceipt; message: string }>;
+export function undoMedicationChange(receipt: import('./database').DoseChangeReceipt): Promise<{ message: string }>;
 
 export function setProfileArchivedWithReminders(profileId: string, archived: boolean): Promise<ReminderResult>;
 
 export function editMedicineWithReminders(medicineId: string, input: MedicineEditInput): Promise<ReminderResult>;
+export function setAppLockWithReminders(enabled: boolean): Promise<{ message: string }>;

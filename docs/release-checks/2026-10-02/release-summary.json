@@ -1,0 +1,26 @@
+{
+  "aab_sha256": "efc4e74da08b65f2695d5d3e794d6424077e008ba58476523a1c68d2c441a2b1",
+  "aab_bytes": 88910562,
+  "apk_sha256": "12e87205fe824f0529ea5b44680af1ca18e21e37034aeaa9506669f52e435e95",
+  "signer_sha256": "52:FB:0D:67:42:E0:D5:BB:7C:B4:1F:C6:A1:61:B6:F2:1B:78:9D:5F:1D:CD:44:1F:D7:BA:C8:1E:DD:2A:65:0E",
+  "identity": {
+    "package": "com.vericodestudio.dosetracker",
+    "version": "1.0.0",
+    "version_code": 1,
+    "min_sdk": 24,
+    "target_sdk": 36
+  },
+  "dex_bytes": 13346060,
+  "native_libraries_per_abi": {
+    "arm64-v8a": 28,
+    "armeabi-v7a": 28,
+    "x86": 28,
+    "x86_64": 28
+  },
+  "diagnostics_mode": "public: compiled PRIVATE_QA_DIAGNOSTICS=false; QA keys retained only for erase-all cleanup",
+  "mapping_matches": true,
+  "sounds_retained": [
+    "gentle.wav",
+    "clear.wav"
+  ]
+}

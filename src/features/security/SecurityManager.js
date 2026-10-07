@@ -19,7 +19,10 @@ export async function checkSupport() {
 
 export async function isAuthEnabled() {
   if (Platform.OS === 'web') return false;
-  return (await SecureStore.getItemAsync(APP_LOCK_KEY, STORE_OPTIONS)) === 'on';
+  const value = await SecureStore.getItemAsync(APP_LOCK_KEY, STORE_OPTIONS);
+  if (value === null || value === 'off') return false;
+  if (value === 'on') return true;
+  throw new Error('The secure app-lock setting could not be read.');
 }
 
 export async function setAuthEnabled(enabled) {

@@ -11,10 +11,10 @@ export function Icon({ name, size = 22, color = theme.palette.navy }: { name: Ic
   return <Feather name={name} size={size} color={color} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />;
 }
 
-export function Page({ children, footer, backgroundColor = theme.colors.background }: { children: ReactNode; footer?: ReactNode; backgroundColor?: string }) {
+export function Page({ children, footer, backgroundColor = theme.colors.background, scrollable = true }: { children: ReactNode; footer?: ReactNode; backgroundColor?: string; scrollable?: boolean }) {
   return <SafeAreaView className="flex-1" style={{ backgroundColor }} edges={['top', 'bottom', 'left', 'right']}>
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>{children}</ScrollView>
+      <ScrollView style={{ flex: 1 }} scrollEnabled={scrollable} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.page, !scrollable && { flex: 1, justifyContent: 'space-between', paddingBottom: 4 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
       {footer && <View style={{ width: '100%', maxWidth: 430, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, backgroundColor }}>{footer}</View>}
     </KeyboardAvoidingView>
   </SafeAreaView>;

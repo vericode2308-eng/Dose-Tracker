@@ -1,0 +1,7 @@
+
+PASS native delivery: looping sound remains active after 7 seconds, Stop first, 120-second timeout
+
+PASS native Stop: sound stopped, content preserved, looping/timeout/Stop removed
+
+PASS phase=stop
+

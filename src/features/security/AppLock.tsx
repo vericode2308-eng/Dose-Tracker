@@ -84,10 +84,17 @@ export function AppLock({ children }: { children: ReactNode }) {
   }, [status, unlock]);
 
   const setEnabled = useCallback(async (value: boolean) => {
-    await protectPreviews(value);
+    // The SecureStore preference has already committed. Keep the UI fail-closed
+    // if screenshot/app-switcher protection cannot be updated by the OS.
     enabledRef.current = value;
     updateEnabled(value);
-    setStatus('unlocked');
+    try {
+      await protectPreviews(value);
+      setStatus(isInBackground() && value ? 'locked' : 'unlocked');
+    } catch (error) {
+      setStatus('error');
+      throw error;
+    }
   }, []);
 
   if (status !== 'unlocked') return <View className="flex-1 items-center justify-center bg-[#FBF8F3] px-8">

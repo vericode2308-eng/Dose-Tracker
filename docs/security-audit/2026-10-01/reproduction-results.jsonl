@@ -1,0 +1,6 @@
+{"scenario":"headless action with enabled-lock service available","writes":1,"lockReads":0,"authenticationCalls":0,"limitation":"Mocked OS and database boundaries; not a device lock-screen test."}
+{"scenario":"show-to-hide notification transition","futureRequestsRedacted":true,"previousPresentedNotificationRetained":true}
+{"scenario":"onboarding persistence","profileNotesStoredInAsyncStorage":true}
+{"scenario":"installed query-string malformed query","percentTokens":192,"parseMs":328}
+{"scenario":"installed query-string malformed query","percentTokens":384,"parseMs":1428}
+{"scenario":"installed query-string malformed query","percentTokens":768,"timeoutMs":2000}

@@ -1,5 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application>
+    <receiver android:name=".DoseNotificationsService" android:exported="false">
+      <!-- Expo selects the highest-priority receiver for its internal events. -->
+      <intent-filter android:priority="1">
+        <action android:name="expo.modules.notifications.NOTIFICATION_EVENT" />
+      </intent-filter>
+    </receiver>
+    <receiver android:name=".StopRingingReceiver" android:exported="false" />
     <receiver android:name=".AlarmAccessReceiver" android:exported="false">
       <intent-filter>
         <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />

@@ -1,5 +1,20 @@
 # Google Play policy audit — 2026-09-29
 
+## Current release/legal update — 2026-10-03
+
+The dated findings below are historical and do not describe the corrected release. The current form worksheet is [playstore_assets/LISTING.md](../playstore_assets/LISTING.md#play-console-answer-worksheet--checked-2026-10-03); exact AAB evidence and remaining runtime checks are in [ANDROID_RELEASE_CHECKS.md](ANDROID_RELEASE_CHECKS.md).
+
+Owner confirmed adults 18+, no prior Play upload, deletion/support email support@vericodestudio.com, and email deletion within 90 days after resolution unless legally required longer. Optional diagnostics now have three separate default-off categories: errors, fixed logs and manual performance traces. Earlier errors-only descriptions are superseded.
+
+Privacy, Terms & Use and deletion pages were generated from the legal sources and deployed to the existing Cloudflare Pages project, then checked in the in-app browser. Legacy `/?legal=terms` correctly redirects. The original contract draft is retained privately as `legal/TERMS_DRAFT_FOR_REVIEW.md`; only three approved public Markdown notices are staged by `scripts/stage-landing.py`. Internal product facts/open questions are excluded from deployment.
+
+Sentry organization uses EU data storage. Project IP-address storage prevention is enabled, default scrubbing is on, minidump storage disabled, no data forwarders configured, and aggregated identifying data use is off. DPA v5.1.0 was accepted with explicit owner authorization (Sentry displays signed Oct 2; local date Oct 3). Additional sensitive-field scrubbing removes city/subdivision/region/country_code/ip_address from future events; it does not erase earlier events. The policy accurately acknowledges network connection processing and plan-dependent retention.
+
+One synthetic error envelope was accepted and inspected in Sentry (DOSE-TRACKER-2): geography fields `[Filtered]`, zero identified users, zero replays/attachments. It was resolved after validation. This confirms server-side redaction for that sample, not in-app delivery or no geographic processing. The form worksheet now explicitly covers inferred approximate location and leaves ephemeral processing unclaimed until supported.
+
+Remaining: verify actual in-app report delivery and provider ephemeral-processing criteria; choose/confirm post-trial retention plan; complete the actual Console forms and release screenshots; finish interactive optimized-release reminder/storage/security checks. Neither DPA acceptance nor static checks establish Google approval. No Play upload or form submission was performed.
+
+
 **Original assessment (before corrections): not ready for a compliance sign-off.** The current source contains disclosure and product-claim gaps. Other requirements depend on the submitted Android bundle, published website, and Play Console settings, which were not available for verification.
 
 Scope: app screens and navigation, data storage/deletion, notifications and native alarm module, SDK configuration, Expo configuration introspection, local legal/landing content, and store-asset documentation. This was a source/configuration audit, not a native-device walkthrough or a determination by Google. No application behavior was changed.

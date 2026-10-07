@@ -1,0 +1,5 @@
+
+PASS muted channel is respected even with ringing requested
+
+PASS phase=silent
+

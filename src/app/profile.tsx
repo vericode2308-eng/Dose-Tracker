@@ -1,3 +1,4 @@
+import { publicErrorMessage } from '@/features/security/errors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -15,7 +16,7 @@ import { useTheme } from '@/features/theme/ThemeContext';
 export default function ProfileScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
-  const { data, save } = useOnboarding();
+  const { data } = useOnboarding();
   const { mode, id } = useLocalSearchParams<{ mode?: string; id?: string }>();
   const { profiles, currentProfile, refresh } = useProfiles();
   const creating = mode === 'create';
@@ -33,7 +34,7 @@ export default function ProfileScreen() {
       await refresh();
       if (result.issues.length) { setError(result.issues.join(' ')); setConfirmArchive(false); }
       else goBack();
-    } catch (e) { setError(e instanceof Error ? e.message : 'Could not update profile.'); }
+    } catch (e) { setError(publicErrorMessage(e, 'Could not update profile.')); }
     finally { saving.current = false; setBusy(false); }
   }
   const [error, setError] = useState('');
@@ -59,7 +60,7 @@ export default function ProfileScreen() {
       void hapticSuccess();
       await refresh();
       if (editing || creating) goBack();
-      else { await save({ profile: skip ? null : { ...profile, photoUri } }); router.push('/notifications'); }
+      else router.push('/notifications');
     } catch { setError('Your profile couldn’t be saved on this device. Please try again.'); }
     finally { saving.current = false; setBusy(false); }
   }
@@ -70,7 +71,7 @@ export default function ProfileScreen() {
     try {
       const photoUri = await choosePhoto();
       if (photoUri) setProfile((p) => ({ ...p, photoUri }));
-    } catch { setError('The photo couldn’t be opened. Try another image or continue without a photo.'); }
+    } catch (error) { setError(publicErrorMessage(error, 'The photo couldn’t be opened. Try another image or continue without a photo.')); }
     finally { setPhotoBusy(false); }
   }
   if (id && !target) return <Page backgroundColor={colors.background}><ErrorMessage message="This profile is no longer available." /><Button title="Go back" onPress={goBack} /></Page>;

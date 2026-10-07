@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 
 import { useProfiles } from '@/features/profiles/context';
-import { fetchAllMedicines, subscribeToDatabaseChanges } from '@/database';
+import { fetchAllMedicines, subscribeToDatabaseChanges, type StoredSchedule } from '@/database';
 
 export type Medicine = {
   id: string;
@@ -21,6 +21,7 @@ export type Medicine = {
   doseAmount?: string;
   schedule?: string;
   scheduleId?: string;
+  schedules?: StoredSchedule[];
   reminderEnabled?: boolean;
   reminderSupported?: boolean;
   startDate?: string;
@@ -57,6 +58,7 @@ export function MedicinesProvider({ children }: { children: ReactNode }) {
         strength: m.strength || undefined, stockThreshold: m.lowStockThreshold ?? undefined,
         doseAmount: m.schedules[0] ? `${m.schedules[0].doseAmount} ${m.doseUnit || m.dosageForm}` : undefined,
         scheduleId: m.schedules[0]?.id,
+        schedules: m.schedules,
         reminderEnabled: m.schedules[0]?.reminderEnabled ?? false,
         reminderSupported: !!m.schedules[0] && !m.schedules[0].pattern.endDate
           && m.schedules[0].pattern.startDate <= todayKey()
@@ -67,7 +69,7 @@ export function MedicinesProvider({ children }: { children: ReactNode }) {
           : m.schedules[0]?.pattern.kind === 'prn' ? 'As needed'
           : m.schedules[0]?.pattern.kind === 'day_interval' ? `Every ${m.schedules[0].pattern.interval} days`
           : m.schedules[0]?.pattern.kind === 'hour_interval' ? `Every ${m.schedules[0].pattern.interval} hours` : undefined,
-        time: m.schedules[0]?.timeLocalMinute == null ? undefined : `${String(Math.floor(m.schedules[0].timeLocalMinute / 60)).padStart(2, '0')}:${String(m.schedules[0].timeLocalMinute % 60).padStart(2, '0')}`,
+        time: m.schedules.filter(s => s.timeLocalMinute != null).map(s => `${String(Math.floor(s.timeLocalMinute! / 60)).padStart(2, '0')}:${String(s.timeLocalMinute! % 60).padStart(2, '0')}`).join(', ') || undefined,
       })));
     }).catch(() => { if (active) setError('Your medicines could not be loaded. Reopen this screen to retry.'); }).finally(() => { if (active) setLoading(false); }); };
     void load();

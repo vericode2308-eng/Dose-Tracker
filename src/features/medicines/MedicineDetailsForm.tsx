@@ -2,11 +2,10 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { MEDICINE_COLORS, type MedicineColor as Color } from './colors';
 import { useTheme } from '@/features/theme/ThemeContext';
 
 const FORMS = ['Tablet', 'Capsule', 'Liquid', 'Injection', 'Inhaler', 'Other'];
-const COLORS = [{ name: 'Teal', value: '#079D9D' }, { name: 'Blue', value: '#3297FF' }, { name: 'Orange', value: '#FFA72E' }, { name: 'Purple', value: '#8845FA' }];
-type Color = typeof COLORS[number];
 type Props = {
   name: string; setName: (value: string) => void;
   strength: string; setStrength: (value: string) => void;
@@ -43,8 +42,9 @@ function InputCard({ label, value, onChangeText, placeholder, outlined = false, 
 
 export function MedicineDetailsForm(p: Props) {
   const { colors, isDark } = useTheme();
-  const [open, setOpen] = useState<'strength' | 'dose' | 'color' | null>(null);
-  function choices(kind: 'strength' | 'dose' | 'color', values: string[], onSelect: (value: string) => void) {
+  const [showOptional, setShowOptional] = useState(!!(p.purpose || p.instructions || p.notes));
+  const [open, setOpen] = useState<'strength' | 'dose' | null>(null);
+  function choices(kind: 'strength' | 'dose', values: string[], onSelect: (value: string) => void) {
     return open === kind && <View className="mt-2 border-t" style={{ borderColor: colors.border }}>{values.map(value => <Pressable key={value} accessibilityRole="button" onPress={() => { onSelect(value); setOpen(null); }} className="min-h-11 justify-center"><Text className="text-[16px]" style={{ color: colors.ink }}>{value}</Text></Pressable>)}</View>;
   }
   return <>
@@ -58,11 +58,25 @@ export function MedicineDetailsForm(p: Props) {
       <View className="flex-row flex-wrap justify-between gap-y-[8px]">{FORMS.map(form => <Pressable key={form} accessibilityRole="radio" accessibilityLabel={`${form}, medicine form, required`} accessibilityState={{ checked: p.form === form }} onPress={() => p.setForm(form)} className="h-[72px] w-[32%] items-center justify-center rounded-[14px] border" style={{ borderWidth: p.form === form ? 2 : 1, borderColor: p.form === form ? colors.accent : colors.border, backgroundColor: p.form === form ? (isDark ? colors.pill : '#EFFBFA') : colors.surface }}><MedicineIcon form={form} selected={p.form === form} /><Text className={`mt-[3px] text-[14px] ${p.form === form ? 'font-semibold' : ''}`} style={{ color: p.form === form ? colors.ink : colors.secondary }}>{form}</Text></Pressable>)}</View>
     </View>
     <View className="mb-[10px] rounded-[17px] border px-[14px] py-[8px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><Pressable accessibilityRole="button" accessibilityLabel={`Dose unit, required, ${p.doseUnit}`} onPress={() => setOpen(open === 'dose' ? null : 'dose')} className="flex-row items-center justify-between"><View><Label required>Dose unit</Label><Text className="text-[18px] leading-[28px]" style={{ color: colors.ink }}>{p.doseUnit}</Text></View><Feather name="chevron-down" size={19} color={colors.ink} /></Pressable>{choices('dose', FORMS, p.setDoseUnit)}</View>
+    <View className="mb-[10px] rounded-[17px] border px-[14px] py-[8px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+      <Label>Color & icon</Label>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Medicine color" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+        {(MEDICINE_COLORS.some(c => c.value.toLowerCase() === p.color.value.toLowerCase()) ? MEDICINE_COLORS : [...MEDICINE_COLORS, p.color]).map(color => {
+          const selected = color.value.toLowerCase() === p.color.value.toLowerCase();
+          return <Pressable key={color.value} accessibilityRole="radio" accessibilityLabel={`${color.name} medicine color`} accessibilityState={{ checked: selected }} onPress={() => p.setColor(color)}
+            style={({ pressed }) => ({ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, borderWidth: 2, borderColor: selected ? colors.ink : 'transparent', opacity: pressed ? 0.7 : 1 })}>
+            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: color.value, alignItems: 'center', justifyContent: 'center' }}>
+              {selected && <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#102238', alignItems: 'center', justifyContent: 'center' }}><Feather name="check" size={16} color="white" /></View>}
+            </View>
+          </Pressable>;
+        })}
+      </View>
+    </View>
+    <Pressable accessibilityRole="button" accessibilityState={{ expanded: showOptional }} onPress={() => setShowOptional(value => !value)} className="min-h-12 flex-row items-center justify-between"><Text style={{ color: colors.accent }}>{showOptional ? 'Hide extra details' : 'Add notes or instructions (optional)'}</Text><Feather name={showOptional ? 'chevron-up' : 'chevron-down'} size={20} color={colors.accent} /></Pressable>
+    {showOptional && <>
     <InputCard label="Purpose (optional)" value={p.purpose} onChangeText={p.setPurpose} placeholder="What is it for?" />
     <InputCard label="Instructions (optional)" value={p.instructions} onChangeText={p.setInstructions} placeholder="e.g. Take after food" />
-    <View className="flex-row items-start gap-[10px]">
-      <View className="min-h-[73px] w-[43%] rounded-[17px] border px-[14px] py-[8px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><Label>Color & icon</Label><Pressable accessibilityRole="button" accessibilityLabel={`Color and icon, ${p.color.name}`} onPress={() => setOpen(open === 'color' ? null : 'color')} className="mt-[4px] min-h-[36px] flex-row items-center gap-[9px]"><View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: p.color.value }}><MaterialCommunityIcons name="pill" size={23} color="white" /></View><Text className="flex-1 text-[16px]" style={{ color: colors.ink }}>{p.color.name}</Text><Feather name="chevron-down" size={18} color={colors.ink} /></Pressable>{choices('color', COLORS.map(c => c.name), value => p.setColor(COLORS.find(c => c.name === value)!))}</View>
-      <View className="min-h-[73px] flex-1 rounded-[17px] border px-[14px] py-[8px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><Label>Notes (optional)</Label><TextInput accessibilityLabel="Notes (optional)" value={p.notes} onChangeText={p.setNotes} placeholder="Anything else to remember" placeholderTextColor={colors.secondary} multiline className="mt-[4px] min-h-[32px] py-0 text-[16px] leading-[23px]" style={{ color: colors.ink }} /></View>
-    </View>
+    <InputCard label="Notes (optional)" value={p.notes} onChangeText={p.setNotes} placeholder="Anything else to remember" multiline />
+    </>}
   </>;
 }

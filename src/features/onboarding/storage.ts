@@ -12,7 +12,13 @@ export async function readOnboarding(): Promise<OnboardingData> {
 }
 
 export async function writeOnboarding(data: OnboardingData): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  if (!isOnboardingData(data)) throw new Error('Invalid setup preferences.');
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(onboardingFlags(data)));
+}
+
+/** SQLite owns personal data. Persist only the setup allowlist, including on upgrades. */
+export function onboardingFlags(data: OnboardingData): OnboardingData {
+  return { version: 1, completed: data.completed, notificationChoice: data.notificationChoice, profile: null };
 }
 
 export async function clearOnboarding(): Promise<void> {

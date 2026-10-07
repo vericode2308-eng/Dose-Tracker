@@ -1,30 +1,31 @@
+import { UserFacingError } from './features/security/errors';
 import * as Crypto from 'expo-crypto';
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
-import { dateKey, occurrencesOnDate } from './features/doses/occurrences';
+import { dateKey, occurrencesOnDate, isEligibleOccurrence } from './features/doses/occurrences';
 
 const listeners = new Set();
 export function subscribeToDatabaseChanges(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; }
 function changed() { for (const listener of listeners) listener(); }
 let writes = Promise.resolve();
-function withWriteTransaction(db, task) {
+function withWriteTransaction(db, task, notify = true) {
   // Web transactions use the shared connection; serialize writes on every platform.
   const result = writes.then(() => Platform.OS === 'web'
     ? db.withTransactionAsync(() => task(db)) : db.withExclusiveTransactionAsync(task));
   writes = result.catch(() => undefined);
-  void result.then(changed, () => undefined);
+  if (notify) void result.then(changed, () => undefined);
   return result;
 }
 
 // All data stays in the app's private on-device SQLite directory.
 export const DATABASE_NAME = 'dosetracker.db';
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 const QUANTITY_SCALE = 1_000_000;
 
 let databasePromise;
 
 function requiredText(value, label) {
-  if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} is required.`);
+  if (typeof value !== 'string' || !value.trim()) throw new UserFacingError(`${label} is required.`);
   return value.trim();
 }
 
@@ -36,11 +37,11 @@ function quantityToUnits(value, label) {
   if (value == null) return null;
   const text = String(value);
   if (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(text)) {
-    throw new Error(`${label} must be a nonnegative number with at most six decimal places.`);
+    throw new UserFacingError(`${label} must be a nonnegative number with at most six decimal places.`);
   }
   const [whole, fraction = ''] = text.split('.');
   const result = Number(whole) * QUANTITY_SCALE + Number(fraction.padEnd(6, '0'));
-  if (!Number.isSafeInteger(result)) throw new Error(`${label} is too large.`);
+  if (!Number.isSafeInteger(result)) throw new UserFacingError(`${label} is too large.`);
   return result;
 }
 
@@ -53,20 +54,20 @@ function isCalendarDate(value) {
 
 function validatePattern(pattern) {
   if (!pattern || typeof pattern !== 'object' || Array.isArray(pattern)) {
-    throw new Error('Recurring pattern must be an object.');
+    throw new UserFacingError('Recurring pattern must be an object.');
   }
   if (!['daily', 'weekdays', 'day_interval', 'hour_interval', 'prn'].includes(pattern.kind)) {
-    throw new Error('Unsupported recurring pattern.');
+    throw new UserFacingError('Unsupported recurring pattern.');
   }
-  if (!isCalendarDate(pattern.startDate)) throw new Error('A valid schedule start date is required.');
+  if (!isCalendarDate(pattern.startDate)) throw new UserFacingError('A valid schedule start date is required.');
   if (pattern.endDate != null && (!isCalendarDate(pattern.endDate) || pattern.endDate < pattern.startDate)) {
-    throw new Error('Schedule end date must be on or after the start date.');
+    throw new UserFacingError('Schedule end date must be on or after the start date.');
   }
   if (pattern.kind === 'weekdays' && (!Array.isArray(pattern.weekdays) || !pattern.weekdays.length || pattern.weekdays.some(day => !Number.isInteger(day) || day < 0 || day > 6))) {
-    throw new Error('Weekdays must contain day numbers from 0 (Sunday) to 6 (Saturday).');
+    throw new UserFacingError('Weekdays must contain day numbers from 0 (Sunday) to 6 (Saturday).');
   }
   if ((pattern.kind === 'day_interval' || pattern.kind === 'hour_interval') && (!Number.isSafeInteger(pattern.interval) || pattern.interval < 1)) {
-    throw new Error('Schedule interval must be a positive whole number.');
+    throw new UserFacingError('Schedule interval must be a positive whole number.');
   }
   return JSON.stringify(pattern);
 }
@@ -75,7 +76,7 @@ async function migrate(db) {
   // These connection settings match the storage conventions in PLAN.md.
   await db.execAsync('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
   const version = (await db.getFirstAsync('PRAGMA user_version'))?.user_version ?? 0;
-  if (version > SCHEMA_VERSION) throw new Error('This database was created by a newer app version.');
+  if (version > SCHEMA_VERSION) throw new UserFacingError('This database was created by a newer app version.');
   if (version === SCHEMA_VERSION) return;
 
   await withWriteTransaction(db, async transaction => {
@@ -192,12 +193,17 @@ async function migrate(db) {
     if (version < 7) {
       await transaction.execAsync('ALTER TABLE history ADD COLUMN dose_snapshot TEXT; PRAGMA user_version = 7;');
     }
+    if (version < 8) {
+      await transaction.execAsync('ALTER TABLE schedules ADD COLUMN history_next_date TEXT; PRAGMA user_version = 8;');
+      // Old versions did not retain pause/edit periods. Do not invent past outcomes.
+      await transaction.runAsync('UPDATE schedules SET history_next_date = ?', [dateKey()]);
+    }
   });
 }
 
 /** Logs observed setup/scheduling issues only; Android does not report every delivery. */
 export async function recordReminderIssue(code, message) {
-  if (!/^[a-z_]{1,40}$/.test(code) || typeof message !== 'string' || !message.trim()) throw new Error('Invalid reminder issue.');
+  if (!/^[a-z_]{1,40}$/.test(code) || typeof message !== 'string' || !message.trim()) throw new UserFacingError('Invalid reminder issue.');
   const db = await initializeDatabase();
   const now = Date.now();
   const day = new Date(now).toISOString().slice(0, 10);
@@ -246,28 +252,64 @@ function validateMedicineForm(medicine, schedule) {
   const time = schedule.timeLocalMinute ?? null;
   if (pattern && ((schedule.pattern.kind === 'prn' && time !== null) ||
       (schedule.pattern.kind !== 'prn' && (!Number.isInteger(time) || time < 0 || time > 1439)))) {
-    throw new Error('A scheduled dose needs a valid local time; as-needed doses have no fixed time.');
+    throw new UserFacingError('A scheduled dose needs a valid local time; as-needed doses have no fixed time.');
   }
   const reminderEnabled = schedule.reminderEnabled === true;
   if (reminderEnabled && (schedule.pattern.endDate || schedule.pattern.startDate > dateKey(new Date()) ||
       !['daily', 'weekdays'].includes(schedule.pattern.kind))) {
-    throw new Error('Reminders currently support ongoing daily or weekday schedules starting today.');
+    throw new UserFacingError('Reminders currently support ongoing daily or weekday schedules starting today.');
   }
   const stock = quantityToUnits(medicine.stockRemaining, 'Stock remaining');
   const threshold = quantityToUnits(medicine.lowStockThreshold, 'Low-stock threshold');
   const amount = quantityToUnits(schedule.doseAmount, 'Dose amount');
-  if (amount === null || amount === 0) throw new Error('Dose amount must be greater than zero.');
+  if (amount === null || amount === 0) throw new UserFacingError('Dose amount must be greater than zero.');
   return { name, dosageForm, pattern, time, reminderEnabled, stock, threshold, amount };
 }
 
+/** Validate every submitted dose time before writing any part of a medicine. */
+function validateAdditionalSchedules(medicine, schedule, additionalSchedules = []) {
+  if (!Array.isArray(additionalSchedules)) throw new UserFacingError('Choose valid dose times.');
+  const times = new Set([schedule.timeLocalMinute]);
+  return additionalSchedules.map(item => {
+    if (!['daily', 'weekdays', 'day_interval'].includes(schedule.pattern.kind) ||
+        JSON.stringify(item.pattern) !== JSON.stringify(schedule.pattern)) {
+      throw new UserFacingError('Additional dose times must use the same daily, weekday or day-interval schedule.');
+    }
+    const validated = validateMedicineForm(medicine, item);
+    if (times.has(validated.time)) throw new UserFacingError('Choose a different time for each dose.');
+    times.add(validated.time);
+    return { ...validated, id: item.id, specialInstructions: optionalText(item.specialInstructions) };
+  });
+}
+
+async function saveAdditionalSchedules(transaction, medicineId, schedules) {
+  for (const item of schedules) {
+    if (item.id) {
+      const old = await transaction.getFirstAsync('SELECT * FROM schedules WHERE id = ? AND medicine_id = ?', [item.id, medicineId]);
+      if (!old) throw new UserFacingError('Dose time no longer exists. Reopen the editor.');
+      await transaction.runAsync('UPDATE schedules SET time_local_minute = ?, recurring_pattern = ?, dose_amount_q = ?, special_instructions = ?, reminder_enabled = ? WHERE id = ?', [item.time, item.pattern, item.amount, item.specialInstructions, item.reminderEnabled ? 1 : 0, item.id]);
+      if (old.time_local_minute !== item.time || old.recurring_pattern !== item.pattern || old.dose_amount_q !== item.amount) {
+        await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ?', [item.id]);
+        await transaction.runAsync('UPDATE schedules SET history_next_date = ? WHERE id = ?', [dateKey(), item.id]);
+      }
+      continue;
+    }
+    await transaction.runAsync(`INSERT INTO schedules (id, medicine_id, time_local_minute, recurring_pattern,
+      dose_amount_q, special_instructions, created_at_ms, reminder_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [Crypto.randomUUID(), medicineId, item.time, item.pattern, item.amount, item.specialInstructions, Date.now(), item.reminderEnabled ? 1 : 0]);
+  }
+}
+
 /**
- * Add one medicine and its first schedule atomically.
+ * Add one medicine and all its dose times atomically.
  * schedule.pattern: { kind, startDate, endDate?, weekdays?, interval? }.
  * timeLocalMinute is 0–1439, or null for an as-needed schedule.
  * Quantities are decimal values in the medicine's dose/stock unit.
  */
-export async function addMedicine({ medicine, schedule, profileId }) {
+export async function addMedicine({ medicine, schedule, additionalSchedules, profileId }) {
+  const extra = validateAdditionalSchedules(medicine, schedule, additionalSchedules);
   const { name, dosageForm, pattern, time, reminderEnabled, stock, threshold, amount } = validateMedicineForm(medicine, schedule);
+  if (extra.some(item => item.id)) throw new UserFacingError('New medicine doses cannot reference existing schedules.');
   const medicineId = Crypto.randomUUID();
   const scheduleId = Crypto.randomUUID();
   const now = Date.now();
@@ -275,7 +317,7 @@ export async function addMedicine({ medicine, schedule, profileId }) {
   await withWriteTransaction(db, async transaction => {
     const owner = profileId ?? (await transaction.getFirstAsync('SELECT active_profile_id FROM settings WHERE id = 1'))?.active_profile_id;
     const profile = await transaction.getFirstAsync("SELECT id FROM profiles WHERE id = ? AND status = 'Active'", [owner ?? '']);
-    if (!profile) throw new Error('Choose an active profile before adding a medicine.');
+    if (!profile) throw new UserFacingError('Choose an active profile before adding a medicine.');
     await transaction.runAsync(
       `INSERT INTO medicines (id, name, dosage_form, strength_text, dose_unit, purpose, instructions,
          notes, color, stock_remaining_q, low_stock_threshold_q, created_at_ms, profile_id)
@@ -289,6 +331,7 @@ export async function addMedicine({ medicine, schedule, profileId }) {
          dose_amount_q, special_instructions, created_at_ms, reminder_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [scheduleId, medicineId, time, pattern, amount, optionalText(schedule.specialInstructions), now, reminderEnabled ? 1 : 0]
     );
+    await saveAdditionalSchedules(transaction, medicineId, extra);
   });
   return { medicineId, scheduleId };
 }
@@ -298,7 +341,7 @@ export async function fetchAllMedicines({ profileId, includeArchivedProfiles = f
   const db = await initializeDatabase();
   const rows = await db.getAllAsync(`
     SELECT m.*, s.id AS schedule_id, s.time_local_minute, s.recurring_pattern, s.reminder_enabled,
-           s.dose_amount_q, s.special_instructions
+           s.dose_amount_q, s.special_instructions, s.created_at_ms AS schedule_created_at_ms
       FROM medicines m JOIN profiles p ON p.id = m.profile_id LEFT JOIN schedules s ON s.medicine_id = m.id
      WHERE (? IS NULL OR m.profile_id = ?) AND (? = 1 OR p.status = 'Active')
      ORDER BY m.name COLLATE NOCASE, s.time_local_minute
@@ -316,7 +359,7 @@ export async function fetchMedicineDetails(medicineId) {
   const db = await initializeDatabase();
   const rows = await db.getAllAsync(`
     SELECT m.*, s.id AS schedule_id, s.time_local_minute, s.recurring_pattern, s.reminder_enabled,
-           s.dose_amount_q, s.special_instructions
+           s.dose_amount_q, s.special_instructions, s.created_at_ms AS schedule_created_at_ms
       FROM medicines m LEFT JOIN schedules s ON s.medicine_id = m.id
      WHERE m.id = ? ORDER BY s.time_local_minute
   `, [requiredText(medicineId, 'Medicine ID')]);
@@ -327,18 +370,32 @@ export async function fetchMedicineDetails(medicineId) {
 }
 
 /** Save the full form atomically, preserving medicine/schedule IDs and logged doses. */
-export async function editMedicine(medicineId, { medicine, schedule, scheduleId, expectedStockRemaining }) {
+export async function editMedicine(medicineId, { medicine, schedule, additionalSchedules, scheduleId, expectedStockRemaining }) {
+  const extra = validateAdditionalSchedules(medicine, schedule, additionalSchedules);
   const { name, dosageForm, pattern, time, reminderEnabled, stock, threshold, amount } = validateMedicineForm(medicine, schedule);
   const id = requiredText(medicineId, 'Medicine ID');
   const sid = requiredText(scheduleId, 'Schedule ID');
   const db = await initializeDatabase();
   await withWriteTransaction(db, async transaction => {
+    await reconcileMissedHistory(transaction);
     const current = await transaction.getFirstAsync('SELECT * FROM medicines WHERE id = ?', [id]);
     const oldSchedule = await transaction.getFirstAsync('SELECT * FROM schedules WHERE id = ? AND medicine_id = ?', [sid, id]);
-    if (!current || !oldSchedule) throw new Error('Medicine or schedule not found. Reopen the editor.');
+    if (!current || !oldSchedule) throw new UserFacingError('Medicine or schedule not found. Reopen the editor.');
+    const ids = extra.filter(item => item.id).map(item => item.id);
+    if (new Set([sid, ...ids]).size !== ids.length + 1) throw new UserFacingError('Each dose must have a distinct schedule.');
+    const otherSchedules = await transaction.getAllAsync('SELECT id, time_local_minute FROM schedules WHERE medicine_id = ? AND id != ?', [id, sid]);
+    if (ids.some(value => !otherSchedules.some(row => row.id === value))) throw new UserFacingError('Dose time no longer exists. Reopen the editor.');
+    const otherTimes = otherSchedules.filter(row => !ids.includes(row.id));
+    const changedTimes = [
+      ...(time !== oldSchedule.time_local_minute ? [time] : []),
+      ...extra.filter(item => !item.id || otherSchedules.find(row => row.id === item.id)?.time_local_minute !== item.time).map(item => item.time),
+    ];
+    if (changedTimes.some(t => t !== null && otherTimes.some(row => row.time_local_minute === t))) {
+      throw new UserFacingError('This medicine already has a dose at that time. Edit its existing schedule instead.');
+    }
     // A dose may be taken while this form is open. Never overwrite its stock deduction.
     if (expectedStockRemaining !== undefined && current.stock_remaining_q !== quantityToUnits(expectedStockRemaining, 'Previous stock')) {
-      throw new Error('Stock changed while editing. Reopen the medicine to load its current stock.');
+      throw new UserFacingError('Stock changed while editing. Reopen the medicine to load its current stock.');
     }
     await transaction.runAsync(`UPDATE history SET dose_snapshot = (
       SELECT json_object('amount', s.dose_amount_q, 'time', s.time_local_minute,
@@ -355,8 +412,10 @@ export async function editMedicine(medicineId, { medicine, schedule, scheduleId,
     await transaction.runAsync(`UPDATE schedules SET time_local_minute = ?, recurring_pattern = ?, dose_amount_q = ?,
       reminder_enabled = ?, special_instructions = ? WHERE id = ? AND medicine_id = ?`,
       [time, pattern, amount, reminderEnabled ? 1 : 0, optionalText(schedule.specialInstructions), sid, id]);
+    await saveAdditionalSchedules(transaction, id, extra);
     if (oldSchedule.time_local_minute !== time || oldSchedule.recurring_pattern !== pattern || oldSchedule.dose_amount_q !== amount) {
       await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ?', [sid]);
+      await transaction.runAsync('UPDATE schedules SET history_next_date = ? WHERE id = ?', [dateKey(), sid]);
     }
   });
 }
@@ -370,31 +429,36 @@ export async function updateMedicine(medicineId, patch) {
     if (key === 'name') return requiredText(value, 'Medicine name');
     if (key === 'stockRemaining') return quantityToUnits(value, 'Stock remaining');
     if (key === 'status') {
-      if (!['Active', 'Paused', 'Archived'].includes(value)) throw new Error('Invalid medicine status.');
+      if (!['Active', 'Paused', 'Archived'].includes(value)) throw new UserFacingError('Invalid medicine status.');
       return value;
     }
     return optionalText(value);
   });
   const db = await initializeDatabase();
-  const result = await db.runAsync(`UPDATE medicines SET ${entries.map(([key]) => `${columns[key]} = ?`).join(', ')} WHERE id = ?`,
-    [...values, requiredText(medicineId, 'Medicine ID')]);
-  if (!result.changes) throw new Error('Medicine not found.');
-  changed();
+  await withWriteTransaction(db, async transaction => {
+    await reconcileMissedHistory(transaction);
+    const id = requiredText(medicineId, 'Medicine ID');
+    const result = await transaction.runAsync(`UPDATE medicines SET ${entries.map(([key]) => `${columns[key]} = ?`).join(', ')} WHERE id = ?`, [...values, id]);
+    if (!result.changes) throw new UserFacingError('Medicine not found.');
+    if (entries.some(([key]) => key === 'status')) {
+      await transaction.runAsync('UPDATE schedules SET history_next_date = ? WHERE medicine_id = ?', [dateKey(), id]);
+    }
+  });
 }
 
 /** Change notification intent without changing the dose tracking schedule. */
 export async function updateScheduleReminderEnabled(scheduleId, enabled) {
-  if (typeof enabled !== 'boolean') throw new Error('Choose whether reminders are on or off.');
+  if (typeof enabled !== 'boolean') throw new UserFacingError('Choose whether reminders are on or off.');
   const db = await initializeDatabase();
   const id = requiredText(scheduleId, 'Schedule ID');
   const row = await db.getFirstAsync('SELECT recurring_pattern FROM schedules WHERE id = ?', [id]);
-  if (!row) throw new Error('Schedule not found.');
+  if (!row) throw new UserFacingError('Schedule not found.');
   const pattern = JSON.parse(row.recurring_pattern);
   if (enabled && (pattern.endDate || pattern.startDate > dateKey(new Date()) || !['daily', 'weekdays'].includes(pattern.kind))) {
-    throw new Error('Reminders currently support ongoing daily or weekday schedules starting today.');
+    throw new UserFacingError('Reminders currently support ongoing daily or weekday schedules starting today.');
   }
   const result = await db.runAsync('UPDATE schedules SET reminder_enabled = ? WHERE id = ?', [enabled ? 1 : 0, id]);
-  if (!result.changes) throw new Error('Schedule not found.');
+  if (!result.changes) throw new UserFacingError('Schedule not found.');
   changed();
 }
 
@@ -411,99 +475,226 @@ export async function deleteMedicine(medicineId) {
 async function validatedOccurrence(transaction, scheduleId, date, scheduledAtMs) {
   const row = await transaction.getFirstAsync(
     `SELECT s.*, m.status AS medicine_status, p.status AS profile_status FROM schedules s JOIN medicines m ON m.id = s.medicine_id JOIN profiles p ON p.id = m.profile_id WHERE s.id = ?`, [scheduleId]);
-  if (!row || row.medicine_status !== 'Active' || row.profile_status !== 'Active') throw new Error('This medicine is no longer active.');
+  if (!row || row.medicine_status !== 'Active' || row.profile_status !== 'Active') throw new UserFacingError('This medicine is no longer active.');
   const schedule = { id: row.id, timeLocalMinute: row.time_local_minute, pattern: JSON.parse(row.recurring_pattern) };
   const occurrences = occurrencesOnDate(schedule, date);
   const at = scheduledAtMs ?? (occurrences.length === 1 ? occurrences[0] : null);
-  if (!occurrences.includes(at)) throw new Error('This dose does not belong to the selected schedule and date.');
-  if (at > Date.now()) throw new Error('This dose is not due yet.');
+  if (!occurrences.includes(at)) throw new UserFacingError('This dose does not belong to the selected schedule and date.');
+  if (!isEligibleOccurrence(row.created_at_ms, at)) {
+    // Keep pre-existing logs/snoozes actionable without inventing an earlier dose.
+    const recorded = await existingDose(transaction, scheduleId, date, at, schedule.pattern.kind !== 'hour_interval');
+    const snoozed = await transaction.getFirstAsync('SELECT 1 FROM dose_snoozes WHERE schedule_id = ? AND date = ? AND scheduled_at_ms = ?', [scheduleId, date, at]);
+    if (!recorded && !snoozed) throw new UserFacingError('This dose predates the schedule being added.');
+  }
+  if (at > Date.now()) throw new UserFacingError('This dose is not due yet.');
   return { row, at };
 }
 
 async function existingDose(transaction, scheduleId, date, at, calendarDose) {
   // Version 1 only recorded one dose per schedule/day. Keep those records visible.
-  return transaction.getFirstAsync(`SELECT id, status, stock_deducted_q FROM history WHERE schedule_id = ? AND date = ?
+  return transaction.getFirstAsync(`SELECT id, status, stock_deducted_q, dose_snapshot FROM history WHERE schedule_id = ? AND date = ?
     AND (? = 1 OR scheduled_at_ms = ? OR scheduled_at_ms IS NULL) ORDER BY created_at_ms LIMIT 1`, [scheduleId, date, calendarDose ? 1 : 0, at]);
 }
 
-export async function logDose({ scheduleId, date, scheduledAtMs, actualTakenAtMs = null, status, requestId }) {
-  const id = requiredText(scheduleId, 'Schedule ID');
-  if (!isCalendarDate(date)) throw new Error('Dose date must be a valid YYYY-MM-DD date.');
-  if (!['Taken', 'Skipped', 'Missed'].includes(status)) throw new Error('Invalid dose status.');
-  if (status === 'Taken' ? !Number.isSafeInteger(actualTakenAtMs) || actualTakenAtMs < 0 : actualTakenAtMs !== null) {
-    throw new Error('Taken doses need an actual UTC time; other statuses must not have one.');
-  }
+export async function logDose(input) {
   const db = await initializeDatabase();
-  let historyId = requestId == null ? Crypto.randomUUID() : requiredText(requestId, 'Request ID');
-  await withWriteTransaction(db, async transaction => {
-    const { row: schedule, at } = await validatedOccurrence(transaction, id, date, scheduledAtMs);
-    const calendarDose = JSON.parse(schedule.recurring_pattern).kind !== 'hour_interval';
-    const existing = await existingDose(transaction, id, date, at, calendarDose);
-    if (existing) { historyId = existing.id; return; }
-    let stockDeducted = null;
-    if (status === 'Taken') {
-      const medicine = await transaction.getFirstAsync('SELECT stock_remaining_q FROM medicines WHERE id = ?', [schedule.medicine_id]);
-      if (medicine?.stock_remaining_q != null) stockDeducted = Math.min(medicine.stock_remaining_q, schedule.dose_amount_q);
+  let result;
+  await withWriteTransaction(db, async transaction => { result = await writeDoseLog(transaction, input); });
+  return result;
+}
+
+async function writeDoseLog(transaction, { scheduleId, date, scheduledAtMs, actualTakenAtMs = null, status, requestId }, previous = null, occurrence = null) {
+  const id = requiredText(scheduleId, 'Schedule ID');
+  if (!isCalendarDate(date)) throw new UserFacingError('Dose date must be a valid YYYY-MM-DD date.');
+  if (!['Taken', 'Skipped', 'Missed'].includes(status)) throw new UserFacingError('Invalid dose status.');
+  if (status === 'Taken' ? !Number.isSafeInteger(actualTakenAtMs) || actualTakenAtMs < 0 : actualTakenAtMs !== null) {
+    throw new UserFacingError('Taken doses need an actual UTC time; other statuses must not have one.');
+  }
+  let historyId = previous?.id ?? (requestId == null ? Crypto.randomUUID() : requiredText(requestId, 'Request ID'));
+  const { row: schedule, at } = occurrence ?? await validatedOccurrence(transaction, id, date, scheduledAtMs);
+  const calendarDose = JSON.parse(schedule.recurring_pattern).kind !== 'hour_interval';
+  const existing = await existingDose(transaction, id, date, at, calendarDose);
+  if (existing) {
+    historyId = existing.id;
+    // An explicit action supersedes an inferred missed outcome, including a
+    // delayed notification action. Other explicit outcomes remain idempotent.
+    if (existing.status !== 'Missed' || status === 'Missed') return historyId;
+    await transaction.runAsync('DELETE FROM history WHERE id = ?', [existing.id]);
+  }
+  const doseSnapshot = existing?.dose_snapshot ?? previous?.dose_snapshot ?? null;
+  const doseAmount = doseSnapshot ? JSON.parse(doseSnapshot).amount : schedule.dose_amount_q;
+  let stockDeducted = null;
+  if (status === 'Taken') {
+    const medicine = await transaction.getFirstAsync('SELECT stock_remaining_q, dose_unit FROM medicines WHERE id = ?', [schedule.medicine_id]);
+    if (doseSnapshot && JSON.parse(doseSnapshot).unit !== medicine.dose_unit) {
+      throw new UserFacingError('The dose unit changed. Review the medicine before recording this earlier dose.');
     }
-    await transaction.runAsync(
-      'INSERT INTO history (id, schedule_id, date, scheduled_at_ms, actual_taken_at_ms, status, created_at_ms, stock_deducted_q) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [historyId, id, date, at, actualTakenAtMs, status, Date.now(), stockDeducted]);
-    await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ? AND date = ? AND (? = 1 OR scheduled_at_ms = ?)', [id, date, calendarDose ? 1 : 0, at]);
-    if (stockDeducted != null) {
-      await transaction.runAsync('UPDATE medicines SET stock_remaining_q = stock_remaining_q - ? WHERE id = ?', [stockDeducted, schedule.medicine_id]);
-    }
-  });
+    if (medicine?.stock_remaining_q != null) stockDeducted = Math.min(medicine.stock_remaining_q, doseAmount);
+  }
+  await transaction.runAsync(
+    'INSERT INTO history (id, schedule_id, date, scheduled_at_ms, actual_taken_at_ms, status, created_at_ms, stock_deducted_q, dose_snapshot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [historyId, id, date, at, actualTakenAtMs, status, Date.now(), stockDeducted, doseSnapshot]);
+  await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ? AND date = ? AND (? = 1 OR scheduled_at_ms = ?)', [id, date, calendarDose ? 1 : 0, at]);
+  if (stockDeducted != null) {
+    await transaction.runAsync('UPDATE medicines SET stock_remaining_q = stock_remaining_q - ? WHERE id = ?', [stockDeducted, schedule.medicine_id]);
+  }
   return historyId;
 }
 
-export async function undoDoseLog({ scheduleId, date, scheduledAtMs }) {
-  const id = requiredText(scheduleId, 'Schedule ID');
-  if (!isCalendarDate(date)) throw new Error('Dose date must be a valid YYYY-MM-DD date.');
+export async function undoDoseLog(input) {
   const db = await initializeDatabase();
+  let result;
+  await withWriteTransaction(db, async transaction => { result = await removeDoseLog(transaction, input); });
+  return result;
+}
+
+async function removeDoseLog(transaction, { scheduleId, date, scheduledAtMs }) {
+  const id = requiredText(scheduleId, 'Schedule ID');
+  if (!isCalendarDate(date)) throw new UserFacingError('Dose date must be a valid YYYY-MM-DD date.');
   let manualStockCorrectionNeeded = false;
-  await withWriteTransaction(db, async transaction => {
-    const row = await transaction.getFirstAsync(
-      `SELECT s.*, m.id as medicine_id, m.stock_remaining_q FROM schedules s JOIN medicines m ON m.id = s.medicine_id WHERE s.id = ?`, [id]);
-    if (!row) throw new Error('Schedule not found.');
-    const calendarDose = JSON.parse(row.recurring_pattern).kind !== 'hour_interval';
-    const existing = await existingDose(transaction, id, date, scheduledAtMs, calendarDose);
-    if (!existing) return;
-    manualStockCorrectionNeeded = existing.status === 'Taken' && existing.stock_deducted_q == null && row.stock_remaining_q != null;
-    if (existing.status === 'Taken' && existing.stock_deducted_q != null) {
-      await transaction.runAsync(`UPDATE medicines SET stock_remaining_q = stock_remaining_q + ?
-        WHERE id = ? AND stock_remaining_q IS NOT NULL`, [existing.stock_deducted_q, row.medicine_id]);
-    }
-    await transaction.runAsync('DELETE FROM history WHERE id = ?', [existing.id]);
-  });
-  changed();
+  const row = await transaction.getFirstAsync(
+    `SELECT s.*, m.id as medicine_id, m.stock_remaining_q FROM schedules s JOIN medicines m ON m.id = s.medicine_id WHERE s.id = ?`, [id]);
+  if (!row) throw new UserFacingError('Schedule not found.');
+  const calendarDose = JSON.parse(row.recurring_pattern).kind !== 'hour_interval';
+  const existing = await existingDose(transaction, id, date, scheduledAtMs, calendarDose);
+  if (!existing) return { manualStockCorrectionNeeded: false };
+  manualStockCorrectionNeeded = existing.status === 'Taken' && existing.stock_deducted_q == null && row.stock_remaining_q != null;
+  if (existing.status === 'Taken' && existing.stock_deducted_q != null) {
+    await transaction.runAsync(`UPDATE medicines SET stock_remaining_q = stock_remaining_q + ?
+      WHERE id = ? AND stock_remaining_q IS NOT NULL`, [existing.stock_deducted_q, row.medicine_id]);
+  }
+  await transaction.runAsync('DELETE FROM history WHERE id = ?', [existing.id]);
   return { manualStockCorrectionNeeded };
+}
+
+// Opaque, in-memory receipts. They contain only this occurrence, never a full
+// database/stock backup. Expiring a Snackbar does not change the saved outcome.
+async function doseChangeSnapshot(transaction, dose) {
+  const schedule = await transaction.getFirstAsync(`SELECT s.*, m.dose_unit, m.stock_remaining_q,
+    m.status AS medicine_status, p.status AS profile_status FROM schedules s
+    JOIN medicines m ON m.id = s.medicine_id JOIN profiles p ON p.id = m.profile_id WHERE s.id = ?`, [dose.scheduleId]);
+  if (!schedule || schedule.medicine_status !== 'Active' || schedule.profile_status !== 'Active') {
+    throw new UserFacingError('This medicine is no longer active.');
+  }
+  const calendarDose = JSON.parse(schedule.recurring_pattern).kind !== 'hour_interval';
+  const params = [dose.scheduleId, dose.date, calendarDose ? 1 : 0, dose.scheduledAtMs];
+  const history = await transaction.getFirstAsync(`SELECT * FROM history WHERE schedule_id = ? AND date = ?
+    AND (? = 1 OR scheduled_at_ms = ? OR scheduled_at_ms IS NULL) ORDER BY created_at_ms LIMIT 1`, params) || null;
+  const snoozes = await transaction.getAllAsync(`SELECT * FROM dose_snoozes WHERE schedule_id = ? AND date = ?
+    AND (? = 1 OR scheduled_at_ms = ?) ORDER BY scheduled_at_ms`, params);
+  const scheduleKey = JSON.stringify([schedule.medicine_id, schedule.recurring_pattern, schedule.time_local_minute,
+    schedule.dose_amount_q, schedule.dose_unit, schedule.stock_remaining_q === null]);
+  return { history, snoozes, scheduleKey, stock: schedule.stock_remaining_q, medicineId: schedule.medicine_id, params };
+}
+
+export async function changeDoseWithUndo(dose, action, untilMs) {
+  if (!['Taken', 'Skipped', 'Reset', 'Snooze'].includes(action)) throw new UserFacingError('Invalid dose action.');
+  if (!isCalendarDate(dose.date)) throw new UserFacingError('Dose date must be a valid YYYY-MM-DD date.');
+  const db = await initializeDatabase();
+  let receipt;
+  await withWriteTransaction(db, async transaction => {
+    const occurrence = await validatedOccurrence(transaction, dose.scheduleId, dose.date, dose.scheduledAtMs);
+    const before = await doseChangeSnapshot(transaction, dose);
+    // A menu can remain open while a notification changes the same dose.
+    if ((before.history?.status || null) !== dose.status
+      || (before.history?.actual_taken_at_ms ?? null) !== dose.actualTakenAtMs
+      || (before.snoozes[0]?.until_ms ?? null) !== dose.snoozedUntilMs) {
+      throw new UserFacingError('This dose changed. Please reopen its options and try again.');
+    }
+    if (action === dose.status || (action === 'Reset' && !before.history)) throw new UserFacingError('This dose already has that status.');
+    let manualStockCorrectionNeeded = false;
+    if (action === 'Snooze') {
+      await writeDoseSnooze(transaction, { ...dose, untilMs });
+    } else {
+      if (before.history) ({ manualStockCorrectionNeeded } = await removeDoseLog(transaction, dose));
+      if (action !== 'Reset') {
+        // Preserve older record identity and dose quantity/unit snapshots.
+        await writeDoseLog(transaction, { ...dose, status: action, actualTakenAtMs: action === 'Taken' ? Date.now() : null }, before.history, occurrence);
+      }
+    }
+    const after = await doseChangeSnapshot(transaction, dose);
+    receipt = { dose, before, after, manualStockCorrectionNeeded, consumed: false };
+  });
+  return receipt;
+}
+
+export async function restoreDoseChange(receipt) {
+  const db = await initializeDatabase();
+  await withWriteTransaction(db, async transaction => {
+    const { dose, before, after } = receipt;
+    const current = await doseChangeSnapshot(transaction, dose);
+    if (receipt.consumed || current.scheduleKey !== after.scheduleKey
+      || JSON.stringify(current.history) !== JSON.stringify(after.history)
+      || JSON.stringify(current.snoozes) !== JSON.stringify(after.snoozes)) {
+      throw new UserFacingError('This dose changed again. Use its options to correct the latest entry.');
+    }
+    // Reverse only this action's stock delta; preserve other dose deductions.
+    if (before.stock !== null && after.stock !== null) {
+      const delta = before.stock - after.stock;
+      if (current.stock + delta < 0) throw new UserFacingError('Stock changed. Review the medicine before undoing this correction.');
+      await transaction.runAsync('UPDATE medicines SET stock_remaining_q = stock_remaining_q + ? WHERE id = ?', [delta, current.medicineId]);
+    }
+    await transaction.runAsync(`DELETE FROM history WHERE schedule_id = ? AND date = ?
+      AND (? = 1 OR scheduled_at_ms = ? OR scheduled_at_ms IS NULL)`, current.params);
+    if (before.history) {
+      const h = before.history;
+      await transaction.runAsync(`INSERT INTO history
+        (id, schedule_id, date, scheduled_at_ms, actual_taken_at_ms, status, created_at_ms, stock_deducted_q, dose_snapshot)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [h.id, h.schedule_id, h.date, h.scheduled_at_ms, h.actual_taken_at_ms,
+        h.status, h.created_at_ms, h.stock_deducted_q, h.dose_snapshot]);
+    }
+    await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ? AND date = ? AND (? = 1 OR scheduled_at_ms = ?)', current.params);
+    for (const snooze of before.snoozes) {
+      await transaction.runAsync('INSERT INTO dose_snoozes (schedule_id, date, scheduled_at_ms, until_ms) VALUES (?, ?, ?, ?)',
+        [snooze.schedule_id, snooze.date, snooze.scheduled_at_ms, snooze.until_ms]);
+    }
+  });
+  receipt.consumed = true;
 }
 
 export async function updateDoseLogTime({ historyId, actualTakenAtMs }) {
   const id = requiredText(historyId, 'History ID');
   if (!Number.isSafeInteger(actualTakenAtMs) || actualTakenAtMs < 0 || actualTakenAtMs > Date.now()) {
-    throw new Error('Choose a valid time that is not in the future.');
+    throw new UserFacingError('Choose a valid time that is not in the future.');
   }
   const db = await initializeDatabase();
   await withWriteTransaction(db, async transaction => {
     const record = await transaction.getFirstAsync('SELECT date, status FROM history WHERE id = ?', [id]);
-    if (!record || record.status !== 'Taken') throw new Error('Only a recorded Taken dose can have its time edited.');
-    if (dateKey(new Date(actualTakenAtMs)) !== record.date) throw new Error('The time must be on the recorded dose date.');
+    if (!record || record.status !== 'Taken') throw new UserFacingError('Only a recorded Taken dose can have its time edited.');
+    if (dateKey(new Date(actualTakenAtMs)) !== record.date) throw new UserFacingError('The time must be on the recorded dose date.');
     await transaction.runAsync('UPDATE history SET actual_taken_at_ms = ? WHERE id = ?', [actualTakenAtMs, id]);
   });
 }
 
-export async function snoozeDose({ scheduleId, date, scheduledAtMs, untilMs }) {
-  if (!isCalendarDate(date) || !Number.isSafeInteger(untilMs) || untilMs <= Date.now()) throw new Error('Choose a future snooze time.');
+export async function snoozeDose(input) {
   const db = await initializeDatabase();
-  await withWriteTransaction(db, async transaction => {
-    const { row, at } = await validatedOccurrence(transaction, requiredText(scheduleId, 'Schedule ID'), date, scheduledAtMs);
-    const calendarDose = JSON.parse(row.recurring_pattern).kind !== 'hour_interval';
-    if (await existingDose(transaction, scheduleId, date, at, calendarDose)) throw new Error('This dose has already been recorded.');
-    if (calendarDose) await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ? AND date = ?', [scheduleId, date]);
-    await transaction.runAsync(`INSERT INTO dose_snoozes (schedule_id, date, scheduled_at_ms, until_ms) VALUES (?, ?, ?, ?)
-      ON CONFLICT(schedule_id, date, scheduled_at_ms) DO UPDATE SET until_ms = excluded.until_ms`, [scheduleId, date, at, untilMs]);
-  });
+  let result;
+  await withWriteTransaction(db, async transaction => { result = await writeDoseSnooze(transaction, input); });
+  return result;
+}
+
+async function writeDoseSnooze(transaction, { scheduleId, date, scheduledAtMs, untilMs, notificationDeliveredAtMs }) {
+  if (!isCalendarDate(date) || !Number.isSafeInteger(untilMs) || untilMs <= Date.now()) throw new UserFacingError('Choose a future snooze time.');
+  if (notificationDeliveredAtMs != null && (!Number.isSafeInteger(notificationDeliveredAtMs) || notificationDeliveredAtMs < 0)) throw new UserFacingError('Invalid notification delivery time.');
+  let savedUntilMs = untilMs;
+  const { row, at } = await validatedOccurrence(transaction, requiredText(scheduleId, 'Schedule ID'), date, scheduledAtMs);
+  const calendarDose = JSON.parse(row.recurring_pattern).kind !== 'hour_interval';
+  if (await existingDose(transaction, scheduleId, date, at, calendarDose)) throw new UserFacingError('This dose has already been recorded.');
+  if (notificationDeliveredAtMs != null) {
+    const existing = await transaction.getFirstAsync(`SELECT until_ms FROM dose_snoozes
+      WHERE schedule_id = ? AND date = ? AND (? = 1 OR scheduled_at_ms = ?)`, [scheduleId, date, calendarDose ? 1 : 0, at]);
+    // Android can replay an old press in a new JS runtime. A notification
+    // delivered before the saved snooze deadline cannot extend it again.
+    // A subsequent snooze alarm arrives at/after that deadline and may defer it.
+    if (existing && notificationDeliveredAtMs < existing.until_ms) {
+      savedUntilMs = existing.until_ms;
+      return savedUntilMs;
+    }
+  }
+  if (calendarDose) await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ? AND date = ?', [scheduleId, date]);
+  await transaction.runAsync(`INSERT INTO dose_snoozes (schedule_id, date, scheduled_at_ms, until_ms) VALUES (?, ?, ?, ?)
+    ON CONFLICT(schedule_id, date, scheduled_at_ms) DO UPDATE SET until_ms = excluded.until_ms`, [scheduleId, date, at, untilMs]);
+  return savedUntilMs;
 }
 
 export async function fetchPendingSnoozes() {
@@ -517,8 +708,9 @@ export async function fetchPendingSnoozes() {
 
 /** Real occurrences for a local calendar day, including history and persisted snoozes. */
 export async function fetchScheduledDoses(date = dateKey(), profileId) {
-  if (!isCalendarDate(date)) throw new Error('Choose a valid calendar date.');
+  if (!isCalendarDate(date)) throw new UserFacingError('Choose a valid calendar date.');
   const db = await initializeDatabase();
+  await withWriteTransaction(db, reconcileMissedHistory, false);
   const medicines = await fetchAllMedicines({ profileId });
   const history = await db.getAllAsync('SELECT * FROM history WHERE date = ? ORDER BY created_at_ms', [date]);
   const snoozes = await db.getAllAsync('SELECT * FROM dose_snoozes WHERE date = ? OR (date < ? AND until_ms >= ? AND until_ms < ?)', [date, date, new Date(`${date}T00:00:00`).getTime(), new Date(`${date}T00:00:00`).setDate(new Date(`${date}T00:00:00`).getDate() + 1)]);
@@ -529,6 +721,7 @@ export async function fetchScheduledDoses(date = dateKey(), profileId) {
       for (const at of occurrencesOnDate(schedule, date)) {
         const record = history.find(h => h.schedule_id === schedule.id && (schedule.pattern.kind !== 'hour_interval' || h.scheduled_at_ms === at || h.scheduled_at_ms == null));
         const snooze = snoozes.find(z => z.schedule_id === schedule.id && (schedule.pattern.kind !== 'hour_interval' || z.scheduled_at_ms === at));
+        if (!record && !snooze && !isEligibleOccurrence(schedule.createdAtMs, at)) continue;
         doses.push({ id: `${schedule.id}:${at}`, medicine, schedule, date, scheduledAtMs: at,
           status: record?.status ?? null, actualTakenAtMs: record?.actual_taken_at_ms ?? null,
           snoozedUntilMs: record ? null : snooze?.until_ms ?? null });
@@ -546,10 +739,51 @@ export async function fetchScheduledDoses(date = dateKey(), profileId) {
   return doses.sort((a, b) => a.scheduledAtMs - b.scheduledAtMs || a.medicine.name.localeCompare(b.medicine.name));
 }
 
-/** Returns [{ month: 'YYYY-MM', records: [...] }] newest first. */
+/** Finalize elapsed local days once per schedule, preserving a future snooze.
+ * Run inside the edit/status transaction to snapshot the old schedule first.
+ * This records absence of a dose log, not evidence of notification delivery.
+ */
+async function reconcileMissedHistory(transaction) {
+  const now = Date.now();
+  const today = dateKey(new Date(now));
+  const schedules = await transaction.getAllAsync(`SELECT s.*, m.status AS medicine_status,
+    p.status AS profile_status, m.dosage_form, m.dose_unit FROM schedules s
+    JOIN medicines m ON m.id = s.medicine_id JOIN profiles p ON p.id = m.profile_id
+    WHERE s.history_next_date IS NULL OR s.history_next_date < ?`, [today]);
+  for (const row of schedules) {
+    const pattern = JSON.parse(row.recurring_pattern);
+    let nextDate = today;
+    const start = row.history_next_date || dateKey(new Date(row.created_at_ms));
+    if (row.medicine_status === 'Active' && row.profile_status === 'Active' && pattern.kind !== 'prn') {
+      const records = await transaction.getAllAsync('SELECT date, scheduled_at_ms FROM history WHERE schedule_id = ? AND date >= ?', [row.id, start]);
+      const recorded = new Set(records.map(h => pattern.kind === 'hour_interval' && h.scheduled_at_ms != null ? `${h.date}:${h.scheduled_at_ms}` : h.date));
+      const snoozes = await transaction.getAllAsync('SELECT * FROM dose_snoozes WHERE schedule_id = ? AND date >= ?', [row.id, start]);
+      const first = start > pattern.startDate ? start : pattern.startDate;
+      for (const day = new Date(`${first}T12:00:00`); dateKey(day) < today; day.setDate(day.getDate() + 1)) {
+        const date = dateKey(day);
+        if (pattern.endDate && date > pattern.endDate) break;
+        for (const at of occurrencesOnDate({ pattern, timeLocalMinute: row.time_local_minute }, date)) {
+          if (recorded.has(date) || recorded.has(`${date}:${at}`)) continue;
+          const snooze = snoozes.find(z => z.date === date && (pattern.kind !== 'hour_interval' || z.scheduled_at_ms === at));
+          if (!snooze && !isEligibleOccurrence(row.created_at_ms, at)) continue;
+          if (snooze && snooze.until_ms > now) { if (date < nextDate) nextDate = date; continue; }
+          await transaction.runAsync(`INSERT INTO history
+            (id, schedule_id, date, scheduled_at_ms, status, created_at_ms, dose_snapshot)
+            VALUES (?, ?, ?, ?, 'Missed', ?, ?)`,
+          [Crypto.randomUUID(), row.id, date, at, now, JSON.stringify({ amount: row.dose_amount_q, time: row.time_local_minute, form: row.dosage_form, unit: row.dose_unit })]);
+          await transaction.runAsync('DELETE FROM dose_snoozes WHERE schedule_id = ? AND date = ? AND (? = 1 OR scheduled_at_ms = ?)', [row.id, date, pattern.kind !== 'hour_interval' ? 1 : 0, at]);
+        }
+      }
+    }
+    await transaction.runAsync('UPDATE schedules SET history_next_date = ? WHERE id = ?', [nextDate, row.id]);
+  }
+}
+
+/** Two History outcomes; legacy Skipped/Missed rows retain stored provenance. */
 export async function fetchHistoryByMonth({ from, to, medicineId, profileId } = {}) {
-  if ((from && !isCalendarDate(from)) || (to && !isCalendarDate(to))) throw new Error('Invalid history date range.');
+  if ((from && !isCalendarDate(from)) || (to && !isCalendarDate(to))) throw new UserFacingError('Invalid history date range.');
   const db = await initializeDatabase();
+  await withWriteTransaction(db, reconcileMissedHistory, false);
   const rows = await db.getAllAsync(`
     SELECT h.id, h.date, h.scheduled_at_ms, h.actual_taken_at_ms, h.status, h.schedule_id, h.dose_snapshot,
            s.time_local_minute, s.dose_amount_q, m.id AS medicine_id,
@@ -566,7 +800,7 @@ export async function fetchHistoryByMonth({ from, to, medicineId, profileId } = 
     if (!byMonth.has(month)) byMonth.set(month, { month, records: [] });
     byMonth.get(month).records.push({
       id: row.id, date: row.date, scheduledAtMs: row.scheduled_at_ms, actualTakenAtMs: row.actual_taken_at_ms,
-      status: row.status, scheduleId: row.schedule_id,
+      status: row.status === 'Taken' ? 'Taken' : 'Skipped / missed', scheduleId: row.schedule_id,
       scheduledTimeLocalMinute: snapshot ? snapshot.time : row.time_local_minute,
       doseAmount: (snapshot ? snapshot.amount : row.dose_amount_q) / QUANTITY_SCALE,
       medicineId: row.medicine_id, medicineName: row.medicine_name,
@@ -589,7 +823,7 @@ function medicineFromRow(row) {
 
 function scheduleFromRow(row) {
   return {
-    id: row.schedule_id, timeLocalMinute: row.time_local_minute, reminderEnabled: row.reminder_enabled === 1,
+    id: row.schedule_id, createdAtMs: row.schedule_created_at_ms, timeLocalMinute: row.time_local_minute, reminderEnabled: row.reminder_enabled === 1,
     pattern: JSON.parse(row.recurring_pattern), doseAmount: row.dose_amount_q / QUANTITY_SCALE,
     specialInstructions: row.special_instructions,
   };
@@ -632,24 +866,24 @@ export async function selectProfile(profileId) {
   const db = await initializeDatabase();
   await withWriteTransaction(db, async tx => {
     const profile = await tx.getFirstAsync("SELECT id FROM profiles WHERE id = ? AND status = 'Active'", [requiredText(profileId, 'Profile')]);
-    if (!profile) throw new Error('Restore this profile before switching to it.');
+    if (!profile) throw new UserFacingError('Restore this profile before switching to it.');
     await tx.runAsync('UPDATE settings SET active_profile_id = ? WHERE id = 1', [profileId]);
   });
 }
 export async function saveProfile(input) {
   const name = requiredText(input.name, 'Name');
-  if (name.length > 80) throw new Error('Use a name of 80 characters or fewer.');
+  if (name.length > 80) throw new UserFacingError('Use a name of 80 characters or fewer.');
   const relationship = (input.relationship || '').trim();
-  if (relationship.length > 40 || (input.notes || '').length > 200) throw new Error('Profile details are too long.');
-  if (!/^#[0-9a-f]{6}$/i.test(input.color)) throw new Error('Choose a valid avatar color.');
-  if (input.dateOfBirth && (!isCalendarDate(input.dateOfBirth) || input.dateOfBirth > dateKey() || input.dateOfBirth < '1900-01-01')) throw new Error('Choose a valid past date of birth.');
+  if (relationship.length > 40 || (input.notes || '').length > 200) throw new UserFacingError('Profile details are too long.');
+  if (!/^#[0-9a-f]{6}$/i.test(input.color)) throw new UserFacingError('Choose a valid avatar color.');
+  if (input.dateOfBirth && (!isCalendarDate(input.dateOfBirth) || input.dateOfBirth > dateKey() || input.dateOfBirth < '1900-01-01')) throw new UserFacingError('Choose a valid past date of birth.');
   const id = input.id || Crypto.randomUUID();
   const db = await initializeDatabase();
   await withWriteTransaction(db, async tx => {
     if (input.id) {
       const result = await tx.runAsync('UPDATE profiles SET name = ?, relationship = ?, color = ?, photo_uri = ?, date_of_birth = ?, notes = ? WHERE id = ?',
         [name, relationship, input.color, input.photoUri || null, input.dateOfBirth || '', input.notes || '', id]);
-      if (!result.changes) throw new Error('Profile not found.');
+      if (!result.changes) throw new UserFacingError('Profile not found.');
     } else {
       await tx.runAsync('INSERT INTO profiles (id,name,relationship,color,photo_uri,date_of_birth,notes,created_at_ms) VALUES (?,?,?,?,?,?,?,?)',
         [id,name,relationship,input.color,input.photoUri || null,input.dateOfBirth || '',input.notes || '',Date.now()]);
@@ -662,14 +896,16 @@ export async function saveProfile(input) {
 export async function setProfileArchived(profileId, archived) {
   const db = await initializeDatabase();
   await withWriteTransaction(db, async tx => {
+    await reconcileMissedHistory(tx);
     const profile = await tx.getFirstAsync('SELECT * FROM profiles WHERE id = ?', [profileId]);
-    if (!profile) throw new Error('Profile not found.');
+    if (!profile) throw new UserFacingError('Profile not found.');
     if (archived) {
       const replacement = await tx.getFirstAsync("SELECT id FROM profiles WHERE id != ? AND status = 'Active' ORDER BY created_at_ms LIMIT 1", [profileId]);
-      if (!replacement) throw new Error('Keep at least one active profile. Add another profile first.');
+      if (!replacement) throw new UserFacingError('Keep at least one active profile. Add another profile first.');
       await tx.runAsync('UPDATE settings SET active_profile_id = ? WHERE active_profile_id = ?', [replacement.id, profileId]);
       await tx.runAsync('DELETE FROM dose_snoozes WHERE schedule_id IN (SELECT s.id FROM schedules s JOIN medicines m ON m.id = s.medicine_id WHERE m.profile_id = ?)', [profileId]);
     }
     await tx.runAsync('UPDATE profiles SET status = ? WHERE id = ?', [archived ? 'Archived' : 'Active', profileId]);
+    await tx.runAsync('UPDATE schedules SET history_next_date = ? WHERE medicine_id IN (SELECT id FROM medicines WHERE profile_id = ?)', [dateKey(), profileId]);
   });
 }

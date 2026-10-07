@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
   openTermsBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      openLegalModal('terms');
+      window.location.assign('./terms.html');
     });
   });
 
@@ -448,14 +448,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const requestedLegalDocument = new URLSearchParams(window.location.search).get('legal');
   if (requestedLegalDocument === 'privacy' || requestedLegalDocument === 'terms') {
     if (requestedLegalDocument === 'privacy') window.location.replace('./privacy.html');
-    else openLegalModal(requestedLegalDocument);
+    else window.location.replace('./terms.html');
     legalModalClose?.focus({ preventScroll: true });
   }
 
   legalModalClose?.addEventListener('click', closeLegalModal);
 
   legalTabPrivacy?.addEventListener('click', () => openLegalModal('privacy'));
-  legalTabTerms?.addEventListener('click', () => openLegalModal('terms'));
+  legalTabTerms?.addEventListener('click', () => window.location.assign('./terms.html'));
 
   // Close modal when clicking backdrop
   legalModal?.addEventListener('click', (e) => {
@@ -547,4 +547,3 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });
-

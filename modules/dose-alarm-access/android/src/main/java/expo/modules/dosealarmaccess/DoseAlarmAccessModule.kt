@@ -16,6 +16,7 @@ class DoseAlarmAccessModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("DoseAlarmAccess")
+    Function("supportsRinging") { Build.VERSION.SDK_INT >= Build.VERSION_CODES.O }
     AsyncFunction("canScheduleExactAlarms") {
       Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
         (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).canScheduleExactAlarms()

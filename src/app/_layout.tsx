@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { OnboardingProvider, useOnboarding } from '@/features/onboarding/context';
 import { NotificationLifecycle } from '@/features/notifications/NotificationLifecycle';
-import { initializeDiagnostics, reportStartupError } from '@/features/diagnostics/diagnostics';
+import { initializeDiagnostics, reportStartupError, measureDiagnosticOperation } from '@/features/diagnostics/diagnostics';
 import { initializeDatabase } from '@/database';
 import { ProfilesProvider } from '@/features/profiles/context';
 import { ProfileSwitcher } from '@/features/profiles/ProfileSwitcher';
@@ -22,13 +22,13 @@ function RootLayout() {
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     let active = true;
-    void initializeDiagnostics().catch(() => undefined);
-    initializeDatabase().then(() => {
+    const diagnosticsReady = initializeDiagnostics().catch(() => undefined);
+    diagnosticsReady.then(() => measureDiagnosticOperation('database.initialize', initializeDatabase)).then(() => {
       if (active) {
         setDatabaseState('ready');
       }
     }).catch(() => {
-      reportStartupError();
+      void diagnosticsReady.then(() => reportStartupError());
       if (active) {
         setDatabaseState('error');
       }

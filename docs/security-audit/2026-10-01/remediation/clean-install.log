@@ -1,0 +1,16 @@
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+> dosetrackerapp@1.0.0 postinstall
+> patch-package
+
+patch-package 8.0.1
+Applying patches...
+expo-router@57.0.24 ✔
+query-string@7.1.3 ✔
+
+added 1005 packages, and audited 1006 packages in 5s
+
+206 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
