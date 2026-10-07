@@ -56,3 +56,6 @@ example
 *.aab
 *.apk
 *.apks
+
+# launch video output
+brag-output/
