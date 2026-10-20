@@ -103,6 +103,9 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
 }
 
 body {
@@ -111,8 +114,20 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  width: 100%;
+  max-width: 100vw;
   position: relative;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* Global text overflow protection */
+p, h1, h2, h3, h4, h5, h6, span, a, button, label, li, td, th {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+a, code {
+  overflow-wrap: anywhere;
 }
 
 img {
@@ -446,6 +461,23 @@ body[data-theme="dark"] .sun-icon {
   background: var(--text-primary);
   border-radius: 2px;
   transition: all var(--transition-fast);
+}
+
+.mobile-menu-cta {
+  display: none;
+}
+
+.back-text-short {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .back-text-full {
+    display: none;
+  }
+  .back-text-short {
+    display: inline;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -793,6 +825,7 @@ body[data-theme="dark"] .stat-value {
 
 .profile-pills-list {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -1091,6 +1124,7 @@ body[data-theme="dark"] .status-taken {
 .action-btn-cluster {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -1834,6 +1868,9 @@ body[data-theme="dark"] .cta-banner-card {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+  text-align: center;
+  line-height: 1.5;
   gap: 8px;
 }
 
@@ -1880,6 +1917,7 @@ body[data-theme="dark"] .cta-banner-card {
 
 .legal-tabs-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -2134,12 +2172,32 @@ body[data-theme="dark"] .legal-tab.active {
 }
 
 @media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.5rem;
+  /* Layout & Containers */
+  .container {
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
-  .section-title {
-    font-size: 2rem;
+  /* Navigation Bar */
+  .navbar {
+    padding: 12px 16px;
+  }
+
+  .brand-logo {
+    gap: 10px;
+  }
+
+  .brand-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+  }
+
+  .brand-tag {
+    font-size: 0.68rem;
   }
 
   .nav-links {
@@ -2157,48 +2215,596 @@ body[data-theme="dark"] .legal-tab.active {
     border-bottom: 1px solid var(--border-subtle);
     padding: 20px 24px;
     box-shadow: var(--card-shadow);
+    gap: 16px;
+    z-index: 100;
+  }
+
+  .nav-links.mobile-open .nav-link {
+    font-size: 1rem;
+    padding: 8px 0;
+  }
+
+  .nav-links.mobile-open .mobile-menu-cta {
+    display: inline-flex;
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+    padding: 10px 16px;
   }
 
   .mobile-menu-toggle {
     display: flex;
   }
 
-  .features-grid {
-    grid-template-columns: 1fr;
+  /* Hide navbar CTA button on narrow mobile to prevent header text collision */
+  .nav-actions .nav-cta {
+    display: none;
   }
 
-  .chimes-player-grid {
-    grid-template-columns: 1fr;
+  /* Typography & Titles */
+  .section-header {
+    margin-bottom: 32px;
   }
 
-  .wizard-steps-grid {
+  .section-title {
+    font-size: clamp(1.6rem, 5.5vw, 2rem);
+    line-height: 1.25;
+  }
+
+  .section-subtitle {
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+
+  /* Hero Section */
+  .hero-section {
+    padding: 36px 0 48px;
+  }
+
+  .hero-badge {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+    font-size: 0.78rem;
+    padding: 6px 12px;
+    line-height: 1.35;
+  }
+
+  .hero-title {
+    font-size: clamp(1.85rem, 6.5vw, 2.35rem);
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .hero-description {
+    font-size: 1rem;
+    line-height: 1.55;
+    margin-bottom: 24px;
+  }
+
+  .hero-pill-badges {
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .pill-chip {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    max-width: 100%;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .hero-cta-group .btn {
+    width: 100%;
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+  }
+
+  .hero-trust-notes {
+    gap: 12px;
+    justify-content: center;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+
+  .hero-visual-wrapper {
+    width: 100%;
+  }
+
+  .app-screenshot-card {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+
+  .floating-badge {
+    display: none;
+  }
+
+  /* Stats Grid - Prevent Card Text Overflows */
+  .stats-strip-section {
+    padding: 16px 0 36px;
+  }
+
+  .stats-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 20px 16px;
+  }
+
+  .stat-value {
+    font-size: 1.45rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
+  /* Interactive Simulator */
+  .demo-section {
+    padding: 48px 0;
+  }
+
+  .demo-card-container {
+    padding: 20px 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  .simulator-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding-bottom: 18px;
+  }
+
+  .simulator-profile-select {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .profile-pills-list {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .profile-pill {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .simulator-summary-box {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+    padding: 20px 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  .summary-details {
+    text-align: center;
+    width: 100%;
+  }
+
+  .streak-badge {
+    margin: 6px auto;
+  }
+
+  .chime-quick-play-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .sim-dose-card {
     grid-template-columns: 1fr;
     gap: 12px;
+    padding: 14px 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .sim-time-col {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .sim-info-col {
+    width: 100%;
+  }
+
+  .sim-med-name {
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.98rem;
+  }
+
+  .strength-tag, .low-stock-pill {
+    font-size: 0.72rem;
+    padding: 2px 6px;
   }
 
   .sim-action-col {
+    width: 100%;
     justify-content: flex-start;
   }
 
+  .action-btn-cluster {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .action-btn-cluster .btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .sim-feedback-toast {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 12px 16px;
+  }
+
+  /* Core Features Grid */
+  .features-section {
+    padding: 48px 0;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .feature-card {
+    padding: 24px 18px;
+    border-radius: var(--radius-lg);
+  }
+
+  .feature-title {
+    font-size: 1.25rem;
+  }
+
+  .feature-text {
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  /* App Showcase */
+  .showcase-section {
+    padding: 48px 0;
+  }
+
+  .showcase-tabs-nav {
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+
+  .showcase-tab {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+
+  .showcase-stage {
+    padding: 20px 14px;
+    border-radius: var(--radius-lg);
+  }
+
+  .showcase-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    text-align: center;
+  }
+
+  .showcase-clean-frame {
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+  }
+
+  .showcase-info-col {
+    align-items: center;
+    text-align: center;
+  }
+
+  .showcase-info-title {
+    font-size: clamp(1.4rem, 5vw, 1.75rem);
+    margin-bottom: 12px;
+  }
+
+  .showcase-info-desc {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin-bottom: 20px;
+  }
+
+  .showcase-highlights-list {
+    text-align: left;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .highlight-item {
+    font-size: 0.9rem;
+  }
+
+  /* 4-Step Setup Wizard */
+  .wizard-section {
+    padding: 48px 0;
+  }
+
+  .wizard-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .wizard-step-card {
+    padding: 20px 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  .wizard-img-wrap {
+    height: 190px;
+  }
+
+  .step-title {
+    font-size: 1.1rem;
+  }
+
+  .step-text {
+    font-size: 0.85rem;
+  }
+
+  /* Sound Chimes Section */
+  .chimes-section {
+    padding: 48px 0;
+  }
+
+  .chimes-player-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .chime-card {
+    padding: 24px 18px;
+    border-radius: var(--radius-lg);
+  }
+
+  .chime-name {
+    font-size: 1.35rem;
+  }
+
+  .chime-desc {
+    font-size: 0.9rem;
+    margin-bottom: 18px;
+  }
+
+  .chime-audio-widget {
+    padding: 10px 12px;
+    gap: 8px;
+    border-radius: var(--radius-pill);
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .play-chime-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .waveform-visualizer {
+    gap: 3px;
+    max-width: 70px;
+  }
+
+  /* Comparison Table / Privacy Section */
+  .privacy-section {
+    padding: 48px 0;
+  }
+
+  .comparison-table-wrapper {
+    padding: 12px 8px;
+    margin: 20px -8px 0;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .comparison-table {
+    min-width: 520px;
+  }
+
+  .comparison-table th,
+  .comparison-table td {
+    padding: 12px 10px;
+    font-size: 0.88rem;
+  }
+
+  .table-brand-title {
+    font-size: 1.1rem;
+  }
+
+  /* FAQ Accordion */
+  .faq-section {
+    padding: 48px 0;
+  }
+
+  .faq-question-btn {
+    padding: 16px 18px;
+    font-size: 1rem;
+    gap: 12px;
+  }
+
+  .faq-answer {
+    padding: 0 18px;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .faq-item.active .faq-answer {
+    max-height: 500px;
+    padding: 0 18px 20px;
+  }
+
+  /* CTA Banner Section */
+  .cta-banner-section {
+    padding: 40px 0 60px;
+  }
+
   .cta-banner-card {
-    padding: 40px 24px;
+    padding: 36px 18px;
+    border-radius: var(--radius-lg);
   }
 
   .cta-title {
-    font-size: 1.85rem;
+    font-size: clamp(1.5rem, 5.5vw, 1.85rem);
+    line-height: 1.25;
+  }
+
+  .cta-desc {
+    font-size: 0.98rem;
+    margin-bottom: 24px;
+  }
+
+  .cta-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .cta-actions .btn {
+    width: 100%;
+    max-width: 100%;
+    white-space: normal;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  .cta-specs-line {
+    font-size: 0.8rem;
+    gap: 6px;
+  }
+
+  /* Legal Modal Dialog */
+  .legal-modal-backdrop {
+    padding: 12px;
+  }
+
+  .legal-modal-card {
+    max-height: 90vh;
+    border-radius: var(--radius-lg);
+    position: relative;
+  }
+
+  .legal-modal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .legal-tabs-nav {
+    width: 100%;
+    padding-right: 32px;
+    gap: 6px;
+  }
+
+  .legal-tab {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .legal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 1.6rem;
+  }
+
+  .legal-modal-body {
+    padding: 18px 14px;
+  }
+
+  .legal-h3 {
+    font-size: 1.15rem;
+  }
+
+  .legal-tab-content p {
+    font-size: 0.9rem;
+  }
+
+  .legal-list li {
+    font-size: 0.88rem;
+  }
+
+  /* Site Footer */
+  .site-footer {
+    padding: 40px 0 30px;
+  }
+
+  .footer-container {
+    gap: 32px;
   }
 
   .footer-links-group {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 20px;
   }
 
-  .floating-badge {
-    display: none;
+  .footer-tagline {
+    max-width: 100%;
+    font-size: 0.88rem;
+  }
+}
+
+/* Extra Small Phones (<= 480px) */
+@media (max-width: 480px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hero-title {
+    font-size: clamp(1.65rem, 6vw, 1.95rem);
+  }
+
+  .section-title {
+    font-size: clamp(1.45rem, 5vw, 1.75rem);
+  }
+
+  .demo-card-container,
+  .guide-card,
+  .contact-card {
+    padding: 18px 14px;
+  }
+
+  .btn-lg {
+    padding: 12px 20px;
+    font-size: 0.95rem;
   }
 }
 
@@ -2561,21 +3167,98 @@ body[data-theme="dark"] .step-badge {
 }
 
 @media (max-width: 768px) {
+  .support-hero-section {
+    padding: 40px 0 24px;
+  }
   .support-hero-title {
-    font-size: 2.2rem;
+    font-size: clamp(1.6rem, 5.5vw, 2.1rem);
+    line-height: 1.25;
+  }
+  .support-hero-subtitle {
+    font-size: 1rem;
+    line-height: 1.55;
+    margin-bottom: 24px;
+  }
+  .support-topic-chips {
+    gap: 8px;
+  }
+  .topic-chip {
+    padding: 8px 14px;
+    font-size: 0.825rem;
+  }
+  .guide-header {
+    margin-bottom: 24px;
+  }
+  .guide-title {
+    font-size: 1.45rem;
+  }
+  .guide-desc {
+    font-size: 0.925rem;
   }
   .guide-steps-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .guide-tip-banner {
+    padding: 14px 14px;
+    font-size: 0.88rem;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .support-faq-section {
+    padding: 40px 0;
   }
   .support-faq-grid {
     grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .faq-category-card {
+    padding: 24px 16px;
+    border-radius: var(--radius-lg);
+  }
+  .category-title {
+    font-size: 1.2rem;
+  }
+  .faq-q {
+    font-size: 0.98rem;
+  }
+  .faq-a {
+    font-size: 0.88rem;
+  }
+  .support-contact-section {
+    padding: 30px 0 60px;
+  }
+  .contact-header {
+    margin-bottom: 24px;
+  }
+  .contact-title {
+    font-size: 1.6rem;
+  }
+  .contact-subtitle {
+    font-size: 0.95rem;
   }
   .form-row {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
   .guide-card,
   .contact-card {
-    padding: 28px 20px;
+    padding: 24px 16px;
+    border-radius: var(--radius-lg);
+  }
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .form-actions .btn {
+    width: 100%;
+    text-align: center;
+  }
+  .contact-direct-link {
+    text-align: center;
+    font-size: 0.85rem;
   }
 }
 

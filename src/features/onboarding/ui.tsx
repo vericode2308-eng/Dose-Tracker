@@ -1,17 +1,20 @@
 import Feather from '@expo/vector-icons/Feather';
 import { useRouter } from 'expo-router';
-import { type ComponentProps, type ReactNode } from 'react';
+import { type ComponentProps, type ReactNode, useMemo } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { useTheme } from '@/features/theme/ThemeContext';
 
 type IconName = ComponentProps<typeof Feather>['name'];
-export function Icon({ name, size = 22, color = theme.palette.navy }: { name: IconName; size?: number; color?: string }) {
-  return <Feather name={name} size={size} color={color} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />;
+export function Icon({ name, size = 22, color }: { name: IconName; size?: number; color?: string }) {
+  const { colors } = useTheme();
+  return <Feather name={name} size={size} color={color ?? colors.ink} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />;
 }
 
-export function Page({ children, footer, backgroundColor = theme.colors.background, scrollable = true }: { children: ReactNode; footer?: ReactNode; backgroundColor?: string; scrollable?: boolean }) {
+export function Page({ children, footer, backgroundColor, scrollable = true }: { children: ReactNode; footer?: ReactNode; backgroundColor?: string; scrollable?: boolean }) {
+  const { colors } = useTheme();
+  backgroundColor ??= colors.background;
   return <SafeAreaView className="flex-1" style={{ backgroundColor }} edges={['top', 'bottom', 'left', 'right']}>
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={{ flex: 1 }} scrollEnabled={scrollable} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.page, !scrollable && { flex: 1, justifyContent: 'space-between', paddingBottom: 4 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
@@ -22,9 +25,10 @@ export function Page({ children, footer, backgroundColor = theme.colors.backgrou
 
 export function StepHeader({ step }: { step: number }) {
   const router = useRouter();
+  const { colors } = useTheme();
   return <View className="flex-row items-center justify-between px-2" style={{ marginBottom: 8 }}>
     <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back}><Icon name="arrow-left" size={25} /></Pressable>
-    <Text className="text-base text-textSecondary">Step {step} of 3</Text>
+    <Text className="text-base" style={{ color: colors.secondary }}>Step {step} of 3</Text>
   </View>;
 }
 
@@ -44,21 +48,24 @@ export function Button({ title, onPress, secondary = false, busy = false, icon }
 }
 
 export function Feature({ icon, title, children, green = false }: { icon: IconName; title: string; children: ReactNode; green?: boolean }) {
+  const { colors, isDark } = useTheme();
   return <View style={styles.feature}>
-    <View style={[styles.featureIcon, { backgroundColor: green ? '#DCF5EF' : '#EAF5FF' }]}><Icon name={icon} size={29} color={green ? '#08AD77' : '#168CF4'} /></View>
-    <View className="flex-1"><Text style={styles.featureTitle}>{title}</Text><Text style={styles.featureBody}>{children}</Text></View>
+    <View style={[styles.featureIcon, { backgroundColor: isDark ? colors.pill : green ? '#DCF5EF' : '#EAF5FF' }]}><Icon name={icon} size={29} color={green ? '#08AD77' : '#168CF4'} /></View>
+    <View className="flex-1"><Text style={[styles.featureTitle, isDark && { color: colors.ink }]}>{title}</Text><Text style={[styles.featureBody, isDark && { color: colors.secondary }]}>{children}</Text></View>
   </View>;
 }
 
 export function PrivacyNote() {
+  const { colors } = useTheme();
   return <View className="flex-row items-center justify-center" style={{ gap: 6, paddingTop: 12 }}>
-    <Icon name="cloud-off" size={13} color={theme.palette.textSecondary} />
-    <Text style={{ fontSize: 11, color: theme.palette.textSecondary }}>Local health records · Optional diagnostics</Text>
+    <Icon name="cloud-off" size={13} color={colors.secondary} />
+    <Text style={{ fontSize: 11, color: colors.secondary }}>Local health records · Optional diagnostics</Text>
   </View>;
 }
 
 export function ErrorMessage({ message }: { message: string }) {
-  return message ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{message}</Text> : null;
+  const { isDark } = useTheme();
+  return message ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.error, isDark && { color: '#F97066' }]}>{message}</Text> : null;
 }
 
 // Only the illustration regions are displayed; all text and controls are native.
@@ -117,6 +124,17 @@ export function ReferenceArt({ kind, maxHeight }: { kind: 'family' | 'reminders'
       />
     </View>
   );
+}
+
+// Layout lives in `styles`; screens read colours through this hook so onboarding follows dark mode.
+export function useOnboardingStyles() {
+  const { colors, isDark } = useTheme();
+  return useMemo(() => isDark ? {
+    ...styles,
+    title: [styles.title, { color: colors.ink }],
+    subtitle: [styles.subtitle, { color: colors.secondary }],
+    card: [styles.card, { backgroundColor: colors.surface, borderColor: colors.border }],
+  } : styles, [colors, isDark]);
 }
 
 export const styles = StyleSheet.create({

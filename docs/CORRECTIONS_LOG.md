@@ -1,5 +1,21 @@
 # Corrections log
 
+## 2026-10-20 — Landing page mobile text overflow and layout correction
+
+- **Request:** Fix text overflowing and layout issues in the landing page and subpages on mobile screens.
+- **Implemented:** 
+  1. Base text wrapping & viewport defense: added `overflow-wrap: break-word;` and `word-break: break-word;` to all text elements, `overflow-wrap: anywhere;` to links/code, and `overflow-x: hidden; max-width: 100vw;` to `html` and `body`.
+  2. Mobile header collision: on screens <= 768px/640px, hid duplicate navbar CTA button to avoid collision with brand logo and hamburger toggle; added an in-drawer mobile CTA "Get the App"; added adaptive "← Back" label on `support.html` for <= 480px.
+  3. Typography scaling: added fluid `clamp()` font sizes for `.hero-title`, `.section-title`, `.showcase-info-title`, `.cta-title`, and `.support-hero-title`.
+  4. Stats grid overflow: fixed `.stats-grid` on screens <= 640px to collapse into a single column (`grid-template-columns: 1fr;`), preventing multi-word labels from overflowing cramped 100px cards.
+  5. Interactive Simulator & Demo: added `flex-wrap: wrap;` to `.profile-pills-list` and `.action-btn-cluster`; converted `.simulator-summary-box` to a stacked column layout on mobile to prevent progress ring and chime button overflow.
+  6. Comparison table: added smooth horizontal scrolling (`overflow-x: auto; -webkit-overflow-scrolling: touch;`) with `min-width: 520px;` so privacy guarantee columns never squash text into illegible, clipped columns.
+  7. CTA Banner & Buttons: wrapped button clusters vertically on small screens with `width: 100%; white-space: normal;` so buttons never extend past card boundaries.
+  8. Legal Modal Dialog & Support Page: converted modal header and contact form actions to responsive column layouts with wrapping tabs, ensuring full accessibility without horizontal clipping on 320px–480px viewports.
+- **Affected files:** `landing/styles.css`, `landing/index.html`, `landing/support.html`, `docs/CORRECTIONS_LOG.md`.
+- **Verification:** CSS balanced braces check passed (3,265 lines); curl HTTP 200 checks on index, support, and styles; test suite passed (164/164 tests); TypeScript check passed (0 errors).
+- **Status:** Implemented and verified in workspace source.
+
 ## 2026-10-03 — Fresh Android package rebuild
 
 - **Request:** Rebuild for a fresh Play upload after the owner reported an existing rejected `com.vericodestudio.dosetracker` app. The requested hyphenated ID is invalid on Android; owner selected `com.vericodestudio.dose_tracker`.
@@ -341,3 +357,28 @@ Record user-requested corrections here with the request date, affected screen, i
 - **Files:** `/Users/shome/Documents/Projects/Reference Docs/ANDROID_GUIDEBOOK.md`, `/Users/shome/Documents/Projects/Reference Docs/PLAY_CONSOLE_GUIDE.md`, this log.
 - **Verification:** Read existing guides and DoseTracker release/listing evidence; checked current official Android and Play guidance. Original historical content preserved byte-for-byte as suffix; new Markdown fences/whitespace checked; example notes 282 characters. Saved files verified equal to reviewed staged content. Expo lint and TypeScript passed.
 - **Status:** Documentation updated. Closed-testing upload/in-review status is owner-reported, not independently inspected; approval, production rollout and pending native/diagnostics/pre-launch checks are not claimed. No app code, binary, deployed policy or Console setting changed.
+
+## 2026-10-20 — Local iOS Release build on a physical iPhone (free Apple ID)
+
+- **Request:** Follow `Reference Docs/ios-local-xcode-build-free-apple-id.md` and install a standalone Release build on the owner's iPhone (Reftyy) using a free personal team, without EAS.
+- **Implemented:** Added iOS bundle identifier `com.vericodestudio.dosetracker` (Android keeps `com.vericodestudio.dose_tracker`; iOS disallows `_`). Added a tracked config plugin that removes the `aps-environment` entitlement which `expo-notifications` always injects; reminders are local-only and personal teams cannot sign Push. The plugin must stay listed before `expo-notifications` (verified empty entitlements after prebuild). Generated ignored `ios/` via `expo prebuild --platform ios`; signing team and Release run configuration were set by the owner in Xcode. Path contains no spaces, so the guide's pbxproj patch was not needed.
+- **Affected files:** `app.json`, `plugins/withIosLocalNotificationsOnly.cjs`, this log; generated ignored `ios/`; shared guide `/Users/shome/Documents/Projects/Reference Docs/ios-local-xcode-build-free-apple-id.md` updated with these lessons (owner request).
+- **Verification:** Lint and TypeScript pass. Expo Doctor fails only its existing "12 packages out of date" check (no dependency changes made). `expo config` shows Android package/permissions unchanged. `expo run:ios --configuration Release` built (0 errors, 1 Sentry symbol-upload phase warning), signed, and installed on device; `devicectl` lists `com.vericodestudio.dosetracker` 1.0.0 (1). Simulator smoke test was cancelled before install.
+- **Status:** Installed on device only. Launch without Metro/cable, reminder delivery, Face ID lock and photo picker on iOS are not yet verified. Free provisioning expires after 7 days. iOS limits pending local notifications to 64 per app; dense schedules are unassessed. No App Store/TestFlight distribution.
+
+## 2026-10-20 — Onboarding follows dark mode (invisible diagnostics toggle labels)
+
+- **Request:** On the final onboarding screen ("Help improve Dose Tracker?") the three diagnostics toggle labels were invisible on iPhone; owner asked for a full fix.
+- **Cause:** Onboarding pages used fixed light colours (cream background, navy title, grey subtitle), while `DiagnosticsChoices` labels and onboarding buttons used the live theme. With the device in dark mode the labels rendered near-white (`#F8FAFC`) on cream.
+- **Implemented:** The shared onboarding kit now reads `useTheme()`: `Page` background, default `Icon` colour, step counter, `Feature` text and icon badge, privacy note and error text. New `useOnboardingStyles()` returns themed title/subtitle/card styles in dark mode and the unchanged light styles otherwise. Welcome, notifications, profile and ready screens use the hook; hard-coded disclaimer and privacy-link colours on welcome/ready follow the theme. Light-mode colours are unchanged apart from the ready-screen privacy link, which now uses the theme ink colour.
+- **Affected files:** `src/features/onboarding/ui.tsx`, `src/app/{welcome,notifications,profile,ready}.tsx`, this log.
+- **Verification:** Expo lint and TypeScript pass. No automated UI tests cover these screens.
+- **Status:** Source change only. Not yet checked on a device or simulator in dark or light mode; requires a JS reload (no native rebuild).
+
+## 2026-10-20 — iOS ringing alarm (AlarmKit) for medication reminders
+
+- **Request:** iPhone reminders only played one short beep. Owner asked for an alarm that keeps ringing until someone attends to it, implemented with AlarmKit (option 3), and checked on the iPhone 17 Pro simulator.
+- **Implemented:** The existing opt-in **Ring repeatedly** switch now appears on iOS. `modules/dose-alarm-access` gained an iOS Swift module (AlarmKit, iOS 26.1+, weak-linked so 16.4+ still launches): authorization, schedule/cancel/stop, one weekly-recurring alarm per daily/weekday schedule, one-shot alarms for pending snoozes and the 10-second test, deterministic UUIDs, system **Stop** plus an **Open** App Intent that only silences and opens the app. `notificationManager.js` reconciles alarms with notifications, silences the paired notification while an alarm is armed (Take/Snooze/Skip stay on the notification), stops/cancels a dose's alarms when it is recorded or snoozed, and cancels all alarms when ringing/reminders are off, Silent is chosen, access is denied, permission fails or data is erased. Alarm title follows notification privacy. Reminder status explains unavailable/denied/undetermined access. Added `NSAlarmKitUsageDescription`. Separately, added `plugins/withIosSceneLifecycle.cjs`: Xcode 27 builds crashed at launch on iOS 27 (`NoSceneLifecycleAdoption`) because the Expo 57 template has no scene manifest; the plugin adopts Expo's own `ExpoAppSceneDelegate`.
+- **Affected files:** `modules/dose-alarm-access/{expo-module.config.json,ios/DoseAlarmAccess.podspec,ios/DoseAlarmAccessModule.swift}`, `src/notificationManager.js`, `src/notificationManager.d.ts`, `src/app/reminder-sound.tsx`, `app.json`, `plugins/withIosSceneLifecycle.cjs`, `tests/notificationManager.test.cjs`, `docs/SETTINGS_ARCHITECTURE.md`, `AGENTS.md`, this log; regenerated ignored `ios/`.
+- **Verification:** 164/164 tests (7 new iOS alarm tests), lint and TypeScript pass. Expo Doctor fails only its existing "12 packages out of date" check. Debug build for iPhone 17 Pro simulator (iOS 27.1) succeeded; AlarmKit weak-linked; Open intent present in app intents metadata. Before the scene plugin the app crashed at launch; after it, it launched. Driven by a temporary XCUITest: the test alarm fired 10 s after scheduling, showed "Sample medication — 1 tablet" with Open and Stop, and was still alerting at ~123 s; **Open** foregrounded the app and silenced it; **Stop** silenced it without opening the app. The paired notification was delivered.
+- **Status:** Source change; simulator-verified with one caveat: on this simulator the AlarmKit permission prompt never appeared — `mobiletimerd` denied instantly and stored the denial — so for the test the simulator's AlarmKit store was set to authorized by hand. The real permission prompt, audible sound/looping, lock-screen presentation, Silent/Focus behaviour, recurring/snooze firing and Take/Snooze/Skip while ringing are **not verified** and need a physical iPhone on iOS 26.1+. The installed device build predates this change and needs a rebuild/reinstall. Older iOS keeps the single-alert behaviour.

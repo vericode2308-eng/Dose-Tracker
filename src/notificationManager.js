@@ -18,15 +18,46 @@ function reminderContent(prefs, detail, data) {
   return { title: prefs.notificationPrivacy === 'none' ? 'DoseTracker' : 'Medication reminder',
     body: prefs.notificationPrivacy === 'show' ? detail : prefs.notificationPrivacy === 'hide'
       ? 'Open DoseTracker to view your scheduled dose.' : 'Open the app for details.',
-    sound: prefs.reminderSound === 'silent' ? false : prefs.reminderSound === 'default' ? 'default' : `${prefs.reminderSound}.wav`,
+    // An armed iOS alarm owns the sound; the notification keeps the dose actions.
+    sound: prefs.reminderSound === 'silent' || iosAlarmsActive(prefs) ? false : prefs.reminderSound === 'default' ? 'default' : `${prefs.reminderSound}.wav`,
     categoryIdentifier: data?.kind === 'medication-dose' && quickActionsAllowed === true ? MEDICATION_CATEGORY : undefined,
     data: { ...data, ...(Platform.OS === 'android' && prefs.reminderRinging && prefs.reminderSound !== 'silent'
       ? { alarmRinging: true } : {}) } };
 }
 const PREFIX = 'dosetracker:dose:';
-const alarmAccess = Platform.OS === 'android' ? requireOptionalNativeModule('DoseAlarmAccess') : null;
+const ALARM_PREFIX = `${PREFIX}alarm:`;
+const alarmAccess = Platform.OS === 'android' || Platform.OS === 'ios' ? requireOptionalNativeModule('DoseAlarmAccess') : null;
 export function isAlarmRingingAvailable() {
-  return Platform.OS === 'android' && alarmAccess?.supportsRinging?.() === true;
+  return (Platform.OS === 'android' || Platform.OS === 'ios') && alarmAccess?.supportsRinging?.() === true;
+}
+function iosAlarmAuthorization() {
+  return Platform.OS === 'ios' && isAlarmRingingAvailable() ? alarmAccess.alarmAuthorization?.() ?? 'unavailable' : 'unavailable';
+}
+/** iOS rings through AlarmKit only after the user grants Alarms access. */
+function iosAlarmsActive(prefs) {
+  return Platform.OS === 'ios' && prefs.remindersEnabled && prefs.reminderRinging === true && prefs.reminderSound !== 'silent'
+    && iosAlarmAuthorization() === 'authorized';
+}
+/** Asks once for AlarmKit access; returns false when iOS ringing cannot be used. */
+export async function requestAlarmRingingAccess() {
+  if (Platform.OS !== 'ios') return isAlarmRingingAvailable();
+  if (!isAlarmRingingAvailable() || !alarmAccess.requestAlarmAuthorization) return false;
+  return (await alarmAccess.requestAlarmAuthorization()) === 'authorized';
+}
+// The alarm title is shown on the lock screen, so it follows notification privacy.
+function iosAlarmRequest(prefs, id, detail, timing) {
+  return { id, title: prefs.notificationPrivacy === 'show' && detail ? detail : reminderContent(prefs, '', null).title,
+    sound: prefs.reminderSound === 'default' ? 'default' : `${prefs.reminderSound}.wav`, hour: 0, minute: 0, ...timing };
+}
+function snoozeAlarmId(dose) { return `${ALARM_PREFIX}snooze:${dose.scheduleId}:${dose.scheduledAtMs}`; }
+async function cancelIosAlarms(keep = []) {
+  if (Platform.OS === 'ios' && alarmAccess?.cancelAlarmsExcept) await alarmAccess.cancelAlarmsExcept(keep);
+}
+async function stopIosDoseAlarms(dose) {
+  if (Platform.OS !== 'ios' || !alarmAccess?.stopAlarm) return;
+  await alarmAccess.stopAlarm(`${ALARM_PREFIX}${dose.scheduleId}`);
+  const remaining = new Set((await fetchPendingSnoozes()).map(snoozeAlarmId));
+  if (!remaining.has(snoozeAlarmId(dose))) await alarmAccess.cancelAlarm(snoozeAlarmId(dose));
 }
 let work = Promise.resolve();
 let foregroundHandlerInstalled = false;
@@ -121,14 +152,21 @@ export async function getReminderStatus(requestPermission = false, soundOverride
     (!selectedChannel || selectedChannel.importance !== api.AndroidImportance.NONE) &&
     (!legacyChannel || legacyChannel.importance !== api.AndroidImportance.NONE);
   const exact = Platform.OS === 'android' ? (alarmAccess ? await alarmAccess.canScheduleExactAlarms() : null) : null;
+  const iosRinging = Platform.OS === 'ios' && prefs.reminderRinging && prefs.reminderSound !== 'silent';
+  if (iosRinging && requestPermission && iosAlarmAuthorization() === 'notDetermined') await requestAlarmRingingAccess().catch(() => false);
+  const alarmAuthorization = iosRinging ? iosAlarmAuthorization() : null;
   return { allowed: allowed && channelAllowed, exact, channelId, channel,
-    ringingAvailable: Platform.OS === 'android' && prefs.reminderRinging ? isAlarmRingingAvailable() : undefined,
+    ringingAvailable: prefs.reminderRinging && Platform.OS === 'android' ? isAlarmRingingAvailable()
+      : iosRinging ? alarmAuthorization === 'authorized' : undefined,
     message: !allowed ? 'Notifications are disabled. Enable notifications in system settings.'
       : !channelAllowed ? 'The Medication reminders channel is disabled in system settings.'
       : Platform.OS === 'android' && exact === null ? 'Rebuild the Android app to check Alarms & reminders access.'
       : Platform.OS === 'android' && !exact ? 'Exact-alarm access is off. Reminders may be delayed. Enable Alarms & reminders.'
       : Platform.OS === 'android' && prefs.reminderRinging && !isAlarmRingingAvailable()
         ? 'Repeating sound needs the updated Android build (Android 8 or later). Current reminders use a single alert.'
+      : alarmAuthorization === 'unavailable' ? 'Ringing alarms need iOS 26.1 or later and the updated app. Current reminders use a single alert.'
+      : alarmAuthorization === 'denied' ? 'Alarm access is off. Reminders use a single alert. Allow Alarms for DoseTracker in iPhone Settings.'
+      : alarmAuthorization === 'notDetermined' ? 'Turn Ring repeatedly off and on to allow alarms. Current reminders use a single alert.'
       : 'Reminders scheduled through the device. Delivery depends on system permissions and restrictions.' };
 }
 
@@ -159,6 +197,10 @@ export async function scheduleTestReminder(soundOverride) {
     content: reminderContent(prefs, 'Sample medication — 1 tablet', { kind: 'reminder-test' }),
     trigger: { type: 'timeInterval', seconds: 10, channelId: status.channelId },
   });
+  if (iosAlarmsActive(prefs)) {
+    await alarmAccess.scheduleAlarm(iosAlarmRequest(prefs, `${ALARM_PREFIX}test`, 'Sample medication — 1 tablet', { dateMs: Date.now() + 10000 }));
+    return 'Test alarm scheduled for 10 seconds from now. It keeps ringing until you tap Stop or Open. Your dose stays pending.';
+  }
   return prefs.reminderRinging && prefs.reminderSound !== 'silent' && Platform.OS === 'android'
     ? 'Test reminder scheduled for 10 seconds from now. Use Stop ringing or open the notification panel to silence it. It clears automatically after 2 minutes. Phone notification volume and system settings apply.'
     : 'Test reminder scheduled for 10 seconds from now. Lock your phone to check privacy, sound and vibration.';
@@ -192,6 +234,7 @@ export async function openNotificationSettings() {
 async function cancelMedicationRequests(api) {
   const requests = await api.getAllScheduledNotificationsAsync();
   for (const request of requests) if (request.identifier.startsWith(PREFIX)) await api.cancelScheduledNotificationAsync(request.identifier);
+  await cancelIosAlarms();
 }
 
 export function cancelMedicationReminders() {
@@ -206,6 +249,7 @@ export function eraseMedicineDataWithReminders() {
       const api = await notifications();
       await api.cancelAllScheduledNotificationsAsync();
       await api.dismissAllNotificationsAsync();
+      await cancelIosAlarms();
     }
     await clearDatabase();
   });
@@ -330,11 +374,13 @@ function snoozeIdentifier(dose) { return `${PREFIX}snooze:${dose.scheduleId}:${d
 async function scheduleSnoozeRequest(api, snooze, medicine, prefs) {
   const schedule = medicine.schedules.find(item => item.id === snooze.scheduleId);
   if (!schedule) return;
+  const detail = `${medicine.name} — ${schedule.doseAmount} ${medicine.doseUnit || medicine.dosageForm}`;
   await api.scheduleNotificationAsync({ identifier: snoozeIdentifier(snooze),
-    content: reminderContent(prefs, `${medicine.name} — ${schedule.doseAmount} ${medicine.doseUnit || medicine.dosageForm}`,
+    content: reminderContent(prefs, detail,
       { kind: 'medication-dose', version: 1, medicineId: medicine.id, scheduleId: schedule.id,
         doseDate: snooze.date, scheduledAtMs: snooze.scheduledAtMs }),
     trigger: { type: 'date', date: new Date(snooze.untilMs), channelId: reminderChannelId(prefs) } });
+  if (iosAlarmsActive(prefs)) await alarmAccess.scheduleAlarm(iosAlarmRequest(prefs, snoozeAlarmId(snooze), detail, { dateMs: snooze.untilMs }));
 }
 
 /** A snooze defers the same occurrence. It is never a Taken/Skipped history entry. */
@@ -356,6 +402,7 @@ async function snoozeMedicationDoseTask(dose, minutes, notificationDeliveredAtMs
     const medicine = await fetchMedicineDetails(dose.medicineId);
     if (!medicine) throw new UserFacingError('Medicine not found.');
     await scheduleSnoozeRequest(await notifications(), { ...dose, untilMs }, medicine, prefs);
+    if (Platform.OS === 'ios' && alarmAccess?.stopAlarm) await alarmAccess.stopAlarm(`${ALARM_PREFIX}${dose.scheduleId}`);
     return { untilMs, message: Platform.OS === 'android' && status.exact !== true ? status.message : '' };
   } catch {
     await recordReminderIssue('snooze_failed', 'A snooze reminder could not be scheduled.').catch(() => undefined);
@@ -377,6 +424,7 @@ async function cleanupDoseNotifications(dose) {
   if (Platform.OS === 'web') return { message: '' };
   try {
     const api = await notifications();
+    await stopIosDoseAlarms(dose);
     await api.cancelScheduledNotificationAsync(snoozeIdentifier(dose));
     for (const request of await api.getAllScheduledNotificationsAsync()) {
       const data = request.content.data;
@@ -487,6 +535,8 @@ async function scheduleSavedMedicines(medicines, requestPermission, removeObsole
     return { ...status, scheduled: 0, issues: [] };
   }
   const desired = new Set();
+  const desiredAlarms = [];
+  const alarms = iosAlarmsActive(prefs);
   const issues = [];
   let scheduled = 0;
   for (const medicine of medicines) {
@@ -494,13 +544,22 @@ async function scheduleSavedMedicines(medicines, requestPermission, removeObsole
     for (const schedule of medicine.schedules) {
       if (schedule.reminderEnabled === false) continue;
       try {
-        for (const trigger of recurringTriggers(schedule, new Date(), reminderChannelId(prefs))) {
+        const detail = `${medicine.name} — ${schedule.doseAmount} ${medicine.doseUnit || medicine.dosageForm}`;
+        const triggers = recurringTriggers(schedule, new Date(), reminderChannelId(prefs));
+        for (const trigger of triggers) {
           const identifier = `${PREFIX}${schedule.id}:${trigger.type === 'weekly' ? trigger.weekday : 'daily'}`;
           desired.add(identifier);
           await api.scheduleNotificationAsync({ identifier,
-            content: reminderContent(prefs, `${medicine.name} — ${schedule.doseAmount} ${medicine.doseUnit || medicine.dosageForm}`,
+            content: reminderContent(prefs, detail,
               { kind: 'medication-dose', version: 1, medicineId: medicine.id, scheduleId: schedule.id }), trigger });
           scheduled++;
+        }
+        if (alarms && triggers.length) {
+          const id = `${ALARM_PREFIX}${schedule.id}`;
+          desiredAlarms.push(id);
+          // One AlarmKit alarm per schedule; Expo weekday 1 is Sunday, AlarmKit index 0 is Sunday.
+          await alarmAccess.scheduleAlarm(iosAlarmRequest(prefs, id, detail, { hour: triggers[0].hour, minute: triggers[0].minute,
+            weekdays: triggers[0].type === 'weekly' ? triggers.map(trigger => trigger.weekday - 1) : null }));
         }
       } catch (error) { issues.push(`${medicine.name}: ${publicErrorMessage(error, 'Reminder could not be scheduled.')}`); }
     }
@@ -510,6 +569,7 @@ async function scheduleSavedMedicines(medicines, requestPermission, removeObsole
     if (!medicine) continue;
     const identifier = snoozeIdentifier(snooze);
     desired.add(identifier);
+    if (alarms) desiredAlarms.push(snoozeAlarmId(snooze));
     try { await scheduleSnoozeRequest(api, snooze, medicine, prefs); scheduled++; }
     catch { issues.push(`${medicine.name}: Snooze reminder could not be scheduled.`); }
   }
@@ -518,6 +578,8 @@ async function scheduleSavedMedicines(medicines, requestPermission, removeObsole
       if (request.identifier.startsWith(PREFIX) && !desired.has(request.identifier)) await api.cancelScheduledNotificationAsync(request.identifier);
     }
   }
+  // Ringing turned off or access revoked removes every alarm, including a partial add.
+  if (removeObsolete || !alarms) await cancelIosAlarms(desiredAlarms);
   return { ...status, scheduled, issues };
 }
 

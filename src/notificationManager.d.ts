@@ -15,6 +15,7 @@ export function recurringTriggers(schedule: StoredSchedule, now?: Date): object[
 export function getReminderStatus(requestPermission?: boolean): Promise<ReminderStatus>;
 export function canChangeReminderChannel(): Promise<boolean>;
 export function isAlarmRingingAvailable(): boolean;
+export function requestAlarmRingingAccess(): Promise<boolean>;
 export function scheduleTestReminder(soundOverride?: 'default' | 'gentle' | 'clear' | 'silent'): Promise<string>;
 export function getReminderDiagnostics(): Promise<ReminderDiagnostics>;
 export function openExactAlarmSettings(): Promise<void>;

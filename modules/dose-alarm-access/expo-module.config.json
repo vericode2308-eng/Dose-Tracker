@@ -1,4 +1,5 @@
 {
-  "platforms": ["android"],
-  "android": { "modules": ["expo.modules.dosealarmaccess.DoseAlarmAccessModule"] }
+  "platforms": ["android", "apple"],
+  "android": { "modules": ["expo.modules.dosealarmaccess.DoseAlarmAccessModule"] },
+  "apple": { "modules": ["DoseAlarmAccessModule"] }
 }

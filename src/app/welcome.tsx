@@ -2,10 +2,13 @@ import { Link, Redirect, useRouter } from 'expo-router';
 import { Image, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOnboarding } from '@/features/onboarding/context';
-import { Button, Feature, Page, PrivacyNote, ReferenceArt, styles } from '@/features/onboarding/ui';
+import { Button, Feature, Page, PrivacyNote, ReferenceArt, useOnboardingStyles } from '@/features/onboarding/ui';
+import { useTheme } from '@/features/theme/ThemeContext';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const styles = useOnboardingStyles();
+  const { colors, isDark } = useTheme();
   const { data } = useOnboarding();
   const { height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -32,7 +35,7 @@ export default function WelcomeScreen() {
       <Feature icon="users" title="For you and your family">Keep everyone’s medicines in one place.</Feature>
       <Feature icon="lock" title="No subscription">Free features, with no sign up.</Feature>
     </View>
-    <Text style={{ marginTop: 6, paddingHorizontal: 4, fontSize: 12, lineHeight: 16, color: '#536073' }}>For adults 18+ managing their own or authorized dependents’ medicines. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment.</Text>
-    <Link href="https://dosetracker.pages.dev/privacy.html" style={{ padding: 10, textAlign: 'center', color: '#0B2540', textDecorationLine: 'underline' }}>Privacy Policy</Link>
+    <Text style={{ marginTop: 6, paddingHorizontal: 4, fontSize: 12, lineHeight: 16, color: colors.secondary }}>For adults 18+ managing their own or authorized dependents’ medicines. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment.</Text>
+    <Link href="https://dosetracker.pages.dev/privacy.html" style={{ padding: 10, textAlign: 'center', color: isDark ? colors.ink : '#0B2540', textDecorationLine: 'underline' }}>Privacy Policy</Link>
   </Page>;
 }

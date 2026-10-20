@@ -8,7 +8,11 @@
     "scheme": "dosetracker",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/icon.png"
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "com.vericodestudio.dosetracker",
+      "infoPlist": {
+        "NSAlarmKitUsageDescription": "DoseTracker rings an alarm at your medication times until you stop it."
+      }
     },
     "android": {
       "allowBackup": false,
@@ -37,6 +41,8 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withIosLocalNotificationsOnly.cjs",
+      "./plugins/withIosSceneLifecycle.cjs",
       [
         "expo-notifications",
         {

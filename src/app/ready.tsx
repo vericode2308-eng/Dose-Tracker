@@ -5,10 +5,13 @@ import { DIAGNOSTICS_OFF, type DiagnosticsPreferences, setDiagnosticsConsent } f
 import { DiagnosticsChoices, DIAGNOSTICS_DISCLOSURE } from '@/features/diagnostics/DiagnosticsChoices';
 import { useOnboarding } from '@/features/onboarding/context';
 import { useProfiles } from '@/features/profiles/context';
-import { Button, ErrorMessage, Feature, Page, PrivacyNote, StepHeader, styles } from '@/features/onboarding/ui';
+import { Button, ErrorMessage, Feature, Page, PrivacyNote, StepHeader, useOnboardingStyles } from '@/features/onboarding/ui';
+import { useTheme } from '@/features/theme/ThemeContext';
 
 export default function ReadyScreen() {
   const router = useRouter();
+  const styles = useOnboardingStyles();
+  const { colors } = useTheme();
   const { data, save } = useOnboarding();
   const { currentProfile } = useProfiles();
   const [diagnostics, setDiagnostics] = useState<DiagnosticsPreferences>({ ...DIAGNOSTICS_OFF });
@@ -36,7 +39,7 @@ export default function ReadyScreen() {
     <Text accessibilityRole="header" style={styles.title}>Help improve Dose Tracker?</Text>
     <Text style={styles.subtitle}>{DIAGNOSTICS_DISCLOSURE}</Text>
     <DiagnosticsChoices value={diagnostics} onChange={setDiagnostics} disabled={busy} />
-    <Link href="https://dosetracker.pages.dev/privacy.html" style={{ paddingVertical: 16, textDecorationLine: 'underline' }}>Privacy Policy and contact</Link>
+    <Link href="https://dosetracker.pages.dev/privacy.html" style={{ color: colors.ink, paddingVertical: 16, textDecorationLine: 'underline' }}>Privacy Policy and contact</Link>
     <ErrorMessage message={error} />
   </Page>;
   return <Page footer={<View style={[styles.footer, { paddingTop: 8 }]}>

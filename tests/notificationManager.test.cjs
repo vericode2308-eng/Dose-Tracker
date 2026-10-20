@@ -21,6 +21,8 @@ function harness(options = {}) {
   let selected = 'p2';
   const prefs = { remindersEnabled: true, reminderSound: 'default', vibrationEnabled: true, notificationPrivacy: 'show', snoozeMinutes: 10 };
   const calls = [];
+  const alarms = new Map();
+  const alarmState = { authorization: options.alarmAuthorization };
   let snoozes = [];
   const history = [];
   let listener;
@@ -86,7 +88,15 @@ function harness(options = {}) {
     },
     'react-native': { Platform: { OS: options.platform || 'android' }, Linking: { openSettings: async () => {} } },
     'expo-modules-core': { requireOptionalNativeModule: () => ({ canScheduleExactAlarms: async () => options.exact !== false, openExactAlarmSettings: async () => {},
-      ...(options.oldNativeBuild ? {} : { supportsRinging: () => true }) }) },
+      ...(options.oldNativeBuild ? {} : { supportsRinging: () => true }),
+      ...(options.alarmAuthorization ? {
+        alarmAuthorization: () => alarmState.authorization,
+        requestAlarmAuthorization: async () => { calls.push('alarmPermission'); if (alarmState.authorization === 'notDetermined') alarmState.authorization = options.grantAlarms === false ? 'denied' : 'authorized'; return alarmState.authorization; },
+        scheduleAlarm: async request => { if (options.failAlarm) throw Error('AlarmKit failed'); alarms.set(request.id, request); },
+        cancelAlarm: async id => { alarms.delete(id); },
+        cancelAlarmsExcept: async ids => { for (const id of [...alarms.keys()]) if (!ids.includes(id)) alarms.delete(id); },
+        stopAlarm: async id => { calls.push('stopAlarm:' + id); },
+      } : {}) }) },
     'expo-notifications': api, './database': db, './features/settings/storage': { readSettings: async () => prefs },
   };
   const manager = {};
@@ -106,7 +116,7 @@ function harness(options = {}) {
     assert.ok(name in taskDependencies, `Unexpected task dependency: ${name}`);
     return taskDependencies[name];
   }, {});
-  return { manager, stored, presented, prefs, calls, api, history, runTask: data => backgroundTask({ data }), emit: response => listener?.(response), get selected() { return selected; }, get medicine() { return medicines[0]; } };
+  return { manager, stored, presented, prefs, calls, api, history, alarms, alarmState, runTask: data => backgroundTask({ data }), emit: response => listener?.(response), get selected() { return selected; }, get medicine() { return medicines[0]; } };
 }
 function response(date = new Date(2026, 8, 26, 8).getTime()) {
   return { actionIdentifier: 'default', notification: { date, request: { identifier: 'dosetracker:dose:schedule-1:daily',
@@ -155,7 +165,74 @@ test('old native builds report missing ringing support and cannot falsely confir
   await assert.rejects(h.manager.scheduleTestReminder(), /updated Android build/);
   assert.equal(h.stored.size, 0);
   assert.equal(harness().manager.isAlarmRingingAvailable(), true);
-  assert.equal(harness({ platform: 'ios' }).manager.isAlarmRingingAvailable(), false);
+  assert.equal(harness({ platform: 'ios' }).manager.isAlarmRingingAvailable(), true);
+  assert.equal(harness({ platform: 'ios', oldNativeBuild: true }).manager.isAlarmRingingAvailable(), false);
+});
+
+test('iOS ringing arms one AlarmKit alarm per schedule and silences the paired notification', async () => {
+  const h = harness({ platform: 'ios', alarmAuthorization: 'authorized' });
+  h.medicine.schedules[0].pattern = { kind: 'weekdays', weekdays: [1, 3, 5], startDate: '2020-01-01' };
+  await h.manager.reconcileReminders();
+  assert.equal(h.alarms.size, 0);
+  for (const request of h.stored.values()) assert.equal(request.content.sound, 'default');
+  h.prefs.reminderRinging = true;
+  await h.manager.reconcileReminders();
+  assert.deepEqual([...h.alarms.values()], [{ id: 'dosetracker:dose:alarm:schedule-1', title: 'Test medicine — 1 tablet',
+    sound: 'default', hour: 8, minute: 0, weekdays: [1, 3, 5] }]);
+  for (const request of h.stored.values()) {
+    assert.equal(request.content.sound, false);
+    assert.equal(request.content.data.alarmRinging, undefined);
+  }
+  h.prefs.notificationPrivacy = 'hide';
+  h.prefs.reminderSound = 'gentle';
+  await h.manager.reconcileReminders();
+  assert.equal(h.alarms.get('dosetracker:dose:alarm:schedule-1').title, 'Medication reminder');
+  assert.equal(h.alarms.get('dosetracker:dose:alarm:schedule-1').sound, 'gentle.wav');
+});
+
+test('iOS snooze and test alarms are one-shot, and recording a dose silences its alarms', async () => {
+  const h = harness({ platform: 'ios', alarmAuthorization: 'authorized' });
+  h.prefs.reminderRinging = true;
+  await h.manager.reconcileReminders();
+  await h.manager.snoozeMedicationDose(doseReference(), 10);
+  const snooze = [...h.alarms.values()].find(alarm => alarm.id.includes(':snooze:'));
+  assert.ok(snooze.dateMs > Date.now());
+  assert.ok(h.calls.includes('stopAlarm:dosetracker:dose:alarm:schedule-1'));
+  assert.match(await h.manager.scheduleTestReminder(), /until you tap Stop or Open/);
+  assert.ok(h.alarms.has('dosetracker:dose:alarm:test'));
+  await h.manager.recordMedicationDose(doseReference(), 'Taken');
+  assert.equal([...h.alarms.keys()].some(id => id.includes(':snooze:')), false);
+  assert.ok(h.alarms.has('dosetracker:dose:alarm:schedule-1'));
+  await h.manager.reconcileReminders();
+  assert.deepEqual([...h.alarms.keys()], ['dosetracker:dose:alarm:schedule-1']);
+});
+
+for (const patch of [{ reminderRinging: false }, { remindersEnabled: false }, { reminderSound: 'silent' }]) {
+  test(`iOS disabling ringing cancels every AlarmKit alarm: ${JSON.stringify(patch)}`, async () => {
+    const h = harness({ platform: 'ios', alarmAuthorization: 'authorized' });
+    h.prefs.reminderRinging = true;
+    await h.manager.reconcileReminders();
+    assert.equal(h.alarms.size, 1);
+    Object.assign(h.prefs, patch);
+    await h.manager.reconcileReminders();
+    assert.equal(h.alarms.size, 0);
+  });
+}
+
+test('iOS without alarm access keeps single notification sound and explains why', async () => {
+  for (const authorization of ['denied', 'notDetermined']) {
+    const h = harness({ platform: 'ios', alarmAuthorization: authorization, grantAlarms: false });
+    h.prefs.reminderRinging = true;
+    await h.manager.reconcileReminders();
+    assert.equal(h.alarms.size, 0);
+    assert.equal([...h.stored.values()][0].content.sound, 'default');
+    assert.match((await h.manager.getReminderStatus()).message, authorization === 'denied' ? /Alarm access is off/ : /allow alarms/);
+  }
+  const h = harness({ platform: 'ios', alarmAuthorization: 'notDetermined' });
+  h.prefs.reminderRinging = true;
+  assert.equal(await h.manager.requestAlarmRingingAccess(), true);
+  await h.manager.reconcileReminders();
+  assert.equal(h.alarms.size, 1);
 });
 
 test('ringing preserves privacy redaction and secure-lock action restrictions', async () => {

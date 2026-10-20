@@ -4,10 +4,11 @@ import { Platform, Text, View, useWindowDimensions } from 'react-native';
 import { useOnboarding } from '@/features/onboarding/context';
 import { requestLocalNotifications } from '@/features/onboarding/permissions';
 import { getReminderStatus, openExactAlarmSettings, openNotificationSettings } from '@/notificationManager';
-import { Button, ErrorMessage, Feature, Page, PrivacyNote, ReferenceArt, StepHeader, styles } from '@/features/onboarding/ui';
+import { Button, ErrorMessage, Feature, Page, PrivacyNote, ReferenceArt, StepHeader, useOnboardingStyles } from '@/features/onboarding/ui';
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const styles = useOnboardingStyles();
   const { save } = useOnboarding();
   const { height } = useWindowDimensions();
   const illustrationMaxHeight = Math.round(Math.min(height * 0.22, 160));

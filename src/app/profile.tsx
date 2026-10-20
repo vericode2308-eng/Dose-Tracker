@@ -8,13 +8,14 @@ import { useProfiles } from '@/features/profiles/context';
 import { useOnboarding } from '@/features/onboarding/context';
 import { AVATAR_COLORS, EMPTY_PROFILE, initials, validBirthday } from '@/features/onboarding/model';
 import { choosePhoto, keepPhoto } from '@/features/onboarding/photos';
-import { Button, ErrorMessage, Icon, Page, StepHeader, styles } from '@/features/onboarding/ui';
+import { Button, ErrorMessage, Icon, Page, StepHeader, useOnboardingStyles } from '@/features/onboarding/ui';
 import { DatePickerField } from '@/features/ui/DateTimePickers';
 import { hapticSuccess, hapticWarning } from '@/features/ui/haptics';
 import { useTheme } from '@/features/theme/ThemeContext';
 
 export default function ProfileScreen() {
   const { colors, isDark } = useTheme();
+const styles = useOnboardingStyles();
   const router = useRouter();
   const { data } = useOnboarding();
   const { mode, id } = useLocalSearchParams<{ mode?: string; id?: string }>();
