@@ -1,7 +1,7 @@
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import type { DoseAction, ScheduledDose } from '@/database';
 import { useTheme } from '@/features/theme/ThemeContext';
+import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
 
 export function DoseOptionsMenu({ dose, onClose, onAction }: {
   dose: ScheduledDose; onClose: () => void; onAction: (dose: ScheduledDose, action: DoseAction) => void;
@@ -10,8 +10,8 @@ export function DoseOptionsMenu({ dose, onClose, onAction }: {
   return <Modal visible transparent animationType="fade" onRequestClose={onClose}>
     <View className="flex-1 justify-end bg-black/40">
       <Pressable className="absolute inset-0" accessibilityRole="button" accessibilityLabel="Dismiss dose options" onPress={onClose} />
-      <SafeAreaView edges={['bottom']} accessibilityViewIsModal className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px]"
-        style={{ backgroundColor: colors.surface }}>
+      <GlassSheetSurface edges={['bottom']} accessibilityViewIsModal className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px]"
+        tint={colors.surface}>
         <ScrollView contentContainerStyle={{ padding: 20 }}>
           <Text accessibilityRole="header" className="mb-1 text-xl font-semibold" style={{ color: colors.ink }}>{dose.medicine.name}</Text>
           <Text className="mb-3 text-sm" style={{ color: colors.secondary }}>{new Date(dose.scheduledAtMs).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })} · {dose.status}</Text>
@@ -24,7 +24,7 @@ export function DoseOptionsMenu({ dose, onClose, onAction }: {
             <Text className="text-base font-semibold" style={{ color: colors.ink }}>Cancel</Text>
           </Pressable>
         </ScrollView>
-      </SafeAreaView>
+      </GlassSheetSurface>
     </View>
   </Modal>;
 }

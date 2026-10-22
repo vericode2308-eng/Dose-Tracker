@@ -15,6 +15,7 @@ import { clearAuthEnabled } from '@/features/security/SecurityManager';
 import { DIAGNOSTICS_OFF, type DiagnosticsPreferences, readDiagnosticsConsent, setDiagnosticsConsent } from '@/features/diagnostics/diagnostics';
 import { DiagnosticsChoices, DIAGNOSTICS_DISCLOSURE } from '@/features/diagnostics/DiagnosticsChoices';
 import { useTheme } from '@/features/theme/ThemeContext';
+import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
 
 type Menu = 'snooze' | 'backup' | 'restore' | 'erase' | 'about' | 'diagnostics' | null;
 const NAVY = '#0B2540';
@@ -197,7 +198,7 @@ export default function SettingsHomeScreen() {
     </ScrollView>
 
     {message ? <Pressable accessibilityRole="button" accessibilityLabel="Dismiss message" onPress={() => setMessage('')} className="absolute bottom-3 left-4 right-4 rounded-2xl bg-[#0B2540] p-4"><Text className="text-center text-[14px] text-white">{message}</Text></Pressable> : null}
-    <Modal transparent visible={menu !== null} animationType="fade" onRequestClose={() => { if (!busy) setMenu(null); }}><View className="flex-1 justify-end bg-black/40"><Pressable className="flex-1" disabled={busy} onPress={() => setMenu(null)} /><View className="rounded-t-[28px] p-5 pb-9" style={{ backgroundColor: surface, maxHeight: '90%' }}><View className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#A1A8B0]" /><Text className="mb-4 text-[20px] font-bold" style={{ color: ink }}>{menu === 'snooze' ? 'Default snooze duration' : menu === 'backup' ? 'Export backup' : menu === 'restore' ? 'Restore backup' : menu === 'erase' ? 'Erase all data?' : menu === 'diagnostics' ? 'Share optional diagnostics?' : 'About DoseTracker'}</Text>
+    <Modal transparent visible={menu !== null} animationType="fade" onRequestClose={() => { if (!busy) setMenu(null); }}><View className="flex-1 justify-end bg-black/40"><Pressable className="flex-1" disabled={busy} onPress={() => setMenu(null)} /><GlassSheetSurface edges={[]} className="rounded-t-[28px] p-5 pb-9" tint={surface} style={{ maxHeight: '90%' }}><View className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#A1A8B0]" /><Text className="mb-4 text-[20px] font-bold" style={{ color: ink }}>{menu === 'snooze' ? 'Default snooze duration' : menu === 'backup' ? 'Export backup' : menu === 'restore' ? 'Restore backup' : menu === 'erase' ? 'Erase all data?' : menu === 'diagnostics' ? 'Share optional diagnostics?' : 'About DoseTracker'}</Text>
       <ScrollView contentContainerStyle={{ gap: 8 }} style={{ flexGrow: 0 }}>
         {menu === 'diagnostics' && <>
           <Text style={{ color: secondary, fontSize: 15, lineHeight: 22 }}>{DIAGNOSTICS_DISCLOSURE}</Text>
@@ -212,6 +213,6 @@ export default function SettingsHomeScreen() {
         {menu === 'erase' && <><Text className="text-[15px] leading-6" style={{ color: secondary }}>This permanently removes the local profile, medicines, schedules, dose history, and preferences from this device. Diagnostics will turn off. Reports already sent to Sentry, support emails, and exported copies are not deleted. A preferences backup does not include your profile or medicines.</Text><Pressable accessibilityRole="button" disabled={busy} onPress={() => void eraseData()} className="mt-2 min-h-[48px] items-center justify-center rounded-full bg-[#EF4444]"><Text className="font-semibold text-white">{busy ? 'Erasing…' : 'Erase all local data'}</Text></Pressable></>}
         {menu === 'about' && <><Image source={require('../../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 72, height: 72, alignSelf: 'center', marginBottom: 10 }} /><Text className="text-[15px] leading-6" style={{ color: secondary }}>DoseTracker 1.0.0 stores your profile, preferences, medicines, and dose records on this device. No account or health-record sync is used. Error reports, diagnostic logs and performance traces go to Sentry only for the categories you enable during setup or in Settings. All categories default off, including in private QA builds. Online help and legal pages require a connection. Ongoing daily and weekday reminders are supported. Course boundaries and interval reminders are still in development. Android notification sound and vibration follow your system channel settings. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment.</Text></>}
         <Pressable accessibilityRole="button" disabled={busy} onPress={() => setMenu(null)} className="mt-2 min-h-[44px] items-center justify-center"><Text className="text-[15px] font-medium" style={{ color: ink }}>Close</Text></Pressable>
-      </ScrollView></View></View></Modal>
+      </ScrollView></GlassSheetSurface></View></Modal>
   </SafeAreaView>;
 }

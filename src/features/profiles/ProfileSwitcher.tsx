@@ -8,6 +8,7 @@ import { initials } from '@/features/onboarding/model';
 import { useProfiles } from './context';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { hapticSelection } from '@/features/ui/haptics';
+import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
 
 function Avatar({ profile, size = 52 }: { profile: LocalProfile | null; size?: number }) {
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: profile?.color || '#08B8BE' }} className="shrink-0 items-center justify-center overflow-hidden">{profile?.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: size, height: size }} /> : <Text className="font-semibold text-white" style={{ fontSize: size * 0.36 }}>{initials(profile?.name || 'Me')}</Text>}</View>;
@@ -69,7 +70,7 @@ export function ProfileSwitcher() {
   return <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
     <View className="flex-1 justify-end bg-black/45">
       <Pressable accessibilityRole="button" accessibilityLabel="Dismiss profile switcher" onPress={close} className="absolute inset-0" />
-      <View accessibilityViewIsModal className="max-h-[85%] w-full max-w-[440px] self-center overflow-hidden rounded-t-[30px]" style={{ paddingBottom: insets.bottom, backgroundColor: colors.surface }}>
+      <GlassSheetSurface edges={[]} accessibilityViewIsModal className="max-h-[85%] w-full max-w-[440px] self-center overflow-hidden rounded-t-[30px]" tint={colors.surface} style={{ paddingBottom: insets.bottom }}>
         <View className="mb-2 mt-3 h-1 w-12 self-center rounded-full bg-[#CBD1D9]" />
         <View className="flex-row items-center gap-3 px-6 pb-3 pt-1"><Text accessibilityRole="header" className="min-w-0 flex-1 text-[26px] font-bold" style={{ color: colors.ink }}>Switch Profile</Text><Pressable accessibilityRole="button" accessibilityLabel="Close profile switcher" disabled={busy} onPress={close} className="h-11 w-11 items-center justify-center"><Feather name="x" size={22} color={colors.secondary} /></Pressable></View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12 }}>
@@ -83,7 +84,7 @@ export function ProfileSwitcher() {
           {!!error && <Text accessibilityRole="alert" className="mb-3 text-sm text-red-700">{error}</Text>}
         </ScrollView>
         <Pressable accessibilityRole="button" disabled={busy} onPress={() => { close(); router.push('/profile?mode=create'); }} className="mx-5 mb-5 min-h-[56px] flex-row items-center justify-center gap-3 rounded-full" style={{ backgroundColor: isDark ? '#08B8BE' : '#102238' }}><Feather name="plus" size={22} color="white" /><Text className="text-[18px] font-semibold text-white">Add Profile</Text></Pressable>
-      </View>
+      </GlassSheetSurface>
     </View>
   </Modal>;
 }

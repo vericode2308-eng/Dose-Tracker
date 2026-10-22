@@ -8,6 +8,7 @@ import { useProfiles } from '@/features/profiles/context';
 import { ProfileSwitcherTrigger } from '@/features/profiles/ProfileSwitcher';
 import { useMedicines, type Medicine } from './context';
 import { useTheme } from '@/features/theme/ThemeContext';
+import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
 
 type Filter = 'Active' | 'Paused' | 'Archived' | 'As needed';
 const FILTERS: Filter[] = ['Active', 'Paused', 'Archived', 'As needed'];
@@ -23,7 +24,7 @@ function CapsuleIcon({ medicine }: { medicine: Medicine }) {
 
 function MedicineCard({ medicine: m, onPress }: { medicine: Medicine; onPress: () => void }) {
   const { colors } = useTheme();
-  return <Pressable accessibilityRole="button" accessibilityLabel={`View ${m.name}, ${m.dosage}${m.stock ? `, ${m.stock} ${m.form?.toLowerCase() || 'units'} left` : ''}`} onPress={onPress} className="mb-2.5 flex-row gap-4 rounded-[22px] px-3 py-2.5 active:opacity-70" style={{ backgroundColor: colors.surface }}>
+  const card = <Pressable accessibilityRole="button" accessibilityLabel={`View ${m.name}, ${m.dosage}${m.stock ? `, ${m.stock} ${m.form?.toLowerCase() || 'units'} left` : ''}`} onPress={onPress} className="mb-2.5 flex-row gap-4 rounded-[22px] px-3 py-2.5 active:opacity-70" style={{ backgroundColor: colors.surface }}>
     <CapsuleIcon medicine={m} />
     <View className="min-w-0 flex-1">
       <View className="flex-row flex-wrap items-start justify-between gap-1">
@@ -38,6 +39,14 @@ function MedicineCard({ medicine: m, onPress }: { medicine: Medicine; onPress: (
     </View>
     <View className="absolute bottom-9 right-2"><Feather name="chevron-right" size={20} color={colors.ink} /></View>
   </Pressable>;
+  // A native iOS long-press context menu (Edit medicine / View dose history) was tried here via
+  // @expo/ui/swift-ui's Host+ContextMenu wrapping each FlatList row, but on-device testing (iOS
+  // 27.0 simulator, 2026-10-22) showed it breaks touch dispatch for the entire list, including
+  // the header row (back button, filter pills, Add Medicine) — Expo's SDK 57 docs confirm a Host
+  // (UIHostingController) fully owns layout/touch for what's inside it and that this isn't a
+  // supported pattern outside a self-contained boundary. Reverted; a correct version would need
+  // Expo UI's own virtualized List/ListItem components instead of a FlatList row wrapper.
+  return card;
 }
 
 export default function MedicinesListScreen() {
@@ -72,13 +81,13 @@ export default function MedicinesListScreen() {
     />
     <Modal visible={sheet !== null} transparent animationType="slide" onRequestClose={close}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end bg-black/30">
-        <SafeAreaView edges={['bottom']} className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px]" style={{ backgroundColor: colors.background }}>
+        <GlassSheetSurface edges={['bottom']} className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px]" tint={colors.background}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
             <View className="mb-4 flex-row items-center justify-between"><Text className="flex-1 text-[22px] font-semibold" style={{ color: colors.ink }}>{sheet === 'profiles' ? 'Choose profile' : sheet?.name}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: colors.surface }}><Feather name="x" size={22} color={colors.ink} /></Pressable></View>
 
             {typeof sheet === 'object' && sheet && <View className="gap-3 rounded-[22px] p-5" style={{ backgroundColor: colors.surface }}><CapsuleIcon medicine={sheet} /><Text className="text-base" style={{ color: colors.secondary }}>{sheet.dosage}</Text><Text className="text-base" style={{ color: colors.secondary }}>{sheet.time ? `Daily at ${sheet.time}` : 'As needed'}</Text>{sheet.tag && <Text className="text-base text-[#005CF5]">{sheet.tag}</Text>}{sheet.stock !== undefined && <Text className="text-base text-[#D90008]">{sheet.stock} tablets left</Text>}</View>}
           </ScrollView>
-        </SafeAreaView>
+        </GlassSheetSurface>
       </KeyboardAvoidingView>
     </Modal>
   </SafeAreaView>;

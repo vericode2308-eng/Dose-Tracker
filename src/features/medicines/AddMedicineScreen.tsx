@@ -1,6 +1,6 @@
 import { publicErrorMessage } from '@/features/security/errors';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import { Alert, BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -82,6 +82,8 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
   const { currentProfile: selectedProfile, profiles } = useProfiles();
   const [currentProfile] = useState(initialMedicine ? profiles.find(p => p.id === initialMedicine.profileId) : selectedProfile);
   const saving = useRef(false);
+  const confirmedExit = useRef(false);
+  const navigation = useNavigation();
   const [savingNow, setSavingNow] = useState(false);
   const [saved, setSaved] = useState(false);
   const [step, setStep] = useState(0);
@@ -184,8 +186,11 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
         if (result.issues.length || (wantsReminder && (!result.allowed || (Platform.OS === 'android' && result.exact !== true)))) {
           setError(`Changes saved. ${result.issues.join(' ') || result.message}`);
           setSaved(true);
-        } else if (router.canGoBack()) router.back();
-        else router.replace('/medicines');
+        } else {
+          confirmedExit.current = true;
+          if (router.canGoBack()) router.back();
+          else router.replace('/medicines');
+        }
         return;
       }
       const result = await addMedicine({ ...input, additionalSchedules });
@@ -197,13 +202,19 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
       if (wantsReminder && (reminders.issues.length || !reminders.allowed || (Platform.OS === 'android' && reminders.exact !== true))) {
         setError(`Medicine saved. ${reminders.issues.join(' ') || reminders.message}`);
         setSaved(true);
-      } else router.dismissTo('/medicines');
+      } else {
+        confirmedExit.current = true;
+        router.dismissTo('/medicines');
+      }
     } catch (error) {
       if (savedId) {
         if (wantsReminder) {
           setError('Medicine saved. Reminder setup failed. Open Reminder status in Settings to retry.');
           setSaved(true);
-        } else router.dismissTo('/medicines');
+        } else {
+          confirmedExit.current = true;
+          router.dismissTo('/medicines');
+        }
       } else setError(publicErrorMessage(error, 'The medicine could not be saved. Check the values and try again.'));
     } finally { saving.current = false; setSavingNow(false); }
   }
@@ -220,7 +231,7 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
     if (saving.current) return;
     if (hasUnsavedChanges) {
       if (Platform.OS === 'web') {
-        if (window.confirm('Discard your unsaved medicine changes?')) close();
+        if (window.confirm('Discard your unsaved medicine changes?')) { confirmedExit.current = true; close(); }
         return;
       }
       Alert.alert(
@@ -228,7 +239,7 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
         'You have unsaved changes. Are you sure you want to leave?',
         [
           { text: 'Keep editing', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: close },
+          { text: 'Discard', style: 'destructive', onPress: () => { confirmedExit.current = true; close(); } },
         ]
       );
     } else {
@@ -265,6 +276,12 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => subscription.remove();
   }, [step, hasUnsavedChanges, handleExit]);
+
+  useEffect(() => navigation.addListener('beforeRemove', (event) => {
+    if (saving.current || confirmedExit.current || !hasUnsavedChanges) return;
+    event.preventDefault();
+    handleExit();
+  }), [navigation, hasUnsavedChanges, handleExit]);
 
   return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
     <View className="flex-row items-center justify-between px-4 pt-1"><Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={back} className="h-11 w-11 items-center justify-center"><Feather name="arrow-left" size={25} color={colors.ink} /></Pressable><Text className="text-[20px] font-semibold" style={{ color: colors.ink }}>{editing ? 'Edit Medicine' : 'Add Medicine'}</Text><Pressable accessibilityRole="button" accessibilityLabel={editing ? "Close edit medicine" : "Close add medicine"} onPress={handleExit} className="h-11 w-11 items-center justify-center"><Feather name="x" size={25} color={colors.ink} /></Pressable></View>

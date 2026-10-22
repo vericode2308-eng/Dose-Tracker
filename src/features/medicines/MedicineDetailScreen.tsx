@@ -8,6 +8,7 @@ import { useMedicines, type Medicine } from './context';
 import { fetchHistoryByMonth } from '@/database';
 import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { updateMedicineWithReminders, deleteMedicineWithReminders, setScheduleReminderEnabled } from '@/notificationManager';
+import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
 
 const NAVY = '#071629';
 type Icon = ComponentProps<typeof Feather>['name'];
@@ -147,7 +148,7 @@ export default function MedicineDetailScreen() {
 
     <Modal visible={panel !== null} transparent animationType="slide" onRequestClose={close}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end bg-black/30">
-        <SafeAreaView edges={['bottom']} className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px] bg-[#FBF8F3]">
+        <GlassSheetSurface edges={['bottom']} className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px]" tint="#FBF8F3">
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
             <View className="mb-4 flex-row items-center justify-between"><Text className="flex-1 text-[22px] font-semibold text-[#071629]">{panel === 'refill' ? 'Log Refill' : panel === 'archive' ? 'Archive Medicine?' : panel === 'delete' ? 'Delete Medicine?' : typeof panel === 'number' ? 'Dose record' : 'Medicine options'}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 items-center justify-center rounded-full bg-white"><Feather name="x" size={22} color={NAVY} /></Pressable></View>
             {panel === 'refill' && <Text className="mb-3 text-sm text-[#536073]">* Required</Text>}
@@ -157,7 +158,7 @@ export default function MedicineDetailScreen() {
             {typeof panel === 'number' && <View className="gap-3 rounded-2xl bg-white p-5"><Text className="text-lg font-semibold text-[#071629]">{medicine.name}</Text><Text className="text-base text-[#536073]">{records[panel]?.date}</Text><Text className="text-base text-[#536073]">{records[panel]?.time} · {records[panel]?.status}</Text><Text className="text-base text-[#536073]">Dose: {records[panel]?.amount}</Text></View>}
             {!!error && <Text accessibilityRole="alert" className="mt-3 text-sm text-[#D90000]">{error}</Text>}
           </ScrollView>
-        </SafeAreaView>
+        </GlassSheetSurface>
       </KeyboardAvoidingView>
     </Modal>
   </SafeAreaView>;
