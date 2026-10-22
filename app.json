@@ -11,7 +11,8 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.vericodestudio.dosetracker",
       "infoPlist": {
-        "NSAlarmKitUsageDescription": "DoseTracker rings an alarm at your medication times until you stop it."
+        "NSAlarmKitUsageDescription": "DoseTracker rings an alarm at your medication times until you stop it.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
