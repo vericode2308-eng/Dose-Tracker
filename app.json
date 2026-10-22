@@ -23,7 +23,10 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "package": "com.vericodestudio.dose_tracker",
       "versionCode": 1,
@@ -118,6 +121,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ac54bbe7-d6eb-420c-b576-ba1f2b298d80"
+      }
+    },
+    "owner": "vericode"
   }
 }
