@@ -1,0 +1,19 @@
+# EAS Build upload exclusions (same syntax as .gitignore).
+# node_modules, ios/, android/ are already excluded via .gitignore and don't need repeating.
+
+.git/
+docs/
+*.md
+!README.md
+
+# test files not needed to produce a build
+__tests__/
+*.test.js
+*.test.ts
+*.test.tsx
+
+# local tooling output
+brag-output/
+promo-output/
+release-artifacts/
+.claude/
