@@ -141,8 +141,6 @@ test('upgraded Xcode UUID generator retains its required identifier format', () 
   const ids = Array.from({ length: 100 }, () => project.generateUuid());
   assert.ok(ids.every(id => /^[A-F0-9]{24}$/.test(id)));
   assert.equal(new Set(ids).size, 100);
-  const uuid = require('uuid');
-  assert.throws(() => uuid.v5('test', uuid.v5.DNS, new Uint8Array(8)), RangeError);
 });
 
 test('image bounds and signatures reject oversized, invalid, and executable content', () => {

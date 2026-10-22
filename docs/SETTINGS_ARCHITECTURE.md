@@ -93,15 +93,11 @@ The app avoids creating a new alert channel if the currently selected channel is
 - The real ten-second test appeared in the Android notification shade with `DoseTracker` / `Open the app for details.` under No info. The native status links opened the app-specific notification page and Alarms & reminders special access page. After granting exact access and refreshing status, the exact-access warning disappeared.
 - This is emulator confirmation of configuration and a test notification, not a long-duration reliability or physical-device Doze certification.
 
-## Optional diagnostics (2026-09-30)
+## Optional diagnostics (removed 2026-10-23)
 
-Settings → Privacy → Optional diagnostics and onboarding expose separate errors, logs and performance traces switches, all initially off in every build. Choices are explicitly saved under `@dosetracker/diagnostics-consent/v2` (public) or `@dosetracker/diagnostics-private-qa/v2` (private QA). A v1 explicit `enabled` choice retains errors only; missing QA consent no longer enables reporting. Malformed/unreadable consent disables reporting. Exports/imports never carry consent. Erase-all disables both build modes and legacy choices.
+Sentry and the optional-diagnostics feature were removed: no onboarding consent step, no Settings → Privacy → Optional diagnostics item, no remote error/log/trace reporting. The app makes no diagnostics network requests. Legacy `@dosetracker/diagnostics-*` AsyncStorage keys on existing installs are no longer read or written. The 2026-09-30 design is in git history and `docs/CORRECTIONS_LOG.md`.
 
-`src/features/diagnostics/diagnostics.ts` lazily loads Sentry only when some category is enabled. Error reports are sanitized JavaScript errors. Manual logs and traces cover only `database.initialize` and `reminders.reconcile` in the launch/foreground lifecycle. Logs include fixed names and outcomes; traces include names, times, outcomes and random report/trace/span IDs. Every opted-in manual operation is sampled; no navigation, network, console, SQL, replay or native crash integration is enabled. A reconciliation log is not proof of reminder delivery. No health records, dynamic error text or device identifiers are allowed.
-
-SDK hooks and the custom HTTPS transport independently gate and sanitize categories, including serialized log attributes added by the SDK after hooks. Changing consent aborts in-flight requests where possible and invalidates buffered logs/spans by revision, including across disable/re-enable. The transport has no persistent offline queue. Received reports cannot be recalled. Logging/tracing failures must not change app operation results.
-
-The public privacy source is `legal/PRIVACY_POLICY.md`; `python3 scripts/render-privacy.py` synchronizes `landing/legal/PRIVACY_POLICY.md` and `landing/privacy.html`. Publish the updated landing files with the app release. Native device verification and receipt in the Sentry project are separate release checks, not established by unit tests.
+The public privacy source is `legal/PRIVACY_POLICY.md`; `python3 scripts/render-privacy.py` synchronizes `landing/legal/PRIVACY_POLICY.md` and `landing/privacy.html`. Publish the updated landing files with the app release.
 
 ## Security remediation (2026-10-01)
 

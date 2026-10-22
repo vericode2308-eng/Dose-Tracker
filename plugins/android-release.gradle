@@ -29,9 +29,6 @@ tasks.register('verifyDoseTrackerRelease') {
         def signing = release.signingConfig
         def debugSigning = signing == null || signing.name == 'debug' || signing.keyAlias == 'androiddebugkey'
         def localQa = project.findProperty('dosetracker.allowDebugRelease') == 'true' && System.getenv('EAS_BUILD') != 'true'
-        if (System.getenv('EXPO_PUBLIC_DIAGNOSTICS_MODE') != 'public' && !(debugSigning && localQa)) {
-            throw new GradleException('Set EXPO_PUBLIC_DIAGNOSTICS_MODE=public for distribution builds.')
-        }
         if (debugSigning && !localQa) {
             throw new GradleException('Debug signing is forbidden for distribution. Supply the approved DOSETRACKER_UPLOAD signing variables. Local QA only: -Pdosetracker.allowDebugRelease=true.')
         }

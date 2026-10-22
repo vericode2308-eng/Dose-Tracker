@@ -5,7 +5,7 @@ This is an emulator-only instrumentation harness. It is added to the generated A
 From `android/`, build a bundled debug app and its test APK:
 
 ```sh
-EXPO_NO_DOTENV=1 SENTRY_DISABLE_AUTO_UPLOAD=true SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD=true ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest -I ../tests/android/reminders/check.gradle -PreactNativeArchitectures=arm64-v8a
+EXPO_NO_DOTENV=1 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest -I ../tests/android/reminders/check.gradle -PreactNativeArchitectures=arm64-v8a
 ```
 
 Install `app/build/outputs/apk/debug/app-debug.apk` and `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk` using `adb install -r`. Enable notification permission on the emulator. Run one phase at a time, waiting for completion before starting another:

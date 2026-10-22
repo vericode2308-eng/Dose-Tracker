@@ -98,14 +98,6 @@
         }
       ],
       "expo-asset",
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "dose-tracker",
-          "organization": "vericode-an"
-        }
-      ],
       "@react-native-community/datetimepicker",
       [
         "expo-build-properties",
