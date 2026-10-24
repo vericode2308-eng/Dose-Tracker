@@ -1,5 +1,14 @@
 # Corrections log
 
+## 2026-10-23 — Remove Sentry disclosures, iOS icon, App Store pack refresh
+
+- **Request:** Make the App Store submission pack ready for an iOS build after Sentry/diagnostics were removed from the app (`7dd2ed0`); owner chose to remove Sentry wording entirely and deploy the website immediately.
+- **Implemented:** Removed all Sentry/optional-diagnostics wording from the Privacy Policy, Data deletion and Terms pages (re-rendered via `scripts/render-privacy.py`), landing and support pages, and the onboarding footer (now "No tracking"). Policy now states the app has no analytics, advertising or diagnostics SDKs and sends nothing off-device; confirmed by source search (only outbound references are in-app links to the website). Added `assets/images/icon-ios.png` (shared icon flattened onto `#91A9ED`, RGB, no alpha) and pointed `expo.ios.icon` at it; Android icon unchanged. Refreshed `STORE_SUBMISSION_PACK.md` (App Privacy = Data Not Collected, description/reviewer note without diagnostics, screenshot size 1206×2622, iPhone-only).
+- **Deployed:** Staged `landing/` with `scripts/stage-landing.py` and deployed to Cloudflare Pages project `dosetracker`, branch `main` (deployment `d8b9cce4`). The previous production deployment (`82f7b717`) returned 404 for every `*.html` path, including `privacy.html` linked from the app and Play listing.
+- **Affected files:** `legal/{PRIVACY_POLICY,DATA_DELETION,TERMS_OF_SERVICE}.md`, `landing/{privacy,delete-data,terms,index,support}.html`, `landing/legal/*.md`, `src/features/onboarding/ui.tsx`, `app.json`, `assets/images/icon-ios.png`, `STORE_SUBMISSION_PACK.md`, this log.
+- **Verification:** `tsc --noEmit` and `expo lint` clean; `npm test` 150/150. Live `/`, `/privacy.html`, `/privacy`, `/support.html`, `/support`, `/terms.html`, `/delete-data.html` return 200 with no "Sentry" text; privacy shows effective date October 23, 2026.
+- **Status:** Website live. App source change (onboarding footer, iOS icon) not yet in any built binary. The released Android 1.0.0 (code 1) build still contains opt-in Sentry diagnostics, so the published policy describes it inaccurately until a Sentry-free Android update ships and Play Data Safety is updated.
+
 ## 2026-10-20 — Landing page mobile text overflow and layout correction
 
 - **Request:** Fix text overflowing and layout issues in the landing page and subpages on mobile screens.
@@ -416,6 +425,15 @@ Record user-requested corrections here with the request date, affected screen, i
   - **Second pass, after both fixes:** (1) **Swipe-back guard — confirmed**, a left-edge swipe with an unsaved Add Medicine draft shows "Discard changes?". (2) **Save Medicine — confirmed fixed:** completed the full Add Medicine flow (Details → Schedule → Stock → Review) and tapped Save Medicine; it navigated straight to the Medicines list with no discard prompt, and the new medicine ("Vitamin D") appeared in the Active list. (3) **Medicines screen — confirmed fixed:** filter pills (tested switching to Paused, which correctly showed the empty state and the count), the back button, and tapping into a medicine card all work again; cards render their full name/form/schedule text. (4) **Liquid Glass sheet — partially confirmed:** opening a medicine's "Medicine options" sheet (`GlassSheetSurface`) works and renders without errors, but the background showed as a flat cream tint rather than a visibly frosted/blurred effect. This may be an iOS Simulator limitation (no real-time GPU blur compositing in Simulator) rather than an app bug — **not resolvable without testing on a physical iOS 26+ device.** (5) **Long-press context menu — removed, not applicable** (see above). `npm test` was not run — none of these changes touch SQLite, dose logic, Settings storage, or notification scheduling. Test medicines created during this check (two "Ibuprofen", one "Vitamin D") remain in the simulator's local app data; this is a throwaway dev-build database, not production data.
 - **Status:** Source changes only; the long-press context menu (item 3) was tried and reverted for the reason above — it will need a different implementation (Expo UI's own `List`/`ListItem`) to ship, not just a fix. Everything else in this entry is now device-verified except the Liquid Glass frosted appearance, which needs a physical device. The EAS iOS build profile is config only — no credentials are linked yet, and no iOS build has been produced via EAS. iPhone Duo: no code changes made per owner's letterboxed-is-fine decision; the codebase was already found free of the common Duo-breaking patterns (module-scope `Dimensions.get`, fixed-orientation layout logic) during the preceding audit.
 
+
+## 2026-10-23 — Eye-catching Apple App Store creative assets
+
+- **Request:** Produce eye-catching Apple-only screenshot/promotional images, inventory existing art, confirm current sizes, and keep real captures distinct from renders.
+- **Implemented:** Added `appstore_assets/creative-v1/`: icon-led promotional poster, four coordinated capture-pending iPhone design proofs, generated abstract background, deterministic Swift renderer, 76-image dimension/classification inventory, dated official requirements, storyboard/capture steps and output verification manifest. Original art and in-progress submission pack preserved.
+- **Correction:** Main design references measure 941 × 1672, not the submission pack's claimed 1080 × 1920. Apple currently requires medium Dynamic Island screenshots; selected output is 1206 × 2622. Existing Android mockups are not relabeled as native iOS captures.
+- **Status:** Promotional poster and creative proofs exported. Zero final capture-based App Store screenshots; all four screen slots visibly marked pending. Booted iPhone 17 simulator showed an expo-modules-core compilation error; native UI control unavailable. Installed simulator build is iPhone-only (`UIDeviceFamily [1]`); eventual distribution build still needs confirmation. No build, dependency/native-config change, submission or release.
+- **Verification:** Expo lint and `npx tsc --noEmit` passed. PNG dimensions/opacity checked after export and visual review performed; see creative directory manifest. Native screen recapture and exact shipping-build comparison remain pending.
+
 ## 2026-10-23 — Remove Sentry and optional diagnostics; EAS iOS build preparation
 
 - **Request:** Get the app ready for an EAS iOS production build. The first cloud build failed because Sentry's Xcode build phase needed `SENTRY_AUTH_TOKEN`. The owner then asked to remove Sentry from the app entirely ("it is not required") and confirmed removing the whole optional-diagnostics feature.
@@ -429,3 +447,19 @@ Record user-requested corrections here with the request date, affected screen, i
 - **Affected files:** `src/app/_layout.tsx`, `src/app/ready.tsx`, `src/features/settings/SettingsHomeScreen.tsx`, `src/features/notifications/NotificationLifecycle.tsx`, `src/features/diagnostics/*` (deleted), `tests/diagnostics.test.cjs` (deleted), `tests/security.test.cjs`, `tests/android/reminders/README.md`, `plugins/android-release.gradle`, `app.json`, `metro.config.js`, `package.json`, `package-lock.json`, this log.
 - **Verification:** `npx expo lint` and `npx tsc --noEmit` pass. `npm test` passed 150/150. `npx expo-doctor` passed 21/21. A production iOS Metro export (`EXPO_NO_DOTENV=1`) succeeded. No device run and no new EAS build yet.
 - **Status:** Source changes only. Not yet updated: the privacy policy and legal pages (`legal/`, `landing/`), `playstore_assets/LISTING.md`, `ANDROID_GUIDEBOOK.md` and the architecture/audit docs still describe Sentry diagnostics. The Play Store build already released still contains Sentry, so the policy and Play Data safety form must stay accurate for that build until an update replaces it. The local generated `ios/`/`android/` folders still contain Sentry native code until the next `npx expo prebuild --clean`. EAS builds regenerate them.
+
+## 2026-10-24 — Search-results promotional image
+
+- **Request:** Generate an image in `playstore_assets` for the supplied product-page Search Results Asset slot.
+- **Implemented:** Generated icon-led blue/indigo/teal Dose Tracker artwork with medicine, stock and history copy. Exported an opaque 1920 × 1280 PNG, one of the sizes shown in the supplied upload UI. Saved the generation prompt and provenance beside the image.
+- **Affected files:** `playstore_assets/appstore-search-results/dose-tracker-search-results-1920x1280.png`, its `README.md`, this log.
+- **Status:** Artwork saved locally; no upload, submission, app source change or release. Generated promotional art, not a device screenshot.
+- **Verification:** Visually reviewed generated output; `sips` confirmed 1920 × 1280 with no alpha. `npx expo lint` and `npx tsc --noEmit` passed.
+
+## 2026-10-24 — Correct generated App Store header upload dimensions
+
+- **Request:** Resolve App Store Connect's invalid-dimensions rejection for generated `exec-f455512e-3f92-458f-96a6-7d4b5b6ef4f2.png`.
+- **Implemented:** Exported the same generated ribbon/icon artwork from 1916 × 821 to exactly 3840 × 1646 with macOS sips. Preserved the original and earlier header alternatives.
+- **Affected files:** `appstore_assets/ios-campaign-v2/header-and-search/04-header-ribbons-3840x1646.png`, this log.
+- **Verification:** sips confirms 3840 × 1646, RGB, no alpha. Lint and typecheck passed during this asset task; no application code changed in this correction.
+- **Status:** Corrected local header file ready for upload into Header. App Store Connect upload/acceptance and crop preview remain unverified.

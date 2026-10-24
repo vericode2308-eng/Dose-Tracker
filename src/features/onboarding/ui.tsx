@@ -59,7 +59,7 @@ export function PrivacyNote() {
   const { colors } = useTheme();
   return <View className="flex-row items-center justify-center" style={{ gap: 6, paddingTop: 12 }}>
     <Icon name="cloud-off" size={13} color={colors.secondary} />
-    <Text style={{ fontSize: 11, color: colors.secondary }}>Local health records · Optional diagnostics</Text>
+    <Text style={{ fontSize: 11, color: colors.secondary }}>Local health records · No tracking</Text>
   </View>;
 }
 

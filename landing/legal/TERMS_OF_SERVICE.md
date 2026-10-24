@@ -2,7 +2,7 @@
 
 Provided by VeriCode (vericodestudio.com). Contact: support@vericodestudio.com.
 
-Last updated: October 3, 2026. These notices describe DoseTracker 1.0.0, currently in testing.
+Last updated: October 23, 2026. These notices describe DoseTracker 1.0.0 on Android and iOS.
 
 ## Who the app is for
 
@@ -22,7 +22,7 @@ Stock counts depend on the quantities, doses and refills you record. Low-stock w
 
 ## Privacy and device security
 
-Health records and profiles are stored in private device storage, without an online account or health-record sync. Optional error reports, diagnostic logs and performance traces are separate choices, all off by default. Enabling a category sends its limited technical reports to Sentry for VeriCode. Read the Privacy Policy for the actual information, consent controls, retention and deletion procedures.
+Health records and profiles are stored in private device storage, without an online account or health-record sync. The app does not include analytics, advertising or diagnostics reporting. Read the Privacy Policy for details on local data, permissions and deletion.
 
 Optional device authentication protects access to the app. It does not separately encrypt the health database. Anyone with an enrolled device credential may unlock it. Reminder details are shown by default; choose a more private notification setting before entering sensitive information if other people can see your device. System notification settings also apply.
 
@@ -30,7 +30,7 @@ Optional device authentication protects access to the app. It does not separatel
 
 You may stop using DoseTracker at any time. Keep any records you need separately: preferences export does not back up profiles, medicines or dose history, and uninstalling, erasing or losing the device may remove local data.
 
-Settings → Erase all data removes local app records, photos, settings and the app-lock flag, cancels reminders and disables diagnostics. If it fails or is interrupted, retry. It does not delete copies shared outside the app, support emails or reports already received by Sentry. Request deletion of those reports or emails at support@vericodestudio.com; see the Data deletion page. No remote account exists to close.
+Settings → Erase all data removes local app records, photos, settings and the app-lock flag, cancels reminders. If it fails or is interrupted, retry. It does not delete copies shared outside the app or support emails. Request deletion of those emails at support@vericodestudio.com; see the Data deletion page. No remote account exists to close.
 
 ## Questions and changes
 
