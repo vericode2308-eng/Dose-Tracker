@@ -1,7 +1,7 @@
 import { publicErrorMessage } from '@/features/security/errors';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import Animated, { ReduceMotion, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import { fetchScheduledDosesForDates, type ScheduledDose, type DoseAction, type DoseChangeReceipt } from '@/database';
@@ -87,7 +87,7 @@ function ProgressRing({ percent }: { percent: number }) {
       {isComplete ? (
         <Icon name="check" size={24} color={colors.success} weight="bold" />
       ) : (
-        <AppText variant="headline" style={{ fontVariant: ['tabular-nums'] }}>{percent}%</AppText>
+        <AppText variant="headline" allowFontScaling={false} style={{ fontVariant: ['tabular-nums'] }}>{percent}%</AppText>
       )}
     </View>
   );
@@ -102,6 +102,8 @@ function ProfileToday() {
   const params = useLocalSearchParams<{ medicineId?: string; scheduleId?: string; doseDate?: string; scheduledAtMs?: string }>();
   const { currentProfile } = useProfiles();
   const { colors } = useTheme();
+  // At large accessibility text sizes the card's side-by-side pieces stack instead of squeezing the medicine name.
+  const stacked = useWindowDimensions().fontScale > 1.4;
   const [busyId, setBusyId] = useState<string | null>(null);
   const busy = useRef(false);
   const [message, setMessage] = useState('');
@@ -211,33 +213,37 @@ function ProfileToday() {
     return <Animated.View key={`${dose.id}:pending`} entering={listItemEntering} exiting={listItemExiting} layout={listItemLayout}>
       <Card style={[{ gap: 12 }, outline]}>
         {isSelected && <AppText variant="footnote" weight="600" tone="accent">Opened from reminder · {dose.date}</AppText>}
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-          {avatar(44)}
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <AppText variant="headline">{dose.medicine.name}</AppText>
-            {!!detail && <AppText variant="subhead" tone="secondary">{detail}</AppText>}
-          </View>
-          <View accessibilityLabel={snoozed ? `Snoozed until ${time(dose.snoozedUntilMs!)}` : `${isDue ? 'Due' : 'Scheduled'} at ${time(dose.scheduledAtMs)}`}
-            style={{ backgroundColor: pill.background, borderRadius: radii.chip, borderCurve: 'continuous', paddingHorizontal: 9, paddingVertical: 4 }}>
+        {(() => {
+          const timePill = <View accessibilityLabel={snoozed ? `Snoozed until ${time(dose.snoozedUntilMs!)}` : `${isDue ? 'Due' : 'Scheduled'} at ${time(dose.scheduledAtMs)}`}
+            style={{ alignSelf: stacked ? 'flex-start' : undefined, marginTop: stacked ? 6 : 0, backgroundColor: pill.background, borderRadius: radii.chip, borderCurve: 'continuous', paddingHorizontal: 9, paddingVertical: 4 }}>
             <AppText variant="caption" weight="600" style={{ color: pill.color, fontVariant: ['tabular-nums'] }}>{pill.text}</AppText>
-          </View>
-        </View>
+          </View>;
+          return <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+            {avatar(44)}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <AppText variant="headline">{dose.medicine.name}</AppText>
+              {!!detail && <AppText variant="subhead" tone="secondary">{detail}</AppText>}
+              {stacked && timePill}
+            </View>
+            {!stacked && timePill}
+          </View>;
+        })()}
         {!!dose.medicine.instructions && <AppText variant="footnote" tone="secondary">{dose.medicine.instructions}</AppText>}
         {canLogEarly && <AppText variant="footnote" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>Scheduled {relativeTime(dose.scheduledAtMs, data.now)}</AppText>}
-        {canLogEarly && <View style={{ flexDirection: 'row', gap: 8 }}>
+        {canLogEarly && <View style={{ flexDirection: stacked ? 'column' : 'row', gap: 8 }}>
           {(['Taken', 'Skipped'] as const).map(action => {
             const label = action === 'Taken' ? 'Take early' : 'Skip';
             return <Button key={action} title={label} accessibilityLabel={`${label} ${dose.medicine.name}`} disabled={busyId !== null}
               onPress={() => void act(dose, action)} variant={action === 'Taken' ? 'secondary' : 'plain'}
-              style={{ flex: action === 'Taken' ? 1.4 : 1, paddingHorizontal: 8 }} />;
+              style={stacked ? undefined : { flex: action === 'Taken' ? 1.4 : 1, paddingHorizontal: 8 }} />;
           })}
         </View>}
-        {dose.scheduledAtMs <= data.now && <View style={{ flexDirection: 'row', gap: 8 }}>
+        {dose.scheduledAtMs <= data.now && <View style={{ flexDirection: stacked ? 'column' : 'row', gap: 8 }}>
           {(['Taken', 'Skipped', 'Snooze'] as const).map(action => {
             const label = action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action;
             return <Button key={action} title={label} accessibilityLabel={`${label} ${dose.medicine.name}`} disabled={busyId !== null}
               onPress={() => void act(dose, action)} variant={action === 'Taken' ? 'primary' : action === 'Skipped' ? 'secondary' : 'plain'}
-              style={{ flex: action === 'Taken' ? 1.4 : 1, paddingHorizontal: 8 }} />;
+              style={stacked ? undefined : { flex: action === 'Taken' ? 1.4 : 1, paddingHorizontal: 8 }} />;
           })}
         </View>}
       </Card>
@@ -256,9 +262,15 @@ function ProfileToday() {
       status: dayStatus(doses), label: `${date === data.today ? 'Today, ' : ''}${day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}, ${date > data.today ? `${doses.length} scheduled` : summary}` };
   });
   const dayWord = viewingToday ? 'today' : 'this day';
-  // The native stack header carries the large "Today" title and the screen's actions.
+  // The native stack header carries the "Today" title and the screen's actions on one row.
   return <View style={{ flex: 1 }} collapsable={false}>
-    <Stack.Screen options={{ headerRight: () => <View style={{ flexDirection: 'row' }}>
+    <Stack.Toolbar placement="left">
+      <Stack.Toolbar.View hidesSharedBackground>
+        <AppText accessibilityRole="header" variant="title1" numberOfLines={1} maxFontSizeMultiplier={1.2}>Today</AppText>
+      </Stack.Toolbar.View>
+    </Stack.Toolbar>
+    <Stack.Screen options={{ headerLargeTitleEnabled: false, headerTitle: '',
+      headerRight: () => <View style={{ flexDirection: 'row' }}>
       <IconButton icon="medicines" accessibilityLabel="View medicines" color={colors.accentText} onPress={() => router.push('/medicines')} />
       <IconButton icon="add" accessibilityLabel="Add medicine" color={colors.accentText} onPress={() => router.push('/add-medicine')} />
     </View> }} />

@@ -17,6 +17,9 @@ export type WeekDay = {
   label: string;
 };
 
+/** Seven days share one row, so their text stops growing past this Dynamic Type multiplier; the whole day stays tappable and is read aloud in full. */
+const FIXED_SLOT_SCALE = 1.2;
+
 /** A row of days for a quick glance at the week; the dot under each day shows how it went. */
 export function WeekStrip({ days, selected, onSelect }: { days: WeekDay[]; selected: string; onSelect: (date: string) => void }) {
   const { colors } = useTheme();
@@ -37,8 +40,9 @@ export function WeekStrip({ days, selected, onSelect }: { days: WeekDay[]; selec
           borderRadius: 16, borderCurve: 'continuous', backgroundColor: active ? colors.primary : 'transparent',
         }}>
         <AppText variant="caption" weight="600" tone={active ? 'onPrimary' : day.isToday ? 'accent' : 'secondary'}
-          style={{ textTransform: 'uppercase' }}>{day.weekday}</AppText>
-        <AppText variant="headline" tone={active ? 'onPrimary' : 'primary'} style={{ fontVariant: ['tabular-nums'] }}>{day.dayNumber}</AppText>
+          numberOfLines={1} maxFontSizeMultiplier={FIXED_SLOT_SCALE} style={{ textTransform: 'uppercase' }}>{day.weekday}</AppText>
+        <AppText variant="headline" tone={active ? 'onPrimary' : 'primary'} numberOfLines={1} maxFontSizeMultiplier={FIXED_SLOT_SCALE}
+          style={{ fontVariant: ['tabular-nums'] }}>{day.dayNumber}</AppText>
         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: day.status === 'none' ? 'transparent' : dotColor(day.status, active),
           opacity: day.status === 'pending' && !active ? 0.45 : 1 }} />
       </PressableScale>;

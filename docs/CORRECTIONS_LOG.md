@@ -1,5 +1,13 @@
 # Corrections log
 
+## 2026-10-25 — Today: title on the icon row, past-day and large-text checks
+
+- **Request:** Check a past day with Missed doses and large text sizes; align the "Today" title with the icons at the top right.
+- **Implemented:** The large title below the header is replaced by a left-aligned "Today" in the same header row as the Medicines/Add icons (`Stack.Toolbar` left view with `hidesSharedBackground` so iOS 26 draws no glass pill). Large-text fixes: week-strip text capped at 1.2× so day names no longer break letter by letter; the progress ring label does not scale; at Dynamic Type above 1.4× a dose card puts the time pill under the name and stacks its buttons.
+- **Affected files:** `src/features/today/TodayHomeScreen.tsx`, `src/features/today/WeekStrip.tsx`.
+- **Verification:** iPhone 17 Pro simulator. A past day with a Missed dose showed amber dots, the Missed row and the menu (Mark as Taken, Skipped, Reset to Pending); Mark as Taken updated the summary and showed Undo. At the largest accessibility text size the strip, ring and dose card were readable and Take early / Skip reachable. Typecheck and lint pass. For the test I temporarily moved a schedule's start date back in the simulator database and restored it afterwards. Not checked: Android (the left toolbar title is untested there), dark mode, the profile avatar initials, which still clip at the largest size.
+- **Status:** Source change, not committed.
+
 ## 2026-10-25 — Today: week strip and taking upcoming doses early
 
 - **Request:** Redesign Today from the shared reference: a row of days for a quick glance at the week, and the option to take an upcoming dose early and log it.
