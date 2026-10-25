@@ -1,6 +1,7 @@
 import { publicErrorMessage } from '@/features/security/errors';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import { Alert, BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -203,7 +204,7 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
         setSaved(true);
       } else {
         confirmedExit.current = true;
-        router.dismissTo('/medicines');
+        leave();
       }
     } catch (error) {
       if (savedId) {
@@ -212,11 +213,13 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
           setSaved(true);
         } else {
           confirmedExit.current = true;
-          router.dismissTo('/medicines');
+          leave();
         }
       } else setError(publicErrorMessage(error, 'The medicine could not be saved. Check the values and try again.'));
     } finally { saving.current = false; setSavingNow(false); }
   }
+  // Back to wherever the sheet was opened from (Today, Medicines or a medicine).
+  const leave = () => { if (router.canGoBack()) router.back(); else router.replace('/medicines'); };
   const close = useCallback(() => {
     if (saving.current) return;
     if (router.canGoBack()) router.back();
@@ -276,11 +279,19 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
     return () => subscription.remove();
   }, [step, hasUnsavedChanges, handleExit]);
 
-  useEffect(() => navigation.addListener('beforeRemove', (event) => {
-    if (saving.current || confirmedExit.current || !hasUnsavedChanges) return;
-    event.preventDefault();
-    handleExit();
-  }), [navigation, hasUnsavedChanges, handleExit]);
+  // usePreventRemove also blocks the iOS sheet swipe-down, which a beforeRemove listener cannot.
+  usePreventRemove(hasUnsavedChanges, ({ data }) => {
+    if (saving.current) return;
+    if (confirmedExit.current) { navigation.dispatch(data.action); return; }
+    if (Platform.OS === 'web') {
+      if (window.confirm('Discard your unsaved medicine changes?')) { confirmedExit.current = true; navigation.dispatch(data.action); }
+      return;
+    }
+    Alert.alert('Discard changes?', 'You have unsaved changes. Are you sure you want to leave?', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => { confirmedExit.current = true; navigation.dispatch(data.action); } },
+    ]);
+  });
 
   return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
     <View className="flex-row items-center justify-between px-4 pt-1"><Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={back} className="h-11 w-11 items-center justify-center"><Feather name="arrow-left" size={25} color={colors.ink} /></Pressable><Text className="text-[20px] font-semibold" style={{ color: colors.ink }}>{editing ? 'Edit Medicine' : 'Add Medicine'}</Text><Pressable accessibilityRole="button" accessibilityLabel={editing ? "Close edit medicine" : "Close add medicine"} onPress={handleExit} className="h-11 w-11 items-center justify-center"><Feather name="x" size={25} color={colors.ink} /></Pressable></View>

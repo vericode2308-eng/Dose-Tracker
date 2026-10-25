@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
-import { MedicinesProvider } from '@/features/medicines/context';
-import { useTheme } from '@/features/theme/ThemeContext';
+import { useStackScreenOptions } from '@/features/ui/navigation';
 
 export default function TodayLayout() {
-  const { colors } = useTheme();
-  return <MedicinesProvider><Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} /></MedicinesProvider>;
+  const screenOptions = useStackScreenOptions();
+  return <Stack screenOptions={screenOptions}>
+    <Stack.Screen name="index" options={{ title: 'Today' }} />
+    <Stack.Screen name="medicines" options={{ title: 'Medicines' }} />
+    <Stack.Screen name="medicine/[id]" options={{ title: '' }} />
+  </Stack>;
 }
-

@@ -1,8 +1,7 @@
 import { publicErrorMessage } from '@/features/security/errors';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Animated, { ReduceMotion, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import { fetchScheduledDoses, type ScheduledDose, type DoseAction, type DoseChangeReceipt } from '@/database';
@@ -18,6 +17,7 @@ import { DoseOptionsMenu } from './DoseOptionsMenu';
 
 import { hapticImpactLight, hapticSuccess } from '@/features/ui/haptics';
 import { AppText } from '@/features/ui/AppText';
+import { BottomOverlay } from '@/features/ui/BottomOverlay';
 import { Button } from '@/features/ui/Button';
 import { Card } from '@/features/ui/Card';
 import { IconButton } from '@/features/ui/IconButton';
@@ -199,17 +199,15 @@ function ProfileToday() {
   const sections = ([['Due Now', due], ['Upcoming', upcoming], ['Logged', earlier]] as const).filter(([, doses]) => doses.length > 0);
   const percent = todaysDoses.length ? Math.round(taken / todaysDoses.length * 100) : 0;
   const dateLabel = data.now ? new Date(data.now).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : '';
-  return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 }}>
+  // The native stack header carries the large "Today" title and the screen's actions.
+  return <View style={{ flex: 1 }} collapsable={false}>
+    <Stack.Screen options={{ headerRight: () => <View style={{ flexDirection: 'row' }}>
+      <IconButton icon="medicines" accessibilityLabel="View medicines" color={colors.accentText} onPress={() => router.push('/medicines')} />
+      <IconButton icon="add" accessibilityLabel="Add medicine" color={colors.accentText} onPress={() => router.push('/add-medicine')} />
+    </View> }} />
+    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 96, gap: 12 }}>
+      {!!dateLabel && <AppText variant="subhead" tone="secondary">{dateLabel}</AppText>}
       <ProfileSwitcherTrigger showOtherProfiles />
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-        <View style={{ flex: 1 }}>
-          <AppText accessibilityRole="header" variant="largeTitle">Today</AppText>
-          {!!dateLabel && <AppText variant="subhead" tone="secondary">{dateLabel}</AppText>}
-        </View>
-        <IconButton icon="medicines" filled accessibilityLabel="View medicines" color={colors.label} onPress={() => router.push('/medicines')} />
-        <IconButton icon="add" filled accessibilityLabel="Add medicine" color={colors.label} onPress={() => router.push('/add-medicine')} />
-      </View>
 
       {todaysDoses.length > 0 && <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12 }}>
         <View style={{ flex: 1, gap: 2 }}>
@@ -243,8 +241,8 @@ function ProfileToday() {
           </View>)}
         </>}
     </ScrollView>
-    {snackbar && <UndoSnackbar key={snackbar.message + snackbar.receipt.dose.scheduledAtMs} message={snackbar.message}
-      disabled={busyId !== null} onDismiss={dismissSnackbar} onUndo={() => void act(snackbar.dose, 'Undo', snackbar.receipt)} />}
+    {snackbar && <BottomOverlay><UndoSnackbar key={snackbar.message + snackbar.receipt.dose.scheduledAtMs} message={snackbar.message}
+      disabled={busyId !== null} onDismiss={dismissSnackbar} onUndo={() => void act(snackbar.dose, 'Undo', snackbar.receipt)} /></BottomOverlay>}
     {menuDose && <DoseOptionsMenu dose={menuDose} onClose={() => setMenuDose(null)} onAction={(dose, action) => void act(dose, action)} />}
-  </SafeAreaView>;
+  </View>;
 }

@@ -3,7 +3,6 @@ import { Feather } from '@expo/vector-icons';
 import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
 import { Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchHistoryByMonth, updateDoseLogTime, type HistoryRecord } from '@/database';
 import { undoMedicationDose } from '@/notificationManager';
 import { useProfiles } from '@/features/profiles/context';
@@ -23,7 +22,7 @@ const time = (at: number) => new Date(at).toLocaleTimeString(undefined, { hour: 
 const pickerTime = (at: number) => new Date(at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
 function Filter({ label, value, onPress, colors }: { label: string; value: string; onPress: () => void; colors: ThemeColors }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${value}`} onPress={onPress} className="min-h-[56px] flex-1 rounded-2xl px-3 py-2" style={{ backgroundColor: colors.surface }}><Text className="text-xs" style={{ color: colors.secondary }}>{label}</Text><Text className="mt-1 text-sm font-semibold" style={{ color: colors.ink }}>{value} ⌄</Text></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${value}`} onPress={onPress} className="min-h-[56px] flex-1 rounded-2xl px-3 py-2" style={{ backgroundColor: colors.surface }}><Text className="text-xs" style={{ color: colors.secondary }}>{label}</Text><View className="mt-1 flex-row items-center gap-1"><Text numberOfLines={1} className="shrink text-sm font-semibold" style={{ color: colors.ink }}>{value}</Text><Feather name="chevron-down" size={14} color={colors.secondary} /></View></Pressable>;
 }
 
 export default function HistoryScreen() {
@@ -87,9 +86,8 @@ function ProfileHistory() {
   };
   const choices = sheet === 'range' ? ['This month', 'Last 30 days', 'Last 90 days'] : sheet === 'status' ? ['All', ...Object.keys(COLORS)] : [];
 
-  return <SafeAreaView className="flex-1" edges={['top']} style={{ backgroundColor: colors.background }}><ScrollView contentContainerClassName="px-4 pb-6 pt-4">
-    <ProfileSwitcherTrigger />
-    <Text accessibilityRole="header" className="mb-3 text-[30px] font-bold" style={{ color: colors.ink }}>History</Text>
+  return <View style={{ flex: 1 }} collapsable={false}><ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="px-4 pb-8 pt-1">
+    <View className="mb-2"><ProfileSwitcherTrigger /></View>
     <View className="rounded-[24px] p-3" style={{ backgroundColor: colors.surface }}>
       <View className="mb-2 flex-row items-center justify-between"><Pressable accessibilityRole="button" accessibilityLabel="Previous month" onPress={() => changeMonth(-1)} className="h-11 w-11 items-center justify-center"><Feather name="chevron-left" size={23} color={colors.ink} /></Pressable><Text className="text-base font-semibold" style={{ color: colors.ink }}>{title}</Text><Pressable accessibilityRole="button" accessibilityLabel="Next month" onPress={() => changeMonth(1)} className="h-11 w-11 items-center justify-center"><Feather name="chevron-right" size={23} color={colors.ink} /></Pressable></View>
       <View className="flex-row">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <Text key={day} className="flex-1 text-center text-xs" style={{ color: colors.secondary }}>{day}</Text>)}</View>
@@ -152,5 +150,5 @@ function ProfileHistory() {
         />
       </View>
     )}
-  </ScrollView></GlassSheetSurface></View></Modal></SafeAreaView>;
+  </ScrollView></GlassSheetSurface></View></Modal></View>;
 }

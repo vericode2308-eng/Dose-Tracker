@@ -5,6 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { OnboardingProvider, useOnboarding } from '@/features/onboarding/context';
 import { NotificationLifecycle } from '@/features/notifications/NotificationLifecycle';
 import { initializeDatabase } from '@/database';
+import { MedicinesProvider } from '@/features/medicines/context';
 import { ProfilesProvider } from '@/features/profiles/context';
 import { ProfileSwitcher } from '@/features/profiles/ProfileSwitcher';
 import { AppLock } from '@/features/security/AppLock';
@@ -57,9 +58,11 @@ function DatabaseGate() {
   return <AppLock>
     <OnboardingProvider>
       <ProfilesProvider>
-        <NotificationLifecycle />
-        <RootNavigator />
-        <ProfileSwitcher />
+        <MedicinesProvider>
+          <NotificationLifecycle />
+          <RootNavigator />
+          <ProfileSwitcher />
+        </MedicinesProvider>
       </ProfilesProvider>
     </OnboardingProvider>
   </AppLock>;
@@ -79,10 +82,9 @@ function RootNavigator() {
     <Stack.Screen name="profile" />
     <Stack.Protected guard={data.completed}>
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="device-authentication" />
-      <Stack.Screen name="notification-privacy" />
-      <Stack.Screen name="reminder-sound" />
-      <Stack.Screen name="reminder-status" />
+      {/* Separate tasks: page sheets on iOS (swipe down asks before discarding a draft). */}
+      <Stack.Screen name="add-medicine" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="edit-medicine" options={{ presentation: 'modal' }} />
     </Stack.Protected>
   </Stack>;
 }

@@ -1,5 +1,5 @@
 import { publicErrorMessage } from '@/features/security/errors';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -149,17 +149,13 @@ export default function MedicineDetailScreen() {
   const archived = medicine.status === 'Archived';
   const record = typeof panel === 'number' ? records[panel] : undefined;
 
-  // The tab bar is hidden here, so this screen must protect the bottom system controls.
-  return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 }}>
-      <IconButton icon="back" accessibilityLabel="Back to Medicines" color={colors.accentText} onPress={() => router.dismissTo('/medicines')} />
-      <View style={{ flexDirection: 'row' }}>
-        <IconButton icon="edit" accessibilityLabel="Edit medicine" color={colors.accentText} onPress={edit} />
-        <IconButton icon="more" accessibilityLabel="More options" color={colors.accentText} onPress={() => setPanel('options')} />
-      </View>
-    </View>
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, gap: 12 }}>
-      <AppText accessibilityRole="header" variant="largeTitle" numberOfLines={2} style={{ paddingHorizontal: 0 }}>{medicine.name}</AppText>
+  // The native header shows the name as a large title with Edit and More; the back button is the system one.
+  return <View style={{ flex: 1 }} collapsable={false}>
+    <Stack.Screen options={{ title: medicine.name, headerRight: () => <View style={{ flexDirection: 'row' }}>
+      <IconButton icon="edit" accessibilityLabel="Edit medicine" color={colors.accentText} onPress={edit} />
+      <IconButton icon="more" accessibilityLabel="More options" color={colors.accentText} onPress={() => setPanel('options')} />
+    </View> }} />
+    <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32, gap: 12 }}>
 
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
         <View style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: medicine.color }}>
@@ -274,5 +270,5 @@ export default function MedicineDetailScreen() {
       </Card>}
       {!!error && <AppText accessibilityRole="alert" variant="footnote" tone="danger">{error}</AppText>}
     </Sheet>
-  </SafeAreaView>;
+  </View>;
 }

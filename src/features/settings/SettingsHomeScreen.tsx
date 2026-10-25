@@ -4,7 +4,6 @@ import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Image, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { openExactAlarmSettings, openNotificationSettings, reconcileReminders, eraseMedicineDataWithReminders, scheduleTestReminder } from '@/notificationManager';
 import { useOnboarding } from '@/features/onboarding/context';
 import { useProfiles } from '@/features/profiles/context';
@@ -15,6 +14,7 @@ import { clearAuthEnabled } from '@/features/security/SecurityManager';
 
 import { useTheme } from '@/features/theme/ThemeContext';
 import { AppText } from '@/features/ui/AppText';
+import { BottomOverlay } from '@/features/ui/BottomOverlay';
 import { Button } from '@/features/ui/Button';
 import { confirmDestructive } from '@/features/ui/confirm';
 import { toastEntering, toastExiting } from '@/features/ui/motion';
@@ -170,10 +170,9 @@ export default function SettingsHomeScreen() {
     return <Pressable key={label} accessibilityRole={role} accessibilityLabel={label} accessibilityState={role === 'radio' ? { checked: selected } : undefined} disabled={busy || !loaded} onPress={action} className="min-h-[48px] flex-row items-center justify-between rounded-2xl px-4" style={{ backgroundColor: selected ? colors.primary : pill }}><Text className="text-[15px] font-medium" style={{ color: selected ? colors.onPrimary : ink }}>{label}</Text>{selected && <Feather name="check" color={colors.onPrimary} size={20} />}</Pressable>;
   }
 
-  return <SafeAreaView className="flex-1" edges={['top']} style={{ backgroundColor: background }}>
-    <ScrollView contentContainerClassName="px-4 pb-8" showsVerticalScrollIndicator={false}>
+  return <View style={{ flex: 1, backgroundColor: background }} collapsable={false}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="px-4 pb-8 pt-2" showsVerticalScrollIndicator={false}>
       <View className="w-full max-w-[440px] self-center">
-        <Text accessibilityRole="header" className="mb-4 mt-5 text-[28px] font-bold" style={{ color: ink }}>Settings</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Switch profile" onPress={showSwitcher} className="mb-4 min-h-[62px] flex-row items-center gap-3"><Feather name="users" size={30} color={ink} /><View className="min-w-0 flex-1"><Text className="text-[18px] font-semibold" style={{ color: ink }}>{profile?.name || 'Me'}</Text><Text style={{ color: secondary }}>Active profile</Text></View><Feather name="chevron-down" size={20} color={ink} /></Pressable>
 
         <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}><Pressable accessibilityRole="button" onPress={showSwitcher} className="flex-row items-center gap-4">{heading('users', 'People & profiles', 'Switch, add, or manage profiles')}<Feather name="chevron-right" size={21} color={ink} /></Pressable></View>
@@ -192,12 +191,12 @@ export default function SettingsHomeScreen() {
       </View>
     </ScrollView>
 
-    {message ? <Animated.View entering={toastEntering} exiting={toastExiting} style={{ position: 'absolute', bottom: 12, left: 16, right: 16 }}>
+    {message ? <BottomOverlay><Animated.View entering={toastEntering} exiting={toastExiting} style={{ marginHorizontal: 16, marginBottom: 12 }}>
       <Pressable accessibilityRole="button" accessibilityLabel={`${message} Dismiss.`} onPress={() => setMessage('')}
         style={{ borderRadius: 16, borderCurve: 'continuous', padding: 16, backgroundColor: colors.inverseSurface, boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)' }}>
         <AppText accessibilityLiveRegion="polite" variant="subhead" tone="inverse" style={{ textAlign: 'center' }}>{message}</AppText>
       </Pressable>
-    </Animated.View> : null}
+    </Animated.View></BottomOverlay> : null}
     <Sheet visible={menu !== null} onClose={() => setMenu(null)} closeDisabled={busy}
       title={menu === 'snooze' ? 'Default Snooze' : menu === 'backup' ? 'Export Preferences' : menu === 'restore' ? 'Restore Preferences' : 'About DoseTracker'}>
       {menu === 'snooze' && ([5, 10, 15, 30] as const).map((minutes) => option(`${minutes} minutes`, prefs.snoozeMinutes === minutes, () => void update({ snoozeMinutes: minutes })))}
@@ -208,5 +207,5 @@ export default function SettingsHomeScreen() {
       {menu === 'about' && <><Image source={require('../../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 72, height: 72, alignSelf: 'center' }} />
         <AppText variant="callout" tone="secondary">DoseTracker 1.0.0 stores your profile, preferences, medicines, and dose records on this device. No account, cloud sync, or remote diagnostics are used. Online help and legal pages require a connection. Ongoing daily and weekday reminders are supported. Course boundaries and interval reminders are still in development. Android notification sound and vibration follow your system channel settings. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment.</AppText></>}
     </Sheet>
-  </SafeAreaView>;
+  </View>;
 }

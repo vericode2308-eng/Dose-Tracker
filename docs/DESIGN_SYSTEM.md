@@ -18,6 +18,14 @@ The app's visual source of truth. Read this before changing any screen.
 - **Native controls before custom ones**: system `Alert` for confirmations (`confirmDestructive`), `Switch`, system date pickers. Later phases move menus, pickers and grouped settings to `@expo/ui`, and headers and sheets to native Expo Router options.
 - **Liquid Glass** only on sheets and system bars (`GlassSheetSurface` / `Sheet`, iOS 26+, respects Reduce Transparency). Never on cards or list rows.
 
+## Navigation
+
+- Tabs: `NativeTabs` in `src/features/navigation/AppTabs.tsx` (web: `AppTabs.web.tsx`). The tab bar stays visible while drilling down inside a tab; never hide it per route.
+- Every tab owns a native Stack configured with `useStackScreenOptions()`. Screen titles come from the stack (`options.title`, or `<Stack.Screen options={{ title }} />` for dynamic titles), never from in-content text. Header actions go in `headerRight` as `IconButton`s tinted `accentText`.
+- A screen's first child is its `ScrollView`/`FlatList` with `contentInsetAdjustmentBehavior="automatic"`; don't wrap tab screens in a top `SafeAreaView`. If a wrapper `View` is needed, give it `collapsable={false}`.
+- Separate tasks (Add/Edit Medicine) are root `presentation: 'modal'` routes; guard drafts with `usePreventRemove`.
+- Bottom overlays (snackbars, toasts) go inside `BottomOverlay` so they clear the tab bar.
+
 ## Color roles
 
 Use roles, not hues. Every text role meets 4.5:1 on `background`, `surface` and its own `*Soft` fill; non-text fills meet 3:1.

@@ -1,12 +1,10 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, Switch, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { AppText } from '@/features/ui/AppText';
 import { Card } from '@/features/ui/Card';
 import { Icon } from '@/features/ui/Icon';
-import { IconButton } from '@/features/ui/IconButton';
 import { InlineMessage } from '@/features/ui/InlineMessage';
 import { radii } from '../../../theme';
 import { useAppLock } from './AppLock';
@@ -52,16 +50,12 @@ export default function DeviceAuthenticationSettingsScreen() {
     }
   }
 
-  return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-    <View style={{ paddingHorizontal: 8 }}>
-      <IconButton icon="back" accessibilityLabel="Back to Settings" color={colors.accentText} onPress={() => router.back()} />
-    </View>
-    <ScrollView contentContainerStyle={{ width: '100%', maxWidth: 440, alignSelf: 'center', paddingHorizontal: 16, paddingBottom: 32, gap: 16 }}>
+  return <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{ width: '100%', maxWidth: 440, alignSelf: 'center', paddingHorizontal: 16, paddingBottom: 32, gap: 16 }}>
       <View style={{ alignItems: 'center', gap: 12, paddingTop: 8 }}>
         <View style={{ width: 72, height: 72, borderRadius: radii.card, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
           <Icon name="lock" size={32} color={colors.accentText} />
         </View>
-        <AppText accessibilityRole="header" variant="title1" style={{ textAlign: 'center' }}>Device Authentication</AppText>
         <AppText variant="callout" tone="secondary" style={{ textAlign: 'center' }}>Require your phone’s fingerprint, face, or screen lock whenever DoseTracker opens or returns from the background. This helps keep your health information private if someone else has your unlocked phone.</AppText>
       </View>
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 12 }}>
@@ -77,6 +71,5 @@ export default function DeviceAuthenticationSettingsScreen() {
         <AppText variant="footnote" tone="secondary">Anyone whose fingerprint or face is enrolled on this phone, or who knows its screen lock, can open DoseTracker. App lock controls access to the app; it does not encrypt exported files or the health database.</AppText>
         <AppText variant="footnote" tone="secondary">While app lock is on, open and unlock DoseTracker to take, skip, or snooze a dose. Quick actions on notifications are disabled.</AppText>
       </View>
-    </ScrollView>
-  </SafeAreaView>;
+    </ScrollView>;
 }
