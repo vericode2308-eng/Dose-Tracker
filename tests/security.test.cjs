@@ -31,6 +31,7 @@ test('a saved lock preference fails closed when native screen protection fails',
     'react-native': { Platform: { OS: 'android' }, AppState: { currentState: 'active' } },
     'expo-screen-capture': { preventScreenCaptureAsync: async () => { throw Error('Native unavailable'); } },
     './SecurityManager': {},
+    './LockScreen': { LockScreen: 'lock-screen' },
   });
   const unlocked = lock.AppLock({ children: 'private content' });
   await assert.rejects(unlocked.props.value.setEnabled(true));

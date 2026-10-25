@@ -6,7 +6,7 @@ import { initializeProfiles, saveProfile } from '@/database';
 import { setProfileArchivedWithReminders } from '@/notificationManager';
 import { useProfiles } from '@/features/profiles/context';
 import { useOnboarding } from '@/features/onboarding/context';
-import { AVATAR_COLORS, EMPTY_PROFILE, initials, validBirthday } from '@/features/onboarding/model';
+import { AVATAR_COLORS, EMPTY_PROFILE, EXTRA_AVATAR_COLORS, initials, validBirthday } from '@/features/onboarding/model';
 import { choosePhoto, keepPhoto } from '@/features/onboarding/photos';
 import { Button, ErrorMessage, Icon, Page, StepHeader, useOnboardingStyles } from '@/features/onboarding/ui';
 import { DatePickerField } from '@/features/ui/DateTimePickers';
@@ -14,7 +14,7 @@ import { hapticSuccess, hapticWarning } from '@/features/ui/haptics';
 import { useTheme } from '@/features/theme/ThemeContext';
 
 export default function ProfileScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 const styles = useOnboardingStyles();
   const router = useRouter();
   const { data } = useOnboarding();
@@ -99,7 +99,7 @@ const styles = useOnboardingStyles();
           </Pressable>)}
           <Pressable accessibilityRole="button" accessibilityLabel="More avatar colors" accessibilityState={{ expanded: moreColors }} onPress={() => setMoreColors(!moreColors)} style={[s.colorRing, { backgroundColor: colors.pill }]}><Icon name={moreColors ? 'minus' : 'plus'} color={colors.ink} /></Pressable>
         </View>
-        {moreColors && <View className="flex-row" style={{ gap: 12, marginTop: 12 }}>{['#64748B', '#C16893', '#44846D'].map((color) => <Pressable key={color} accessibilityRole="radio" accessibilityLabel={`Avatar color ${color}`} accessibilityState={{ checked: color === profile.color }} onPress={() => setProfile({ ...profile, color })} style={[s.colorRing, { backgroundColor: color }]}><Icon name={color === profile.color ? 'check' : 'user'} color="white" /></Pressable>)}</View>}
+        {moreColors && <View className="flex-row" style={{ gap: 12, marginTop: 12 }}>{EXTRA_AVATAR_COLORS.map(({ name, color }) => <Pressable key={color} accessibilityRole="radio" accessibilityLabel={`${name} avatar`} accessibilityState={{ checked: color === profile.color }} onPress={() => setProfile({ ...profile, color })} style={[s.colorRing, { backgroundColor: color }]}><Icon name={color === profile.color ? 'check' : 'user'} color="white" /></Pressable>)}</View>}
       </View>
       <View>
         <Text style={[s.label, { color: colors.ink }]}>Photo (optional)</Text>
@@ -127,8 +127,8 @@ const styles = useOnboardingStyles();
         <TextInput accessibilityLabel="Notes, optional" multiline maxLength={200} textAlignVertical="top" style={[s.input, { minHeight: 76, paddingTop: 10, fontSize: 16, color: colors.ink, backgroundColor: colors.background, borderColor: colors.border }]} placeholder={'e.g. allergies, medical conditions,\nor other useful notes…'} placeholderTextColor={colors.secondary} value={profile.notes} onChangeText={(notes) => setProfile({ ...profile, notes })} />
         <Text style={[s.helper, { textAlign: 'right', marginTop: 4, color: colors.secondary }]}>{profile.notes.length}/200</Text>
       </View>
-      <View style={[s.callout, { backgroundColor: isDark ? colors.pill : '#EBF5FF' }]}>
-        <View style={s.pillCircle}><Icon name="package" color="#168CF4" size={27} /></View>
+      <View style={[s.callout, { backgroundColor: colors.infoSoft }]}>
+        <View style={[s.pillCircle, { backgroundColor: colors.surface }]}><Icon name="package" color={colors.infoText} size={27} /></View>
         <View className="flex-1"><Text style={[s.label, { marginBottom: 3, color: colors.ink }]}>Add first medicine later</Text><Text style={[s.helper, { color: colors.secondary }]}>You can set up medicines after creating the profile.</Text></View>
       </View>
     </View>
@@ -142,15 +142,14 @@ const styles = useOnboardingStyles();
 }
 
 const s = StyleSheet.create({
-  label: { fontSize: 16, fontWeight: '600', color: '#0F172A', marginBottom: 7 },
-  input: { borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12, minHeight: 44, paddingHorizontal: 12, paddingVertical: 9, fontSize: 18, color: '#0F172A', backgroundColor: '#FFFFFF' },
-  dateRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12 },
+  label: { fontSize: 16, fontWeight: '600', marginBottom: 7 },
+  input: { borderWidth: 1.5, borderRadius: 12, minHeight: 44, paddingHorizontal: 12, paddingVertical: 9, fontSize: 18 },
   colorRing: { width: 46, height: 46, borderRadius: 999, borderWidth: 2, borderColor: 'transparent', justifyContent: 'center', alignItems: 'center' },
   swatch: { width: 39, height: 39, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  initials: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  initials: { color: 'white', fontSize: 15, fontWeight: '600' }, // white glyph on the user's avatar color
   avatar: { width: 72, height: 72, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  photoButton: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: 18, borderRadius: 999, borderWidth: 1, borderColor: '#E5E7EB', flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F9FAFB' },
-  helper: { fontSize: 14, lineHeight: 19, color: '#64748B' },
-  callout: { padding: 10, backgroundColor: '#EBF5FF', borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  pillCircle: { width: 48, height: 48, borderRadius: 999, backgroundColor: '#DDEEFF', justifyContent: 'center', alignItems: 'center' },
+  photoButton: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: 18, borderRadius: 999, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  helper: { fontSize: 14, lineHeight: 19 },
+  callout: { padding: 10, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  pillCircle: { width: 48, height: 48, borderRadius: 999, justifyContent: 'center', alignItems: 'center' },
 });

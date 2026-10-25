@@ -1,4 +1,6 @@
 export const AVATAR_COLORS = ['#08B8BE', '#FF8585', '#4299FA', '#FF9E22', '#8B48EF', '#64748B'];
+// Profile colors are user data, shown only as avatar fills with a white glyph.
+export const EXTRA_AVATAR_COLORS = [{ name: 'Slate', color: '#64748B' }, { name: 'Rose', color: '#C16893' }, { name: 'Green', color: '#44846D' }];
 
 export type Profile = {
   name: string;

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, Pressable, Text, View } from 'react-native';
+import { useTheme } from '@/features/theme/ThemeContext';
 import { fetchProfileState, selectProfile, subscribeToDatabaseChanges, type ProfileSummary } from '@/database';
 
 type ProfilesContext = { profiles: ProfileSummary[]; currentProfile: ProfileSummary | null; refresh: () => Promise<void>; select: (id: string) => Promise<void>; visible: boolean; showSwitcher: () => void; hideSwitcher: () => void };
@@ -25,7 +26,8 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
     return () => { requests.current++; unsubscribe(); clearInterval(timer); subscription.remove(); };
   }, [refresh]);
   const select = async (id: string) => { await selectProfile(id); await refresh(); setVisible(false); };
-  if (!ready) return <View className="flex-1 items-center justify-center bg-[#FBF8F3] p-6"><Text>{error || 'Opening profiles…'}</Text>{!!error && <Pressable accessibilityRole="button" onPress={() => void refresh().catch(() => {})} className="p-4"><Text>Retry</Text></Pressable>}</View>;
+  const { colors } = useTheme();
+  if (!ready) return <View className="flex-1 items-center justify-center p-6" style={{ backgroundColor: colors.background }}><Text style={{ color: colors.secondaryLabel }}>{error || 'Opening profiles…'}</Text>{!!error && <Pressable accessibilityRole="button" onPress={() => void refresh().catch(() => {})} className="p-4"><Text style={{ color: colors.accentText }}>Retry</Text></Pressable>}</View>;
   return <Context.Provider value={{ ...state, currentProfile: state.profiles.find(p => p.id === state.activeProfileId) || null, refresh, select, visible, showSwitcher: () => setVisible(true), hideSwitcher: () => setVisible(false) }}>{children}</Context.Provider>;
 }
 export function useProfiles() { const value = useContext(Context); if (!value) throw new Error('ProfilesProvider is required.'); return value; }

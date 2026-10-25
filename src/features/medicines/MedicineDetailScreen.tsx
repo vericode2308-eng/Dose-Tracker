@@ -1,37 +1,72 @@
 import { publicErrorMessage } from '@/features/security/errors';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState, type ComponentProps } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMedicines, type Medicine } from './context';
 import { fetchHistoryByMonth } from '@/database';
 import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { updateMedicineWithReminders, deleteMedicineWithReminders, setScheduleReminderEnabled } from '@/notificationManager';
-import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
+import { useTheme } from '@/features/theme/ThemeContext';
+import { AppText } from '@/features/ui/AppText';
+import { ActionMenu } from '@/features/ui/ActionMenu';
+import { Button } from '@/features/ui/Button';
+import { Card } from '@/features/ui/Card';
+import { Icon, type IconName } from '@/features/ui/Icon';
+import { IconButton } from '@/features/ui/IconButton';
+import { InlineMessage } from '@/features/ui/InlineMessage';
+import { Sheet } from '@/features/ui/Sheet';
+import { confirmDestructive } from '@/features/ui/confirm';
+import { formatClockList, formatDateKey } from '@/features/ui/format';
+import { radii } from '../../../theme';
 
-const NAVY = '#071629';
-type Icon = ComponentProps<typeof Feather>['name'];
-type Panel = 'options' | 'refill' | 'archive' | 'delete' | number | null;
+type Panel = 'refill' | number | null;
 
-function MetadataRow({ icon, label, value }: { icon: Icon | 'infinity' | 'pill'; label: string; value?: string }) {
-  return <View className="min-h-[29px] flex-row items-center gap-4">
-    {icon === 'infinity' || icon === 'pill' ? <MaterialCommunityIcons name={icon} size={19} color={NAVY} /> : <Feather name={icon} size={17} color={NAVY} />}
-    <Text className="flex-1 text-[14px] leading-5 text-[#536073]">{label}</Text>
-    {value && <Text className="text-right text-[14px] leading-5 text-[#536073]">{value}</Text>}
+/** Stock unit from the medicine form, e.g. "1 capsule", "4 capsules". */
+function unitLabel(form: string | undefined, count: number) {
+  const base = !form || form === 'Other' ? 'unit' : form.toLowerCase();
+  return count === 1 ? base : `${base}s`;
+}
+
+function dayLabel(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((today.getTime() - date.getTime()) / 86_400_000);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', ...(date.getFullYear() !== today.getFullYear() && { year: 'numeric' }) });
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return <AppText accessibilityRole="header" variant="footnote" tone="secondary" style={{ textTransform: 'uppercase', paddingHorizontal: 4, marginTop: 6 }}>{children}</AppText>;
+}
+
+/** Inset grouped row: icon, label, trailing value or control, hairline to the next row. */
+function Row({ icon, label, detail, value, last = false, children }: {
+  icon: IconName; label: string; detail?: string; value?: string; last?: boolean; children?: ReactNode;
+}) {
+  const { colors } = useTheme();
+  return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 50, paddingVertical: 8, paddingRight: 16,
+    borderBottomWidth: last ? 0 : 1, borderBottomColor: colors.separator }}>
+    <View style={{ width: 22, alignItems: 'center' }}><Icon name={icon} size={19} color={colors.accentText} /></View>
+    <View style={{ flex: 1, minWidth: 0 }}>
+      <AppText variant="body">{label}</AppText>
+      {!!detail && <AppText variant="footnote" tone="secondary">{detail}</AppText>}
+    </View>
+    {!!value && <AppText variant="body" tone="secondary" selectable style={{ fontVariant: ['tabular-nums'], flexShrink: 1, textAlign: 'right' }}>{value}</AppText>}
+    {children}
   </View>;
 }
 
-function Action({ icon, title, onPress, dark = false, danger = false }: { icon?: Icon; title: string; onPress: () => void; dark?: boolean; danger?: boolean }) {
-  const color = dark ? '#FFFFFF' : danger ? '#DD0606' : NAVY;
-  return <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress} className={`min-h-11 flex-1 flex-row items-center justify-center gap-2.5 rounded-[15px] border px-2 active:opacity-70 ${dark ? 'border-[#071629] bg-[#071629]' : danger ? 'border-[#FFC5C5] bg-[#FFEAEA]' : 'border-[#E3E5E9] bg-white'}`}>
-    {icon && <Feather name={icon} size={19} color={color} />}<Text className="text-[14px] font-medium" style={{ color }}>{title}</Text>
-  </Pressable>;
+function GroupCard({ children }: { children: ReactNode }) {
+  return <Card padded={false} style={{ paddingLeft: 16, overflow: 'hidden' }}>{children}</Card>;
 }
 
 export default function MedicineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { medicines, setMedicines } = useMedicines();
+  const { colors } = useTheme();
   const medicine = medicines.find(m => m.id === id);
   const historyQuery = useCallback(async () => (await fetchHistoryByMonth({ medicineId: id })).flatMap(group => group.records).slice(0, 5).map(record => ({
     id: record.id, date: record.date, status: record.status,
@@ -67,7 +102,7 @@ export default function MedicineDetailScreen() {
       await deleteMedicineWithReminders(id);
       setMedicines(items => items.filter(m => m.id !== id));
       router.dismissTo('/medicines');
-    } catch { setError('Deletion or reminder reconciliation failed. Please retry.'); }
+    } catch { setFeedback('Deletion or reminder reconciliation failed. Please retry.'); }
     finally { saving.current = false; }
   }
   async function toggleReminder(enabled: boolean, scheduleId = medicine?.scheduleId) {
@@ -88,78 +123,157 @@ export default function MedicineDetailScreen() {
     if (!medicine) return;
     close(); router.push({ pathname: '/edit-medicine', params: { id: medicine.id } });
   }
-  if (!medicine) return <SafeAreaView className="flex-1 items-center justify-center gap-5 bg-[#FBF8F3] p-6"><Text className="text-xl text-[#071629]">Medicine not found</Text><View className="h-11 w-full"><Action title="Back to Medicines" onPress={() => router.dismissTo('/medicines')} /></View></SafeAreaView>;
+  async function confirmArchive() {
+    if (!medicine) return;
+    if (await confirmDestructive({ title: `Archive ${medicine.name}?`, message: 'It moves to Archived and its reminders stop. You can restore it later.', confirmLabel: 'Archive', destructive: false })) {
+      void update({ status: 'Archived' });
+    }
+  }
+  async function confirmDelete() {
+    if (!medicine) return;
+    // Present over any open sheet and close it afterwards: iOS can drop an alert that is
+    // presented while a modal is still dismissing.
+    const confirmed = await confirmDestructive({ title: `Delete ${medicine.name}?`, message: 'This permanently deletes the medicine, its dose history and its reminders. This can’t be undone.', confirmLabel: 'Delete Medicine' });
+    close();
+    if (confirmed) void remove();
+  }
+  const switchColors = { trackColor: { false: colors.fill, true: colors.accent }, ios_backgroundColor: colors.fill };
+
+  if (!medicine) return <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, backgroundColor: colors.background }}>
+    <AppText variant="title3">Medicine not found</AppText>
+    <AppText variant="subhead" tone="secondary" style={{ textAlign: 'center' }}>It may have been deleted on this device.</AppText>
+    <Button title="Back to Medicines" variant="secondary" onPress={() => router.dismissTo('/medicines')} />
+  </SafeAreaView>;
+
   const lowStock = medicine.stock !== undefined && medicine.stock <= (medicine.stockThreshold ?? 10);
+  const multipleSchedules = (medicine.schedules?.length ?? 0) > 1;
+  const paused = medicine.status === 'Paused';
+  const archived = medicine.status === 'Archived';
+  const record = typeof panel === 'number' ? records[panel] : undefined;
 
-  // The tab bar is hidden here, so this screen must protect the bottom system controls.
-  return <SafeAreaView className="flex-1 bg-[#FBF8F3]" edges={['top', 'bottom']}>
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 14 }}>
-      <View className="mb-2 flex-row items-center gap-3">
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to Medicines" onPress={() => router.dismissTo('/medicines')} className="h-11 w-11 items-center justify-center"><Feather name="arrow-left" size={24} color={NAVY} /></Pressable>
-        <Text accessibilityRole="header" numberOfLines={1} className="flex-1 text-[20px] font-semibold tracking-[-0.5px] text-[#071629]">{medicine.name}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Edit medicine" onPress={edit} className="h-11 w-9 items-center justify-center"><Feather name="edit-2" size={22} color={NAVY} /></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Medicine options" onPress={() => setPanel('options')} className="h-11 w-8 items-center justify-center"><Feather name="more-vertical" size={23} color={NAVY} /></Pressable>
-      </View>
+  // The native header shows the name as a large title with Edit and More; the back button is the system one.
+  return <View style={{ flex: 1 }} collapsable={false}>
+    <Stack.Screen options={{ title: medicine.name, headerRight: () => <View style={{ flexDirection: 'row' }}>
+      <IconButton icon="edit" accessibilityLabel="Edit medicine" color={colors.accentText} onPress={edit} />
+      <ActionMenu accessibilityLabel="More options" title={medicine.name} onSelect={id => {
+        if (id === 'refill') { setQuantity('30'); setPanel('refill'); }
+        else if (id === 'history') router.push('/history');
+        else if (id === 'pause') void update({ status: paused ? 'Active' : 'Paused' });
+        else if (id === 'archive') { if (archived) void update({ status: 'Active' }); else void confirmArchive(); }
+        else if (id === 'delete') void confirmDelete();
+      }} items={[
+        { id: 'refill', title: 'Log Refill', icon: 'plus.circle' },
+        { id: 'history', title: 'View Dose History', icon: 'clock.arrow.circlepath' },
+        { id: 'pause', title: paused ? 'Resume Medicine' : 'Pause Medicine', icon: paused ? 'play.circle' : 'pause.circle' },
+        { id: 'archive', title: archived ? 'Restore Medicine' : 'Archive Medicine', icon: archived ? 'arrow.uturn.backward.circle' : 'archivebox' },
+        { id: 'delete', title: 'Delete Medicine', icon: 'trash', destructive: true },
+      ]}>
+        <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Icon name="more" size={22} color={colors.accentText} /></View>
+      </ActionMenu>
+    </View> }} />
+    <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32, gap: 12 }}>
 
-      <View className="rounded-[24px] bg-white p-3.5">
-        <View className="mb-2 flex-row items-start gap-3.5">
-          <View className="h-[55px] w-[55px] items-center justify-center rounded-full" style={{ backgroundColor: medicine.color }}><MaterialCommunityIcons name="pill" size={32} color="white" /></View>
-          <View className="min-w-0 flex-1"><View className="flex-row flex-wrap items-center justify-between gap-1"><Text className="text-[20px] font-semibold leading-6 tracking-[-0.5px] text-[#071629]">{medicine.name}</Text>{medicine.tag && <View accessibilityLabel={`Take ${medicine.tag.toLowerCase()}`} className="rounded-full bg-[#E3EFFF] px-3 py-1"><Text className="text-[12px] font-medium text-[#005CF5]">{medicine.tag}</Text></View>}</View><Text className="mt-0.5 text-[14px] leading-5 text-[#536073]">{medicine.dosage}</Text>{medicine.purpose && <View className="mt-1 flex-row items-center gap-2"><MaterialCommunityIcons name="heart-pulse" size={16} color={NAVY} /><Text className="text-[12px] text-[#536073]">{medicine.purpose}</Text></View>}</View>
+      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+        <View style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: medicine.color }}>
+          <Icon name="pill" size={28} color="#FFFFFF" />
         </View>
-        {medicine.status !== 'Active' && <Text accessibilityLiveRegion="polite" className="mb-2 rounded-xl bg-[#F1EEEA] p-2 text-sm text-[#536073]">{medicine.status}</Text>}
-        {(medicine.schedules?.length ?? 0) > 1 ? <View>
-          <Text className="mb-2 text-base font-semibold text-[#071629]">Dose times</Text>
-          {medicine.schedules!.map((s, index) => {
-            const now = new Date();
-            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-            const supported = !s.pattern.endDate && s.pattern.startDate <= today && ['daily', 'weekdays'].includes(s.pattern.kind);
-            const time = s.timeLocalMinute == null ? 'As needed' : `${Math.floor(s.timeLocalMinute / 60) % 12 || 12}:${String(s.timeLocalMinute % 60).padStart(2, '0')} ${s.timeLocalMinute < 720 ? 'AM' : 'PM'}`;
-            const frequency = s.pattern.kind === 'daily' ? 'Every day' : s.pattern.kind === 'weekdays' ? s.pattern.weekdays?.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') : s.pattern.kind === 'prn' ? 'As needed' : `Every ${s.pattern.interval} ${s.pattern.kind === 'hour_interval' ? 'hours' : 'days'}`;
-            return <View key={s.id} className="mb-2 rounded-2xl border border-[#E3E5E9] p-3">
-              <Text className="text-base font-medium text-[#071629]">{time} · {s.doseAmount} {medicine.doseAmount?.split(' ').slice(1).join(' ') || medicine.form}</Text>
-              <Text className="text-sm text-[#536073]">{frequency} · From {s.pattern.startDate}{s.pattern.endDate ? ` until ${s.pattern.endDate}` : ' · Ongoing'}</Text>
-              <View className="mt-2 flex-row items-center justify-between"><Text className="flex-1 text-sm text-[#536073]">{supported ? 'Dose reminder' : 'Tracking only: this schedule does not support reminders yet.'}</Text><Switch accessibilityLabel={`Dose ${index + 1} reminder, ${time}`} value={s.reminderEnabled} disabled={!supported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value, s.id)} /></View>
-            </View>;
-          })}
-        </View> : <>
-        <MetadataRow icon="calendar" label={medicine.schedule ?? (medicine.time ? `Daily at ${medicine.time}` : 'As needed')} />
-        {!!medicine.scheduleId && <View className="my-2 flex-row items-center gap-3 rounded-2xl border border-[#E3E5E9] p-3"><View className="flex-1"><Text className="text-[14px] font-medium text-[#071629]">Dose reminders</Text><Text className="text-[12px] leading-5 text-[#536073]">{medicine.reminderSupported ? 'Optional device alerts. Dose tracking works with reminders off.' : 'Available for ongoing daily or weekday schedules starting today.'}</Text></View><Switch accessibilityLabel="Dose reminders" value={!!medicine.reminderEnabled} disabled={!medicine.reminderSupported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value)} /></View>}
-        <MetadataRow icon="pill" label="Dose amount" value={medicine.doseAmount ?? '1 tablet'} />
-        <MetadataRow icon="calendar" label="Started" value={medicine.startDate ?? 'Not set'} />
-        <MetadataRow icon="infinity" label={medicine.duration ?? 'No end date'} />
-        </>}
-        <MetadataRow icon="archive" label="Stock remaining" value={medicine.stock === undefined ? 'Not tracked' : `${medicine.stock} ${medicine.form?.toLowerCase() ?? 'tablet'}${medicine.stock === 1 ? '' : 's'}`} />
-        {lowStock && <View accessibilityRole="alert" className="mb-2 mt-2 min-h-[52px] flex-row items-center gap-4 rounded-[14px] bg-[#FFEAEA] px-3 py-2"><View className="h-7 w-7 items-center justify-center rounded-full bg-[#E11717]"><Text className="text-xl font-bold leading-6 text-white">!</Text></View><View><Text className="text-[16px] font-semibold text-[#D90000]">Low stock</Text><Text className="mt-0.5 text-[12px] text-[#D90000]">Only {medicine.stock} tablets remaining.</Text></View></View>}
-        <Pressable accessibilityRole="button" onPress={() => { setQuantity('30'); setPanel('refill'); }} className={`${lowStock ? '' : 'mt-3'} min-h-11 flex-row items-center justify-center gap-3 rounded-full bg-[#071629] active:opacity-70`}><Feather name="archive" size={19} color="white" /><Text className="text-[16px] font-medium text-white">Log Refill</Text></Pressable>
-      </View>
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <AppText variant="headline" selectable>{medicine.dosage}</AppText>
+          {!!medicine.purpose && <AppText variant="subhead" tone="secondary">{medicine.purpose}</AppText>}
+          {(!!medicine.tag || medicine.status !== 'Active') &&<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+            {!!medicine.tag && <View accessibilityLabel={`Take ${medicine.tag.toLowerCase()}`} style={{ backgroundColor: colors.infoSoft, borderRadius: radii.chip, paddingHorizontal: 9, paddingVertical: 3 }}>
+              <AppText variant="caption" weight="600" tone="info">{medicine.tag}</AppText>
+            </View>}
+            {medicine.status !== 'Active' && <View accessibilityLiveRegion="polite" style={{ backgroundColor: paused ? colors.warningSoft : colors.fill, borderRadius: radii.chip, paddingHorizontal: 9, paddingVertical: 3 }}>
+              <AppText variant="caption" weight="600" tone={paused ? 'warning' : 'secondary'}>{medicine.status}</AppText>
+            </View>}
+          </View>}
+        </View>
+      </Card>
 
-      <View className="mt-3 flex-row items-center gap-4 rounded-[22px] bg-white px-4 py-2.5"><Feather name="file-text" size={23} color={NAVY} /><View className="flex-1"><Text className="text-[14px] font-medium text-[#071629]">Notes</Text><Text className="mt-0.5 text-[12px] leading-[18px] text-[#536073]">{medicine.notes || 'No notes added.'}</Text></View></View>
+      <SectionLabel>Schedule</SectionLabel>
+      {multipleSchedules ? medicine.schedules!.map((s, index) => {
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const supported = !s.pattern.endDate && s.pattern.startDate <= today && ['daily', 'weekdays'].includes(s.pattern.kind);
+        const time = s.timeLocalMinute == null ? 'As needed' : `${Math.floor(s.timeLocalMinute / 60) % 12 || 12}:${String(s.timeLocalMinute % 60).padStart(2, '0')} ${s.timeLocalMinute < 720 ? 'AM' : 'PM'}`;
+        const frequency = s.pattern.kind === 'daily' ? 'Every day' : s.pattern.kind === 'weekdays' ? s.pattern.weekdays?.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') : s.pattern.kind === 'prn' ? 'As needed' : `Every ${s.pattern.interval} ${s.pattern.kind === 'hour_interval' ? 'hours' : 'days'}`;
+        return <GroupCard key={s.id}>
+          <Row icon="clock" label={`${time} · ${s.doseAmount} ${medicine.doseAmount?.split(' ').slice(1).join(' ') || medicine.form}`}
+            detail={`${frequency} · From ${formatDateKey(s.pattern.startDate)}${s.pattern.endDate ? ` until ${formatDateKey(s.pattern.endDate)}` : ' · Ongoing'}`} />
+          <Row icon="bell" label="Dose reminder" detail={supported ? undefined : 'Tracking only: this schedule does not support reminders yet.'} last>
+            <Switch accessibilityLabel={`Dose ${index + 1} reminder, ${time}`} value={s.reminderEnabled} disabled={!supported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value, s.id)} {...switchColors} />
+          </Row>
+        </GroupCard>;
+      }) : <GroupCard>
+        <Row icon="clock" label={medicine.time ? `${medicine.schedule ?? 'Daily'} at ${formatClockList(medicine.time)}` : medicine.schedule ?? 'As needed'} />
+        <Row icon="dose" label="Dose amount" value={medicine.doseAmount ?? '1 tablet'} />
+        <Row icon="calendar" label="Started" value={medicine.startDate ? formatDateKey(medicine.startDate) : 'Not set'} />
+        <Row icon="duration" label={medicine.duration?.replace(/\d{4}-\d{2}-\d{2}/, formatDateKey) ?? 'No end date'} last={!medicine.scheduleId} />
+        {!!medicine.scheduleId && <Row icon="bell" label="Dose reminders" last
+          detail={medicine.reminderSupported ? 'Tracking works with reminders off.' : 'Available for ongoing daily or weekday schedules starting today.'}>
+          <Switch accessibilityLabel="Dose reminders" value={!!medicine.reminderEnabled} disabled={!medicine.reminderSupported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value)} {...switchColors} />
+        </Row>}
+      </GroupCard>}
 
-      <View className="mt-3 rounded-[24px] bg-white px-4 pb-1 pt-3">
-        <View className="mb-1 flex-row flex-wrap items-center justify-between gap-1"><Text accessibilityRole="header" className="text-[16px] font-semibold tracking-[-0.4px] text-[#071629]">Recent Dose Records</Text><Pressable accessibilityRole="button" accessibilityLabel="See all in History" hitSlop={10} onPress={() => router.push('/history')} className="min-h-6 flex-row items-center gap-1.5"><Text className="text-[12px] font-medium text-[#0065FF]">See all in History</Text><Feather name="arrow-right" size={19} color="#0065FF" /></Pressable></View>
-        {records.map((record, index) => <Pressable key={record.id} accessibilityRole="button" accessibilityLabel={`Dose record, ${record.date}, ${record.status}, ${record.time}`} onPress={() => setPanel(index)} className={`min-h-[46px] flex-row items-center gap-3 py-1 ${index ? 'border-t border-[#E9EBED]' : ''}`}><View className="h-[27px] w-[27px] items-center justify-center rounded-full bg-[#536073]"><Feather name={record.status === 'Taken' ? 'check' : 'minus'} size={20} color="white" /></View><View className="flex-1"><Text className="text-[13px] leading-[18px] text-[#071629]">{record.date}</Text><Text className="text-[12px] leading-[18px] text-[#536073]">{record.time} · {record.status}</Text></View><View className="border-l border-[#F0F1F3] pl-3"><Text className="text-[12px] text-[#536073]">{record.amount}</Text></View><Feather name="chevron-right" size={20} color={NAVY} /></Pressable>)}
-        {!records.length && <Text className="py-5 text-sm text-[#536073]">No recent dose records.</Text>}
-      </View>
+      <SectionLabel>Stock</SectionLabel>
+      <GroupCard>
+        <Row icon="stock" label="Remaining" last={!lowStock}
+          value={medicine.stock === undefined ? 'Not tracked' : `${medicine.stock} ${unitLabel(medicine.form, medicine.stock)}`} />
+        {lowStock && <InlineMessage tone="danger" title="Low stock" message={`Only ${medicine.stock} ${unitLabel(medicine.form, medicine.stock!)} left.`} style={{ marginTop: 10, marginRight: 16 }} />}
+        <View style={{ paddingTop: lowStock ? 10 : 12, paddingBottom: 14, paddingRight: 16 }}>
+          <Button title="Log Refill" icon="refill" variant="tinted" onPress={() => { setQuantity('30'); setPanel('refill'); }} />
+        </View>
+      </GroupCard>
 
-      <View className="mt-2.5 flex-row gap-2"><Action icon="edit-2" title="Edit" onPress={edit} /><Action icon={medicine.status === 'Paused' ? 'play' : 'pause'} title={medicine.status === 'Paused' ? 'Resume' : 'Pause'} onPress={() => { void update({ status: medicine.status === 'Paused' ? 'Active' : 'Paused' }); }} /><Action icon="archive" title={medicine.status === 'Archived' ? 'Restore' : 'Archive'} onPress={() => medicine.status === 'Archived' ? update({ status: 'Active' }) : setPanel('archive')} /></View>
-      <View className="mt-2"><Action icon="trash-2" title="Delete Medicine" danger onPress={() => setPanel('delete')} /></View>
-      {!!feedback && <Text accessibilityLiveRegion="polite" className="mt-3 text-center text-sm text-[#176A4C]">{feedback}</Text>}
+      {!!medicine.notes && <>
+        <SectionLabel>Notes</SectionLabel>
+        <Card><AppText variant="body" selectable>{medicine.notes}</AppText></Card>
+      </>}
+
+      <Card style={{ paddingBottom: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <AppText accessibilityRole="header" variant="headline">Recent doses</AppText>
+          <Pressable accessibilityRole="button" accessibilityLabel="See all in History" hitSlop={12} onPress={() => router.push('/history')} style={{ minHeight: 44, justifyContent: 'center' }}>
+            <AppText variant="subhead" weight="600" tone="accent">See All</AppText>
+          </Pressable>
+        </View>
+        {records.map((item, index) => {
+          const taken = item.status === 'Taken';
+          return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`Dose record, ${dayLabel(item.date)}, ${item.time}, ${item.status}, ${item.amount}`}
+            onPress={() => setPanel(index)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 8,
+              borderTopWidth: 1, borderTopColor: colors.separator, opacity: pressed ? 0.6 : 1 })}>
+            <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: taken ? colors.successSoft : colors.warningSoft }}>
+              <Icon name={taken ? 'taken' : 'skipped'} size={15} color={taken ? colors.successText : colors.warningText} weight="bold" />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <AppText variant="subhead">{dayLabel(item.date)}, {item.time}</AppText>
+              <AppText variant="footnote" tone="secondary">{item.status} · {item.amount}</AppText>
+            </View>
+            <Icon name="chevronRight" size={14} color={colors.tertiaryLabel} weight="semibold" />
+          </Pressable>;
+        })}
+        {!records.length && <AppText variant="subhead" tone="secondary" style={{ paddingVertical: 14 }}>No doses recorded yet.</AppText>}
+      </Card>
+
+      <Button variant="destructiveSoft" icon="trash" title="Delete Medicine" onPress={() => void confirmDelete()} style={{ marginTop: 8 }} />
+      {!!feedback && <AppText accessibilityLiveRegion="polite" variant="footnote" tone="secondary" style={{ textAlign: 'center' }}>{feedback}</AppText>}
     </ScrollView>
 
-    <Modal visible={panel !== null} transparent animationType="slide" onRequestClose={close}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end bg-black/30">
-        <GlassSheetSurface edges={['bottom']} className="max-h-[85%] w-full max-w-[440px] self-center rounded-t-[28px]" tint="#FBF8F3">
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
-            <View className="mb-4 flex-row items-center justify-between"><Text className="flex-1 text-[22px] font-semibold text-[#071629]">{panel === 'refill' ? 'Log Refill' : panel === 'archive' ? 'Archive Medicine?' : panel === 'delete' ? 'Delete Medicine?' : typeof panel === 'number' ? 'Dose record' : 'Medicine options'}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 items-center justify-center rounded-full bg-white"><Feather name="x" size={22} color={NAVY} /></Pressable></View>
-            {panel === 'refill' && <Text className="mb-3 text-sm text-[#536073]">* Required</Text>}
-            {panel === 'refill' && <><Text className="mb-3 text-base text-[#536073]">How many tablets did you add? *</Text><TextInput accessibilityLabel="Tablets added, required" keyboardType="number-pad" value={quantity} onChangeText={setQuantity} className="mb-4 rounded-2xl bg-white p-4 text-base text-[#071629]" /><Action title="Save refill" dark onPress={() => { const amount = Number(quantity); if (!/^\d+$/.test(quantity) || !Number.isSafeInteger(amount) || amount < 1 || amount > 10000) { setError('Enter a whole number between 1 and 10,000.'); return; } void update({ stock: (medicine.stock ?? 0) + amount }); }} /></>}
-            {(panel === 'archive' || panel === 'delete') && <><Text className="mb-5 text-base leading-6 text-[#536073]">{panel === 'archive' ? `${medicine.name} will move to Archived. You can restore it later.` : `Permanently delete ${medicine.name}, its dose history and its reminders?`}</Text><View className="flex-row gap-3"><Action title="Cancel" onPress={close} /><Action title={panel === 'archive' ? 'Confirm archive' : 'Confirm delete'} danger={panel === 'delete'} dark={panel === 'archive'} onPress={() => { if (panel === 'archive') { void update({ status: 'Archived' }); } else { void remove(); } }} /></View></>}
-            {panel === 'options' && <View className="gap-3"><Action title="Edit medicine" icon="edit-2" onPress={edit} /><Action title="Log refill" icon="archive" onPress={() => setPanel('refill')} /><Action title="View dose history" icon="clock" onPress={() => { close(); router.push('/history'); }} /></View>}
-            {typeof panel === 'number' && <View className="gap-3 rounded-2xl bg-white p-5"><Text className="text-lg font-semibold text-[#071629]">{medicine.name}</Text><Text className="text-base text-[#536073]">{records[panel]?.date}</Text><Text className="text-base text-[#536073]">{records[panel]?.time} · {records[panel]?.status}</Text><Text className="text-base text-[#536073]">Dose: {records[panel]?.amount}</Text></View>}
-            {!!error && <Text accessibilityRole="alert" className="mt-3 text-sm text-[#D90000]">{error}</Text>}
-          </ScrollView>
-        </GlassSheetSurface>
-      </KeyboardAvoidingView>
-    </Modal>
-  </SafeAreaView>;
+    <Sheet visible={panel !== null} onClose={close}
+      title={panel === 'refill' ? 'Log Refill' : 'Dose Record'}>
+      {panel === 'refill' && <>
+        <AppText variant="subhead" tone="secondary">How many {unitLabel(medicine.form, 2)} did you add?</AppText>
+        <TextInput accessibilityLabel={`${unitLabel(medicine.form, 2)} added, required`} keyboardType="number-pad" value={quantity} onChangeText={setQuantity} autoFocus selectTextOnFocus
+          style={{ backgroundColor: colors.surface, color: colors.label, borderRadius: radii.control, borderCurve: 'continuous', paddingHorizontal: 16, minHeight: 52, fontSize: 22, fontVariant: ['tabular-nums'], borderWidth: 1, borderColor: colors.separator }} />
+        <Button title="Save Refill" onPress={() => { const amount = Number(quantity); if (!/^\d+$/.test(quantity) || !Number.isSafeInteger(amount) || amount < 1 || amount > 10000) { setError('Enter a whole number between 1 and 10,000.'); return; } void update({ stock: (medicine.stock ?? 0) + amount }); }} />
+      </>}
+      {record && <Card style={{ gap: 6 }}>
+        <AppText variant="headline">{dayLabel(record.date)}, {record.time}</AppText>
+        <AppText variant="subhead" tone={record.status === 'Taken' ? 'success' : 'warning'}>{record.status}</AppText>
+        <AppText variant="subhead" tone="secondary" selectable>Dose: {record.amount} · {formatDateKey(record.date)}</AppText>
+      </Card>}
+      {!!error && <AppText accessibilityRole="alert" variant="footnote" tone="danger">{error}</AppText>}
+    </Sheet>
+  </View>;
 }

@@ -1,11 +1,13 @@
+import { Host, Picker } from '@expo/ui';
+import { SegmentedControl } from '@expo/ui/community/segmented-control';
 import { publicErrorMessage } from '@/features/security/errors';
-import { Feather } from '@expo/vector-icons';
-import { Link, router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Image, Modal, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Image, Linking, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { openExactAlarmSettings, openNotificationSettings, reconcileReminders, eraseMedicineDataWithReminders, scheduleTestReminder } from '@/notificationManager';
 import { useOnboarding } from '@/features/onboarding/context';
+import { initials } from '@/features/onboarding/model';
 import { useProfiles } from '@/features/profiles/context';
 import { exportPreferences, importPreferences } from '@/features/settings/backup';
 import { clearSettings, DEFAULT_SETTINGS, readSettings, type SettingsPreferences, writeSettings } from '@/features/settings/storage';
@@ -13,25 +15,25 @@ import { useAppLock } from '@/features/security/AppLock';
 import { clearAuthEnabled } from '@/features/security/SecurityManager';
 
 import { useTheme } from '@/features/theme/ThemeContext';
-import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
+import { AppText } from '@/features/ui/AppText';
+import { BottomOverlay } from '@/features/ui/BottomOverlay';
+import { Button } from '@/features/ui/Button';
+import { confirmDestructive } from '@/features/ui/confirm';
+import { toastEntering, toastExiting } from '@/features/ui/motion';
+import { ListRow, ListSection } from '@/features/ui/GroupedList';
+import { Icon } from '@/features/ui/Icon';
+import { Sheet } from '@/features/ui/Sheet';
 
-type Menu = 'snooze' | 'backup' | 'restore' | 'erase' | 'about' | null;
-const NAVY = '#0B2540';
+type Menu = 'backup' | 'restore' | 'about' | null;
 
 export default function SettingsHomeScreen() {
   const { reset } = useOnboarding();
-  const { isDark, colors, setTheme, refreshTheme } = useTheme();
+  const { colors, setTheme, refreshTheme } = useTheme();
   const [prefs, setPrefs] = useState(DEFAULT_SETTINGS);
   const [menu, setMenu] = useState<Menu>(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const dark = isDark;
-  const surface = colors.surface;
-  const background = colors.background;
-  const ink = colors.ink;
-  const secondary = colors.secondary;
-  const pill = colors.pill;
   const { currentProfile: profile, showSwitcher } = useProfiles();
   const { enabled: appLockEnabled, setEnabled: setAppLockEnabled } = useAppLock();
 
@@ -129,65 +131,93 @@ export default function SettingsHomeScreen() {
     finally { setBusy(false); }
   }
 
-  function row(label: string, value: string | undefined, action: () => void, danger = false) {
-    return <Pressable key={label} accessibilityRole="button" accessibilityLabel={`${label}${value ? `, ${value}` : ''}`} disabled={busy || !loaded} onPress={action} className="min-h-[48px] flex-row items-center justify-between py-2 pl-[52px]">
-      <Text className="flex-1 text-[15px]" style={{ color: danger ? '#EF4444' : ink, fontWeight: danger ? '600' : '400' }}>{label}</Text>
-      {value && <Text className="mr-2 text-[14px]" style={{ color: secondary }}>{value}</Text>}
-      <Feather name="chevron-right" size={20} color={danger ? '#EF4444' : ink} />
-    </Pressable>;
+  async function confirmErase() {
+    if (busy) return;
+    const confirmed = await confirmDestructive({
+      title: 'Erase all data?',
+      message: 'This permanently removes the local profile, medicines, schedules, dose history, and preferences from this device. Support emails and exported copies are not deleted. A preferences backup does not include your profile or medicines.',
+      confirmLabel: 'Erase All Data',
+    });
+    if (confirmed) void eraseData();
   }
 
-  function legalLink(label: string, document: 'privacy' | 'terms') {
-    return <Link href={document === 'privacy' ? 'https://dosetracker.pages.dev/privacy.html' : 'https://dosetracker.pages.dev/?legal=terms'} asChild>
-      <Pressable accessibilityRole="link" accessibilityLabel={label} accessibilityHint="Opens the document in your browser" className="min-h-[48px] flex-row items-center justify-between py-2 pl-[52px]">
-        <Text className="flex-1 text-[15px]" style={{ color: ink }}>{label}</Text>
-        <Feather name="external-link" size={20} color={ink} />
-      </Pressable>
-    </Link>;
-  }
+  const privacyLabel = prefs.notificationPrivacy === 'show' ? 'Show content' : prefs.notificationPrivacy === 'hide' ? 'Hide details' : 'No info';
+  const themeIndex = (['system', 'light', 'dark'] as const).indexOf(prefs.theme);
 
-  function heading(icon: keyof typeof Feather.glyphMap, title: string, subtitle?: string) {
-    return <View className="flex-1 flex-row items-center gap-4 pb-1">
-      <View className="w-9 items-center"><Feather name={icon} size={27} color={ink} /></View>
-      <View className="flex-1"><Text className="text-[17px] font-semibold" style={{ color: ink }}>{title}</Text>{subtitle && <Text className="mt-0.5 text-[13px]" style={{ color: secondary }}>{subtitle}</Text>}</View>
-    </View>;
-  }
+  return <View style={{ flex: 1, backgroundColor: colors.background }} collapsable={false}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32, gap: 24 }}>
+      <ListSection>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${profile?.name || 'Me'}, active profile`} accessibilityHint="Switch, add, or manage profiles"
+          onPress={showSwitcher} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, backgroundColor: pressed ? colors.fill : 'transparent' })}>
+          <View style={{ width: 52, height: 52, borderRadius: 26, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: profile?.color || colors.accent }}>
+            {profile?.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: 52, height: 52 }} />
+              : <AppText variant="headline" style={{ color: '#FFFFFF' }}>{initials(profile?.name || 'Me')}</AppText>}
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText variant="title3" numberOfLines={1}>{profile?.name || 'Me'}</AppText>
+            <AppText variant="subhead" tone="secondary">Switch, add, or manage profiles</AppText>
+          </View>
+          <Icon name="chevronRight" size={14} color={colors.tertiaryLabel} weight="semibold" />
+        </Pressable>
+      </ListSection>
 
-  function option(label: string, selected: boolean, action: () => void, role: 'radio' | 'button' = 'radio') {
-    return <Pressable key={label} accessibilityRole={role} accessibilityLabel={label} accessibilityState={role === 'radio' ? { checked: selected } : undefined} disabled={busy || !loaded} onPress={action} className="min-h-[48px] flex-row items-center justify-between rounded-2xl px-4" style={{ backgroundColor: selected ? NAVY : pill }}><Text className="text-[15px] font-medium" style={{ color: selected ? '#FFFFFF' : ink }}>{label}</Text>{selected && <Feather name="check" color="#FFFFFF" size={20} />}</Pressable>;
-  }
+      <ListSection title="Appearance">
+        <View style={{ padding: 12 }}>
+          <SegmentedControl values={['System', 'Light', 'Dark']} selectedIndex={Math.max(0, themeIndex)} enabled={loaded && !busy}
+            onChange={event => { const theme = (['system', 'light', 'dark'] as const)[event.nativeEvent.selectedSegmentIndex]; if (theme && theme !== prefs.theme) void update({ theme }); }} />
+        </View>
+      </ListSection>
 
-  return <SafeAreaView className="flex-1" edges={['top']} style={{ backgroundColor: background }}>
-    <ScrollView contentContainerClassName="px-4 pb-8" showsVerticalScrollIndicator={false}>
-      <View className="w-full max-w-[440px] self-center">
-        <Text accessibilityRole="header" className="mb-4 mt-5 text-[28px] font-bold" style={{ color: ink }}>Settings</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Switch profile" onPress={showSwitcher} className="mb-4 min-h-[62px] flex-row items-center gap-3"><Feather name="users" size={30} color={ink} /><View className="min-w-0 flex-1"><Text className="text-[18px] font-semibold" style={{ color: ink }}>{profile?.name || 'Me'}</Text><Text style={{ color: secondary }}>Active profile</Text></View><Feather name="chevron-down" size={20} color={ink} /></Pressable>
+      <ListSection title="Reminders" footer="Reminders are local notifications. Dose tracking works with reminders off.">
+        <ListRow icon="bell" title="Reminders" trailing={<Switch accessibilityLabel="Reminders enabled" value={prefs.remindersEnabled} disabled={!loaded || busy}
+          onValueChange={(remindersEnabled) => void update({ remindersEnabled })} trackColor={{ false: colors.fill, true: colors.accent }} ios_backgroundColor={colors.fill} />} />
+        <ListRow icon="snooze" title="Default snooze" trailing={<Host matchContents>
+          <Picker selectedValue={prefs.snoozeMinutes} enabled={loaded && !busy} appearance="menu"
+            onValueChange={(minutes) => void update({ snoozeMinutes: minutes as SettingsPreferences['snoozeMinutes'] })}>
+            {([5, 10, 15, 30] as const).map(minutes => <Picker.Item key={minutes} label={`${minutes} min`} value={minutes} />)}
+          </Picker>
+        </Host>} />
+        <ListRow icon="privacyEye" title="Notification privacy" subtitle={privacyLabel} disabled={busy || !loaded} onPress={() => router.push('/notification-privacy')} />
+        <ListRow icon="sound" title="Sound & vibration" value={prefs.reminderSound === 'silent' && !prefs.vibrationEnabled ? 'Off' : 'On'} disabled={busy || !loaded} onPress={() => router.push('/reminder-sound')} />
+        <ListRow icon="status" title="Reminder status" disabled={busy || !loaded} onPress={() => router.push('/reminder-status')} />
+        <ListRow icon="test" title="Send a test reminder" accessory="none" disabled={busy || !loaded} onPress={() => void testReminder()} last={Platform.OS === 'web'} />
+        {Platform.OS === 'android' && <ListRow icon="alarm" title="Alarms & reminders access" accessory="external" disabled={busy || !loaded} onPress={requestExactAccess} />}
+        {Platform.OS !== 'web' && <ListRow icon="systemSettings" title="System notification settings" accessory="external" last disabled={busy || !loaded}
+          onPress={() => { void openNotificationSettings().catch(() => setMessage('System settings could not be opened.')); }} />}
+      </ListSection>
 
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}><Pressable accessibilityRole="button" onPress={showSwitcher} className="flex-row items-center gap-4">{heading('users', 'People & profiles', 'Switch, add, or manage profiles')}<Feather name="chevron-right" size={21} color={ink} /></Pressable></View>
+      <ListSection title="Privacy">
+        <ListRow icon="lock" title="App lock" value={appLockEnabled ? 'On' : 'Off'} last disabled={busy || !loaded} onPress={() => router.push('/device-authentication')} />
+      </ListSection>
 
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('sun', 'Appearance', 'Choose your theme')}<View className="mt-3 flex-row gap-2">{(['system', 'light', 'dark'] as const).map((theme) => <Pressable key={theme} accessibilityRole="radio" accessibilityLabel={`${theme} theme`} accessibilityState={{ checked: prefs.theme === theme }} disabled={busy || !loaded} onPress={() => void update({ theme })} className="min-h-[42px] flex-1 flex-row items-center justify-center gap-2 rounded-full px-2" style={{ backgroundColor: prefs.theme === theme ? (dark ? '#08B8BE' : NAVY) : pill }}><Feather name={theme === 'system' ? 'smartphone' : theme === 'light' ? 'sun' : 'moon'} size={18} color={prefs.theme === theme ? '#FFFFFF' : ink} /><Text className="text-[14px] font-semibold capitalize" style={{ color: prefs.theme === theme ? '#FFFFFF' : ink }}>{theme}</Text></Pressable>)}</View></View>
+      <ListSection title="Data" footer="Preference files never include profiles, medicines, or dose history.">
+        <ListRow icon="export" title="Export preferences" disabled={busy || !loaded} onPress={() => setMenu('backup')} />
+        <ListRow icon="import" title="Restore preferences" disabled={busy || !loaded} onPress={() => setMenu('restore')} />
+        <ListRow icon="trash" title="Erase all data" destructive accessory="none" last disabled={busy || !loaded} onPress={() => void confirmErase()} />
+      </ListSection>
 
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('bell', 'Reminders', 'Local reminder preferences')}
-          <View className="min-h-[52px] flex-row items-center justify-between pl-[52px]"><Text className="text-[15px]" style={{ color: ink }}>Reminders enabled</Text><Switch accessibilityLabel="Reminders enabled" value={prefs.remindersEnabled} disabled={!loaded || busy} onValueChange={(remindersEnabled) => void update({ remindersEnabled })} trackColor={{ false: '#9CA3AF', true: '#08B8BE' }} /></View>
-          {row('Default snooze duration', `${prefs.snoozeMinutes} minutes`, () => setMenu('snooze'))}{row('Notification privacy', prefs.notificationPrivacy === 'show' ? 'Show content' : prefs.notificationPrivacy === 'hide' ? 'Hide sensitive' : 'No info', () => router.push('/notification-privacy'))}{row('Sound & vibration', prefs.reminderSound === 'silent' && !prefs.vibrationEnabled ? 'Off' : 'On', () => router.push('/reminder-sound'))}{row('Test reminder', undefined, () => void testReminder())}{row('Reminder status', 'Check status', () => router.push('/reminder-status'))}{Platform.OS === 'android' && row('Alarms & reminders access', 'System settings', requestExactAccess)}{Platform.OS !== 'web' && row('Notification system settings', undefined, () => { void openNotificationSettings().catch(() => setMessage('System settings could not be opened.')); })}</View>
-
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('lock', 'Privacy')}{row('Device authentication', appLockEnabled ? 'On' : 'Off', () => router.push('/device-authentication'))}</View>
-
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('database', 'Data')}{row('Export preferences', undefined, () => setMenu('backup'))}{row('Restore preferences', undefined, () => setMenu('restore'))}{row('Erase all data', undefined, () => setMenu('erase'), true)}</View>
-
-        <View className="mb-3 rounded-[22px] p-4" style={{ backgroundColor: surface }}>{heading('info', 'About')}{row('Offline-first', 'On', () => setMenu('about'))}{legalLink('Privacy Policy', 'privacy')}{legalLink('Terms of Service', 'terms')}</View>
-      </View>
+      <ListSection title="About" footer="Offline-first: your records stay on this device. No account or cloud sync.">
+        <ListRow icon="aboutApp" title="About DoseTracker" value="1.0.0" onPress={() => setMenu('about')} />
+        <ListRow icon="policy" title="Privacy Policy" accessory="external" accessibilityHint="Opens in your browser" onPress={() => void Linking.openURL('https://dosetracker.pages.dev/privacy.html')} />
+        <ListRow icon="terms" title="Terms of Service" accessory="external" accessibilityHint="Opens in your browser" last onPress={() => void Linking.openURL('https://dosetracker.pages.dev/?legal=terms')} />
+      </ListSection>
     </ScrollView>
 
-    {message ? <Pressable accessibilityRole="button" accessibilityLabel="Dismiss message" onPress={() => setMessage('')} className="absolute bottom-3 left-4 right-4 rounded-2xl bg-[#0B2540] p-4"><Text className="text-center text-[14px] text-white">{message}</Text></Pressable> : null}
-    <Modal transparent visible={menu !== null} animationType="fade" onRequestClose={() => { if (!busy) setMenu(null); }}><View className="flex-1 justify-end bg-black/40"><Pressable className="flex-1" disabled={busy} onPress={() => setMenu(null)} /><GlassSheetSurface edges={[]} className="rounded-t-[28px] p-5 pb-9" tint={surface} style={{ maxHeight: '90%' }}><View className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#A1A8B0]" /><Text className="mb-4 text-[20px] font-bold" style={{ color: ink }}>{menu === 'snooze' ? 'Default snooze duration' : menu === 'backup' ? 'Export backup' : menu === 'restore' ? 'Restore backup' : menu === 'erase' ? 'Erase all data?' : 'About DoseTracker'}</Text>
-      <ScrollView contentContainerStyle={{ gap: 8 }} style={{ flexGrow: 0 }}>
-        {menu === 'snooze' &&([5, 10, 15, 30] as const).map((minutes) => option(`${minutes} minutes`, prefs.snoozeMinutes === minutes, () => void update({ snoozeMinutes: minutes })))}
-        {menu === 'backup' && <><Text className="text-[15px] leading-6" style={{ color: secondary }}>Save a JSON file with preferences only. Your profile, medicines, and dose history are not included.</Text><Pressable accessibilityRole="button" disabled={busy || !loaded} onPress={() => void exportBackup()} className="mt-2 min-h-[48px] items-center justify-center rounded-full bg-[#0B2540]"><Text className="font-semibold text-white">{busy ? 'Preparing…' : 'Save preferences file'}</Text></Pressable></>}
-        {menu === 'restore' && <><Text className="text-[15px] leading-6" style={{ color: secondary }}>Choose a DoseTracker preferences JSON file. Its settings will replace your current preferences.</Text><Pressable accessibilityRole="button" disabled={busy || !loaded} onPress={() => void restoreBackup()} className="mt-2 min-h-[48px] items-center justify-center rounded-full bg-[#0B2540]"><Text className="font-semibold text-white">{busy ? 'Restoring…' : 'Choose preferences file'}</Text></Pressable></>}
-        {menu === 'erase' && <><Text className="text-[15px] leading-6" style={{ color: secondary }}>This permanently removes the local profile, medicines, schedules, dose history, and preferences from this device. Support emails and exported copies are not deleted. A preferences backup does not include your profile or medicines.</Text><Pressable accessibilityRole="button" disabled={busy} onPress={() => void eraseData()} className="mt-2 min-h-[48px] items-center justify-center rounded-full bg-[#EF4444]"><Text className="font-semibold text-white">{busy ? 'Erasing…' : 'Erase all local data'}</Text></Pressable></>}
-        {menu === 'about' && <><Image source={require('../../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 72, height: 72, alignSelf: 'center', marginBottom: 10 }} /><Text className="text-[15px] leading-6" style={{ color: secondary }}>DoseTracker 1.0.0 stores your profile, preferences, medicines, and dose records on this device. No account, cloud sync, or remote diagnostics are used. Online help and legal pages require a connection. Ongoing daily and weekday reminders are supported. Course boundaries and interval reminders are still in development. Android notification sound and vibration follow your system channel settings. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment.</Text></>}
-        <Pressable accessibilityRole="button" disabled={busy} onPress={() => setMenu(null)} className="mt-2 min-h-[44px] items-center justify-center"><Text className="text-[15px] font-medium" style={{ color: ink }}>Close</Text></Pressable>
-      </ScrollView></GlassSheetSurface></View></Modal>
-  </SafeAreaView>;
+    {message ? <BottomOverlay><Animated.View entering={toastEntering} exiting={toastExiting} style={{ marginHorizontal: 16, marginBottom: 12 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${message} Dismiss.`} onPress={() => setMessage('')}
+        style={{ borderRadius: 16, borderCurve: 'continuous', padding: 16, backgroundColor: colors.inverseSurface, boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)' }}>
+        <AppText accessibilityLiveRegion="polite" variant="subhead" tone="inverse" style={{ textAlign: 'center' }}>{message}</AppText>
+      </Pressable>
+    </Animated.View></BottomOverlay> : null}
+    <Sheet visible={menu !== null} onClose={() => setMenu(null)} closeDisabled={busy}
+      title={menu === 'backup' ? 'Export Preferences' : menu === 'restore' ? 'Restore Preferences' : 'About DoseTracker'}>
+      {menu === 'backup' && <><AppText variant="callout" tone="secondary">Save a JSON file with preferences only. Your profile, medicines, and dose history are not included.</AppText>
+        <Button title={busy ? 'Preparing…' : 'Save Preferences File'} loading={busy} disabled={!loaded} onPress={() => void exportBackup()} /></>}
+      {menu === 'restore' && <><AppText variant="callout" tone="secondary">Choose a DoseTracker preferences JSON file. Its settings will replace your current preferences.</AppText>
+        <Button title={busy ? 'Restoring…' : 'Choose Preferences File'} loading={busy} disabled={!loaded} onPress={() => void restoreBackup()} /></>}
+      {menu === 'about' && <><Image source={require('../../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 72, height: 72, alignSelf: 'center' }} />
+        <AppText variant="callout" tone="secondary">DoseTracker 1.0.0 stores your profile, preferences, medicines, and dose records on this device. No account, cloud sync, or remote diagnostics are used. Online help and legal pages require a connection. Ongoing daily and weekday reminders are supported. Course boundaries and interval reminders are still in development. Android notification sound and vibration follow your system channel settings. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment.</AppText></>}
+    </Sheet>
+  </View>;
 }
