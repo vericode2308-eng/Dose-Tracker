@@ -1,5 +1,15 @@
 # Corrections log
 
+## 2026-10-25 — Settings rows and other function-style Pressables rendered unstyled
+
+- **Request:** Run the app in the iOS simulator, check the UI (Settings looked wrong) and look for other bugs.
+- **Found:** In the Debug build on iPhone 17 Pro, every tappable Settings row showed its icon tile stacked above the title with no padding, and the Medicines filter chips lost their background (the selected "Active 3" chip was white text on nothing). Cause: NativeWind's `cssInterop` on `Pressable` drops `style={({ pressed }) => ...}` function styles, so `flexDirection`, `padding` and `backgroundColor` were never applied.
+- **Implemented:** Replaced all seven function-style `Pressable`s with `PressableScale` (static style; dim on press, `scaleTo={1}` for full-width rows). The pressed-row background highlight on Settings rows is now a dim instead.
+- **Affected files:** `src/features/ui/{GroupedList,UndoSnackbar,DateTimePickers}.tsx`, `src/features/settings/SettingsHomeScreen.tsx`, `src/features/medicines/{MedicinesListScreen,MedicineDetailScreen,MedicineDetailsForm}.tsx`, `docs/DESIGN_SYSTEM.md`.
+- **Verification:** `tsc --noEmit` and `expo lint` clean, `npm test` 150/150. Re-viewed Settings, Medicines and Medicine detail on the iPhone 17 Pro simulator after the change: rows and chips render correctly and a Settings row tap still fires. Dark mode, the colour swatches, the Undo snackbar, the inline date buttons and Android were not re-checked.
+- **Not fixed (open):** Reanimated warning "shared value's .value inside reanimated inline style" logged 32 times at startup (source not located); Add Medicine shows both a back arrow and a close button on step 1; Today shows "0 of 1 dose taken" while Medicines lists three active daily medicines (start dates not checked).
+- **Status:** Source changes verified on the iOS simulator only; not committed, no Android or device run.
+
 ## 2026-10-25 — Remaining hard-coded colors moved to theme tokens (Phase 6)
 
 - **Request:** Replace the ~90 remaining hard-coded hex colors so every screen follows light/dark mode.
@@ -527,3 +537,10 @@ Record user-requested corrections here with the request date, affected screen, i
 - **Affected files:** `appstore_assets/ios-campaign-v2/header-and-search/04-header-ribbons-3840x1646.png`, this log.
 - **Verification:** sips confirms 3840 × 1646, RGB, no alpha. Lint and typecheck passed during this asset task; no application code changed in this correction.
 - **Status:** Corrected local header file ready for upload into Header. App Store Connect upload/acceptance and crop preview remain unverified.
+## 2026-10-25 — New App Store header creative
+
+- **Request:** Make a nice header and search image for the App Store.
+- **Implemented:** Generated a new ivory, lavender and mint icon-led header using the built-in image-generation tool. Saved original and exact 3840 × 1646 opaque PNG export under `appstore_assets/ios-campaign-v3/`, with prompt and provenance. Prior artwork preserved.
+- **Status:** Header and matching search-results image complete locally after the user requested continuation. Search artwork saved as `appstore_assets/ios-campaign-v3/search-results-3840x2560.png`, with original and exact prompt under `sources/`. No upload, submission or release.
+- **Verification:** Both compositions and copy visually reviewed; exact header 3840 × 1646 and search 3840 × 2560 dimensions, RGB colour and no alpha confirmed with sips. On continuation, Expo lint and TypeScript checks both failed on an unrelated mismatched JSX closing tag at `src/features/medicines/MedicinesListScreen.tsx:99`. No application code changed in this artwork task. App Store Connect crop preview and upload remain unverified.
+

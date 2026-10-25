@@ -59,7 +59,7 @@ Medicine colors (`src/features/medicines/colors.ts`) are user data and stay as c
 | `InlineMessage` | `tone`: info, warning, danger, success; optional title and action. Replaces ad-hoc colored boxes. |
 | `Sheet` | The only bottom sheet: grabber, title, close, scrollable body. |
 | `Icon` | Registry name → SF Symbol on iOS, vector icon elsewhere. Add new glyphs to the registry; SF names are type-checked. |
-| `PressableScale` | Press feedback for custom tappables (scale 0.97 + dim, 120ms; dim only under Reduce Motion). |
+| `PressableScale` | Press feedback for custom tappables (scale 0.97 + dim, 120ms; dim only under Reduce Motion). Takes a static `style`: never pass `style={({ pressed }) => ...}` to a `Pressable` in this repo, NativeWind drops it and the layout collapses. |
 | `ActionMenu` | Native menu around any trigger: `items` with SF `icon`, `checked`, `destructive`. The trigger is a plain `View` (the native menu owns the tap). Web shows a `Sheet`. |
 | `ListSection` / `ListRow` | Grouped settings rows: icon tile, title, subtitle or value, chevron/external accessory, or a `trailing` native control. |
 | `DatePickerField` / `TimePickerField` | Compact native picker inline on iOS, system dialog on Android, modal on web. |

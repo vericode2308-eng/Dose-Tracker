@@ -22,6 +22,7 @@ import { confirmDestructive } from '@/features/ui/confirm';
 import { toastEntering, toastExiting } from '@/features/ui/motion';
 import { ListRow, ListSection } from '@/features/ui/GroupedList';
 import { Icon } from '@/features/ui/Icon';
+import { PressableScale } from '@/features/ui/PressableScale';
 import { Sheet } from '@/features/ui/Sheet';
 
 type Menu = 'backup' | 'restore' | 'about' | null;
@@ -148,8 +149,8 @@ export default function SettingsHomeScreen() {
     <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}
       contentContainerStyle={{ width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32, gap: 24 }}>
       <ListSection>
-        <Pressable accessibilityRole="button" accessibilityLabel={`${profile?.name || 'Me'}, active profile`} accessibilityHint="Switch, add, or manage profiles"
-          onPress={showSwitcher} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, backgroundColor: pressed ? colors.fill : 'transparent' })}>
+        <PressableScale accessibilityRole="button" accessibilityLabel={`${profile?.name || 'Me'}, active profile`} accessibilityHint="Switch, add, or manage profiles"
+          onPress={showSwitcher} scaleTo={1} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 }}>
           <View style={{ width: 52, height: 52, borderRadius: 26, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: profile?.color || colors.accent }}>
             {profile?.photoUri ? <Image source={{ uri: profile.photoUri }} style={{ width: 52, height: 52 }} />
               : <AppText variant="headline" style={{ color: '#FFFFFF' }}>{initials(profile?.name || 'Me')}</AppText>}
@@ -159,7 +160,7 @@ export default function SettingsHomeScreen() {
             <AppText variant="subhead" tone="secondary">Switch, add, or manage profiles</AppText>
           </View>
           <Icon name="chevronRight" size={14} color={colors.tertiaryLabel} weight="semibold" />
-        </Pressable>
+        </PressableScale>
       </ListSection>
 
       <ListSection title="Appearance">

@@ -15,6 +15,7 @@ import { Card } from '@/features/ui/Card';
 import { Icon, type IconName } from '@/features/ui/Icon';
 import { IconButton } from '@/features/ui/IconButton';
 import { InlineMessage } from '@/features/ui/InlineMessage';
+import { PressableScale } from '@/features/ui/PressableScale';
 import { Sheet } from '@/features/ui/Sheet';
 import { confirmDestructive } from '@/features/ui/confirm';
 import { formatClockList, formatDateKey } from '@/features/ui/format';
@@ -240,9 +241,9 @@ export default function MedicineDetailScreen() {
         </View>
         {records.map((item, index) => {
           const taken = item.status === 'Taken';
-          return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`Dose record, ${dayLabel(item.date)}, ${item.time}, ${item.status}, ${item.amount}`}
-            onPress={() => setPanel(index)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 8,
-              borderTopWidth: 1, borderTopColor: colors.separator, opacity: pressed ? 0.6 : 1 })}>
+          return <PressableScale key={item.id} accessibilityRole="button" accessibilityLabel={`Dose record, ${dayLabel(item.date)}, ${item.time}, ${item.status}, ${item.amount}`}
+            onPress={() => setPanel(index)} scaleTo={1} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 8,
+              borderTopWidth: 1, borderTopColor: colors.separator }}>
             <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: taken ? colors.successSoft : colors.warningSoft }}>
               <Icon name={taken ? 'taken' : 'skipped'} size={15} color={taken ? colors.successText : colors.warningText} weight="bold" />
             </View>
@@ -251,7 +252,7 @@ export default function MedicineDetailScreen() {
               <AppText variant="footnote" tone="secondary">{item.status} · {item.amount}</AppText>
             </View>
             <Icon name="chevronRight" size={14} color={colors.tertiaryLabel} weight="semibold" />
-          </Pressable>;
+          </PressableScale>;
         })}
         {!records.length && <AppText variant="subhead" tone="secondary" style={{ paddingVertical: 14 }}>No doses recorded yet.</AppText>}
       </Card>

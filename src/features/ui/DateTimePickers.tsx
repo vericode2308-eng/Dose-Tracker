@@ -3,6 +3,7 @@ import { Modal, View, Text, Pressable, StyleSheet, ScrollView, Platform } from '
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { hasInlineNativeDatePicker, NativeDatePicker } from './NativeDatePicker';
+import { PressableScale } from './PressableScale';
 
 /** iOS row: label on the left, SwiftUI compact picker (or an Add button while empty) on the right. */
 function InlinePickerRow({ label, required, children }: { label: string; required: boolean; children: React.ReactNode }) {
@@ -15,10 +16,10 @@ function InlinePickerRow({ label, required, children }: { label: string; require
 
 function InlineTextButton({ title, accessibilityLabel, onPress }: { title: string; accessibilityLabel: string; onPress: () => void }) {
   const { colors } = useTheme();
-  return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} hitSlop={8}
-    style={({ pressed }) => [styles.inlineTextButton, { opacity: pressed ? 0.6 : 1 }]}>
+  return <PressableScale accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} hitSlop={8} scaleTo={1}
+    style={styles.inlineTextButton}>
     <Text style={[styles.inlineTextButtonLabel, { color: colors.accentText }]}>{title}</Text>
-  </Pressable>;
+  </PressableScale>;
 }
 
 const MONTH_NAMES = [

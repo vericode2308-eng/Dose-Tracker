@@ -1,6 +1,6 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, ScrollView, View } from 'react-native';
+import { FlatList, ScrollView, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 import { useProfiles } from '@/features/profiles/context';
 import { ProfileSwitcherTrigger } from '@/features/profiles/ProfileSwitcher';
@@ -90,13 +90,13 @@ export default function MedicinesListScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
           {FILTERS.map(value => {
             const selected = filter === value;
-            return <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={`${value}, ${count(value)}`}
-              onPress={() => setFilter(value)} style={({ pressed }) => ({ minHeight: 36, paddingHorizontal: 14, borderRadius: 18, justifyContent: 'center',
-                backgroundColor: selected ? colors.primary : colors.fill, opacity: pressed ? 0.7 : 1 })}>
+            return <PressableScale key={value} accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={`${value}, ${count(value)}`}
+              onPress={() => setFilter(value)} style={{ minHeight: 36, paddingHorizontal: 14, borderRadius: 18, justifyContent: 'center',
+                backgroundColor: selected ? colors.primary : colors.fill }}>
               <AppText variant="subhead" weight={selected ? '600' : '400'} style={{ color: selected ? colors.onPrimary : colors.label, fontVariant: ['tabular-nums'] }}>
                 {value} {count(value)}
               </AppText>
-            </Pressable>;
+            </PressableScale>;
           })}
         </ScrollView>
       </View>}

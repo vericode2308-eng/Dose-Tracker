@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { radii } from '../../../theme';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { AppText } from './AppText';
 import { Icon, type IconName } from './Icon';
+import { PressableScale } from './PressableScale';
 
 /**
  * Inset grouped section in the iOS Settings pattern, drawn in the app's own palette:
@@ -55,9 +56,9 @@ export function ListRow({ icon, title, subtitle, value, onPress, trailing, acces
   </>;
   const rowStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 14, paddingLeft: 16 };
   if (!onPress) return <View style={rowStyle}>{content}</View>;
-  return <Pressable accessibilityRole={accessory === 'external' ? 'link' : 'button'} accessibilityLabel={value ? `${title}, ${value}` : title}
-    accessibilityHint={accessibilityHint} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
-    style={({ pressed }) => [rowStyle, { backgroundColor: pressed ? colors.fill : 'transparent', opacity: disabled ? 0.5 : 1 }]}>
+  // PressableScale takes a static style (a function style is dropped by NativeWind); scaleTo 1 keeps full-width rows from shrinking.
+  return <PressableScale accessibilityRole={accessory === 'external' ? 'link' : 'button'} accessibilityLabel={value ? `${title}, ${value}` : title}
+    accessibilityHint={accessibilityHint} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} scaleTo={1} style={rowStyle}>
     {content}
-  </Pressable>;
+  </PressableScale>;
 }

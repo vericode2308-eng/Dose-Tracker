@@ -5,6 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { MEDICINE_COLORS, type MedicineColor as Color } from './colors';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { ActionMenu } from '@/features/ui/ActionMenu';
+import { PressableScale } from '@/features/ui/PressableScale';
 
 const FORMS = ['Tablet', 'Capsule', 'Liquid', 'Injection', 'Inhaler', 'Other'];
 type Props = {
@@ -65,12 +66,12 @@ export function MedicineDetailsForm(p: Props) {
       <View accessibilityRole="radiogroup" accessibilityLabel="Medicine color" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
         {(MEDICINE_COLORS.some(c => c.value.toLowerCase() === p.color.value.toLowerCase()) ? MEDICINE_COLORS : [...MEDICINE_COLORS, p.color]).map(color => {
           const selected = color.value.toLowerCase() === p.color.value.toLowerCase();
-          return <Pressable key={color.value} accessibilityRole="radio" accessibilityLabel={`${color.name} medicine color`} accessibilityState={{ checked: selected }} onPress={() => p.setColor(color)}
-            style={({ pressed }) => ({ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, borderWidth: 2, borderColor: selected ? colors.ink : 'transparent', opacity: pressed ? 0.7 : 1 })}>
+          return <PressableScale key={color.value} accessibilityRole="radio" accessibilityLabel={`${color.name} medicine color`} accessibilityState={{ checked: selected }} onPress={() => p.setColor(color)}
+            style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, borderWidth: 2, borderColor: selected ? colors.ink : 'transparent' }}>
             <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: color.value, alignItems: 'center', justifyContent: 'center' }}>
               {selected && <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}><Feather name="check" size={16} color={colors.onPrimary} /></View>}
             </View>
-          </Pressable>;
+          </PressableScale>;
         })}
       </View>
     </View>
