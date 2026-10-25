@@ -8,7 +8,7 @@ import { useTheme } from '@/features/theme/ThemeContext';
 export default function WelcomeScreen() {
   const router = useRouter();
   const styles = useOnboardingStyles();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { data } = useOnboarding();
   const { height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -36,6 +36,6 @@ export default function WelcomeScreen() {
       <Feature icon="lock" title="No subscription">Free features, with no sign up.</Feature>
     </View>
     <Text style={{ marginTop: 6, paddingHorizontal: 4, fontSize: 12, lineHeight: 16, color: colors.secondary }}>For adults 18+ managing their own or authorized dependents’ medicines. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment.</Text>
-    <Link href="https://dosetracker.pages.dev/privacy.html" style={{ padding: 10, textAlign: 'center', color: isDark ? colors.ink : '#0B2540', textDecorationLine: 'underline' }}>Privacy Policy</Link>
+    <Link href="https://dosetracker.pages.dev/privacy.html" style={{ padding: 10, textAlign: 'center', color: colors.label, textDecorationLine: 'underline' }}>Privacy Policy</Link>
   </Page>;
 }

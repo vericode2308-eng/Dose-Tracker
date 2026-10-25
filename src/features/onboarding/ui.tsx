@@ -35,11 +35,11 @@ export function StepHeader({ step }: { step: number }) {
 export function Button({ title, onPress, secondary = false, busy = false, icon }: {
   title: string; onPress: () => void; secondary?: boolean; busy?: boolean; icon?: IconName;
 }) {
-  const { colors, isDark } = useTheme();
-  const foreground = secondary ? colors.ink : '#FFFFFF';
+  const { colors } = useTheme();
+  const foreground = secondary ? colors.ink : colors.onPrimary;
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={onPress}
     className={secondary ? 'rounded-pill border border-border bg-surface active:opacity-70' : 'rounded-pill bg-medical active:opacity-70'}
-    style={[styles.button, { opacity: busy ? 0.7 : 1, backgroundColor: secondary ? colors.surface : isDark ? colors.accent : theme.palette.navy, borderColor: colors.border }]}>
+    style={[styles.button, { opacity: busy ? 0.7 : 1, backgroundColor: secondary ? colors.surface : colors.primary, borderColor: colors.border }]}>
     {busy ? <ActivityIndicator color={foreground} /> : <>
       <Text style={[styles.buttonText, { color: foreground }]}>{title}</Text>
       {icon && <Icon name={icon} color={foreground} />}

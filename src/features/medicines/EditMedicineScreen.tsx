@@ -29,9 +29,9 @@ export default function EditMedicineScreen() {
     <ScrollView>
       <Text accessibilityRole="header" className="mb-4 text-2xl font-semibold" style={{ color: colors.ink }}>Edit Medicine</Text>
       <Text accessibilityRole={error ? 'alert' : undefined} className="mb-4 text-base" style={{ color: colors.secondary }}>{error || (medicine ? 'Choose the schedule to edit. Medicine details and stock apply to all its schedules.' : 'Loading saved details…')}</Text>
-      {!!error && <Pressable accessibilityRole="button" onPress={() => { setMedicine(null); setError(''); setScheduleId(undefined); setAttempt(n => n + 1); }} className="mb-3 min-h-12 justify-center"><Text style={{ color: colors.accent }}>Retry</Text></Pressable>}
+      {!!error && <Pressable accessibilityRole="button" onPress={() => { setMedicine(null); setError(''); setScheduleId(undefined); setAttempt(n => n + 1); }} className="mb-3 min-h-12 justify-center"><Text style={{ color: colors.accentText }}>Retry</Text></Pressable>}
       {medicine?.schedules.map((s, index) => <Pressable key={s.id} accessibilityRole="button" onPress={() => setScheduleId(s.id)} className="mb-3 rounded-2xl p-4" style={{ backgroundColor: colors.surface }}><Text style={{ color: colors.ink }}>Schedule {index + 1} · {s.timeLocalMinute == null ? 'As needed' : `${String(Math.floor(s.timeLocalMinute / 60)).padStart(2, '0')}:${String(s.timeLocalMinute % 60).padStart(2, '0')}`} · {s.doseAmount} {medicine.doseUnit || medicine.dosageForm}</Text></Pressable>)}
-      <Pressable accessibilityRole="button" onPress={() => router.canGoBack() ? router.back() : router.replace('/medicines')} className="min-h-12 justify-center"><Text style={{ color: colors.accent }}>Back to medicine</Text></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.canGoBack() ? router.back() : router.replace('/medicines')} className="min-h-12 justify-center"><Text style={{ color: colors.accentText }}>Back to medicine</Text></Pressable>
     </ScrollView>
   </SafeAreaView>;
 }

@@ -7,7 +7,7 @@ import { useTheme } from '@/features/theme/ThemeContext';
 export default function DashboardLayout() {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const hideTabBar = pathname === '/medicines' || pathname.startsWith('/medicine/')
     || pathname === '/add-medicine' || pathname === '/edit-medicine';
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -15,7 +15,7 @@ export default function DashboardLayout() {
       <Tabs screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
-        tabBarActiveTintColor: isDark ? '#FFFFFF' : '#071629',
+        tabBarActiveTintColor: colors.label,
         tabBarInactiveTintColor: colors.secondary,
         tabBarLabelStyle: { fontSize: 13, lineHeight: 18, flexShrink: 0, marginTop: 3 },
         tabBarStyle: {
@@ -36,8 +36,8 @@ export default function DashboardLayout() {
           <Tabs.Screen key={item.name} name={item.name} options={{
             title: item.label,
             tabBarIcon: ({ focused, color }) => (
-              <View style={[styles.tabIcon, { backgroundColor: focused ? (isDark ? '#08B8BE' : '#071629') : 'transparent' }]}>
-                <Feather name={item.icon} size={23} color={focused ? '#FFFFFF' : color} />
+              <View style={[styles.tabIcon, { backgroundColor: focused ? colors.primary : 'transparent' }]}>
+                <Feather name={item.icon} size={23} color={focused ? colors.onPrimary : color} />
               </View>
             )
           }} />

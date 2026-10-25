@@ -14,7 +14,6 @@ import { DatePickerField, TimePickerField } from '@/features/ui/DateTimePickers'
 import { hapticSelection, hapticSuccess } from '@/features/ui/haptics';
 import { useTheme } from '@/features/theme/ThemeContext';
 
-const NAVY = '#102238';
 const TEAL = '#079D9D';
 const STEPS = ['Details', 'Schedule', 'Stock', 'Review'];
 const FREQUENCIES = [
@@ -64,7 +63,7 @@ export default function AddMedicineScreen(props: MedicineFormProps = {}) {
   if (!ready && (props.initialMedicine || (!loading && !error))) setReady(true);
   if (!ready && !props.initialMedicine && (loading || error)) return <SafeAreaView className="flex-1 p-5" style={{ backgroundColor: colors.background }}>
     <Text style={{ color: colors.ink }}>{error || 'Loading medicines…'}</Text>
-    {!!error && <Pressable accessibilityRole="button" onPress={refresh} className="min-h-12 justify-center"><Text style={{ color: colors.accent }}>Retry</Text></Pressable>}
+    {!!error && <Pressable accessibilityRole="button" onPress={refresh} className="min-h-12 justify-center"><Text style={{ color: colors.accentText }}>Retry</Text></Pressable>}
   </SafeAreaView>;
   return <MedicineForm {...props} />;
 }
@@ -77,7 +76,7 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
   const initialStrengthUnit = parsedStrength?.[2] ?? (initialMedicine?.strength ? '' : 'mg');
   const minute = initialSchedule?.timeLocalMinute ?? 540;
   const initialTime = `${Math.floor(minute / 60) % 12 || 12}:${String(minute % 60).padStart(2, '0')} ${minute < 720 ? 'AM' : 'PM'}`;
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { medicines } = useMedicines();
   const { currentProfile: selectedProfile, profiles } = useProfiles();
   const [currentProfile] = useState(initialMedicine ? profiles.find(p => p.id === initialMedicine.profileId) : selectedProfile);
@@ -299,13 +298,13 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
             {additionalDoses.map((dose, index) => <View key={dose.key} className="mt-3 border-t pt-3" style={{ borderColor: colors.border }}>
               <TimePickerField label={`Additional dose ${index + 2} time`} value={dose.time} onChange={time => setAdditionalDoses(items => items.map(d => d.key === dose.key ? { ...d, time } : d))} placeholder="6:00 PM" title={`Select Dose ${index + 2} Time`} />
               <Field label={`Dose ${index + 2}: how many ${plural}?`} value={dose.amount} onChangeText={amount => setAdditionalDoses(items => items.map(d => d.key === dose.key ? { ...d, amount } : d))} keyboardType="decimal-pad" />
-              {!dose.id && <Pressable accessibilityRole="button" accessibilityLabel={`Remove dose ${index + 2}`} onPress={() => setAdditionalDoses(items => items.filter(d => d.key !== dose.key))} className="min-h-11 justify-center"><Text style={{ color: colors.accent }}>Remove this time</Text></Pressable>}
+              {!dose.id && <Pressable accessibilityRole="button" accessibilityLabel={`Remove dose ${index + 2}`} onPress={() => setAdditionalDoses(items => items.filter(d => d.key !== dose.key))} className="min-h-11 justify-center"><Text style={{ color: colors.accentText }}>Remove this time</Text></Pressable>}
             </View>)}
-            {multipleTimesSupported && <Pressable accessibilityRole="button" accessibilityLabel="Add another dose time (optional)" onPress={addDoseTime} className="min-h-12 flex-row items-center justify-center gap-2 rounded-xl border" style={{ borderColor: colors.accent }}><Feather name="plus" size={20} color={colors.accent} /><Text style={{ color: colors.accent }}>Add another dose time (optional)</Text></Pressable>}
+            {multipleTimesSupported && <Pressable accessibilityRole="button" accessibilityLabel="Add another dose time (optional)" onPress={addDoseTime} className="min-h-12 flex-row items-center justify-center gap-2 rounded-xl border" style={{ borderColor: colors.accent }}><Feather name="plus" size={20} color={colors.accent} /><Text style={{ color: colors.accentText }}>Add another dose time (optional)</Text></Pressable>}
           </View>
           {frequency !== 'As needed' && <View className="mb-3 flex-row items-center gap-3 rounded-[22px] border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><View className="flex-1"><Text className="text-base font-semibold" style={{ color: colors.ink }}>Remind me</Text><Text className="mt-1 text-sm" style={{ color: colors.secondary }}>{reminderExplanation}</Text></View><Switch accessibilityLabel="Remind me" value={wantsReminder} disabled={!reminderSupported} onValueChange={setReminderEnabled} trackColor={{ true: TEAL }} /></View>}
           <Text className="mb-2 text-sm" style={{ color: colors.secondary }}>{schedule} · {durationLabel}{startDate === today() ? ' · Starts today' : ` · Starts ${startDate}`}</Text>
-          <Pressable accessibilityRole="button" accessibilityState={{ expanded: moreOptions }} onPress={() => setMoreOptions(value => !value)} className="min-h-12 flex-row items-center justify-between"><Text style={{ color: colors.accent }}>{moreOptions ? 'Hide schedule options' : 'More schedule options'}</Text><Feather name={moreOptions ? 'chevron-up' : 'chevron-down'} size={20} color={colors.accent} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityState={{ expanded: moreOptions }} onPress={() => setMoreOptions(value => !value)} className="min-h-12 flex-row items-center justify-between"><Text style={{ color: colors.accentText }}>{moreOptions ? 'Hide schedule options' : 'More schedule options'}</Text><Feather name={moreOptions ? 'chevron-up' : 'chevron-down'} size={20} color={colors.accent} /></Pressable>
           {moreOptions && <View className="rounded-[22px] border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
             <Text className="mb-2 font-semibold" style={{ color: colors.ink }}>How often? *</Text>
             {FREQUENCIES.map(([label]) => <Pressable key={label} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{ checked: frequency === label }} onPress={() => { if (additionalDoses.length && (label === 'Every N hours' || label === 'As needed')) { setError('This medicine has multiple dose times. Keep a daily, weekday or every-N-days schedule.'); return; } setFrequency(label); setError(''); }} className="min-h-11 flex-row items-center gap-3"><Feather name={frequency === label ? 'check-circle' : 'circle'} size={20} color={colors.accent} /><Text style={{ color: colors.ink }}>{label}</Text></Pressable>)}
@@ -325,7 +324,7 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
       <View style={{ borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }}>
         <View className="flex-row gap-3">
           {step > 0 && !saved && <Pressable accessibilityRole="button" onPress={back} className="min-h-[52px] flex-1 items-center justify-center rounded-full border" style={{ borderColor: colors.border, backgroundColor: colors.surface }}><Text className="text-[16px] font-semibold" style={{ color: colors.ink }}>Back</Text></Pressable>}
-          <Pressable accessibilityRole="button" disabled={savingNow} onPress={saved ? close : step === 3 ? () => void save() : next} className="min-h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-full" style={{ backgroundColor: isDark ? colors.accent : NAVY }}><Text className="text-[16px] font-semibold text-white">{saved ? 'Done' : savingNow ? 'Saving…' : step === 3 ? (editing ? 'Save changes' : 'Save Medicine') : 'Next'}</Text><Feather name={step === 3 ? 'check' : 'arrow-right'} size={20} color="white" /></Pressable>
+          <Pressable accessibilityRole="button" disabled={savingNow} onPress={saved ? close : step === 3 ? () => void save() : next} className="min-h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-full" style={{ backgroundColor: colors.primary }}><Text className="text-[16px] font-semibold" style={{ color: colors.onPrimary }}>{saved ? 'Done' : savingNow ? 'Saving…' : step === 3 ? (editing ? 'Save changes' : 'Save Medicine') : 'Next'}</Text><Feather name={step === 3 ? 'check' : 'arrow-right'} size={20} color={colors.onPrimary} /></Pressable>
         </View>
       </View>
     </KeyboardAvoidingView>

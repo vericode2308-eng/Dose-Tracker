@@ -11,7 +11,8 @@ import { ProfileSwitcherTrigger } from '@/features/profiles/ProfileSwitcher';
 import { dateKey } from '@/features/doses/occurrences';
 import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { useTheme, type ThemeColors } from '@/features/theme/ThemeContext';
-import { hapticImpactLight } from '@/features/ui/haptics';
+import { Button } from '@/features/ui/Button';
+import { confirmDestructive } from '@/features/ui/confirm';
 import { TimePickerField } from '@/features/ui/DateTimePickers';
 import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
 
@@ -32,7 +33,7 @@ export default function HistoryScreen() {
 
 function ProfileHistory() {
   const { currentProfile } = useProfiles();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [month, setMonth] = useState(() => { const date = new Date(); return new Date(date.getFullYear(), date.getMonth(), 1); });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [range, setRange] = useState('This month');
@@ -96,14 +97,14 @@ function ProfileHistory() {
         const key = dateKey(day); const dayRecords = filtered.filter(record => record.date === key);
         const marks = [...new Set(dayRecords.map(record => record.status))];
         const selected = selectedDate === key;
-        return <Pressable key={key} accessibilityRole="button" accessibilityLabel={`${key}, ${dayRecords.length} records${marks.length ? `, ${marks.join(', ')}` : ''}`} accessibilityState={{ selected }} onPress={() => { setSelectedDate(key); if (day.getMonth() !== month.getMonth()) { setMonth(new Date(day.getFullYear(), day.getMonth(), 1)); setRange('This month'); } }} className="min-h-11 flex-1 items-center justify-center"><View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: selected ? (isDark ? '#08B8BE' : '#071629') : 'transparent' }}><Text style={{ color: selected ? '#FFFFFF' : day.getMonth() === month.getMonth() ? colors.ink : colors.secondary }}>{day.getDate()}</Text><View className="absolute bottom-0.5 flex-row gap-0.5">{marks.map(mark => <View key={mark} className="h-1 w-1 rounded-full" style={{ backgroundColor: COLORS[mark] }} />)}</View></View></Pressable>;
+        return <Pressable key={key} accessibilityRole="button" accessibilityLabel={`${key}, ${dayRecords.length} records${marks.length ? `, ${marks.join(', ')}` : ''}`} accessibilityState={{ selected }} onPress={() => { setSelectedDate(key); if (day.getMonth() !== month.getMonth()) { setMonth(new Date(day.getFullYear(), day.getMonth(), 1)); setRange('This month'); } }} className="min-h-11 flex-1 items-center justify-center"><View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: selected ? colors.primary : 'transparent' }}><Text style={{ color: selected ? colors.onPrimary : day.getMonth() === month.getMonth() ? colors.ink : colors.secondary }}>{day.getDate()}</Text><View className="absolute bottom-0.5 flex-row gap-0.5">{marks.map(mark => <View key={mark} className="h-1 w-1 rounded-full" style={{ backgroundColor: COLORS[mark] }} />)}</View></View></Pressable>;
       })}</View>)}
       <View className="mt-2 flex-row justify-around">{Object.entries(COLORS).map(([label, color]) => <View key={label} className="flex-row items-center gap-1"><View className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} /><Text className="text-xs" style={{ color: colors.secondary }}>{label}</Text></View>)}</View>
     </View>
     <View className="mt-3 flex-row gap-2"><Filter label="Date range" value={range} onPress={() => setSheet('range')} colors={colors} /><Filter label="Medicine" value={medicine === 'All' ? 'All' : medicines.find(([id]) => id === medicine)?.[1] || 'Selected'} onPress={() => setSheet('medicine')} colors={colors} /><Filter label="Status" value={status} onPress={() => setSheet('status')} colors={colors} /></View>
-    {selectedDate && <Pressable accessibilityRole="button" accessibilityLabel="Show all days" onPress={() => setSelectedDate(null)} className="mt-2 min-h-11 justify-center"><Text className="font-medium" style={{ color: isDark ? '#38BDF8' : '#176A4C' }}>{selectedDate} · Show all days</Text></Pressable>}
+    {selectedDate && <Pressable accessibilityRole="button" accessibilityLabel="Show all days" onPress={() => setSelectedDate(null)} className="mt-2 min-h-11 justify-center"><Text className="font-medium" style={{ color: colors.accentText }}>{selectedDate} · Show all days</Text></Pressable>}
     {!!error && <View className="mt-3 rounded-2xl bg-[#FFF0D8] p-3"><Text accessibilityRole="alert">{error}</Text><Pressable accessibilityRole="button" onPress={() => void reload()} className="min-h-11 justify-center"><Text>Retry</Text></Pressable></View>}
-    <View className="mb-2 mt-4 flex-row items-center justify-between"><Text accessibilityRole="header" className="text-xl font-semibold" style={{ color: colors.ink }}>Records · {displayed.length}</Text><Pressable accessibilityRole="button" onPress={() => router.navigate('/')} className="min-h-11 justify-center"><Text className="font-medium" style={{ color: isDark ? '#38BDF8' : '#176A4C' }}>Log a dose</Text></Pressable></View>
+    <View className="mb-2 mt-4 flex-row items-center justify-between"><Text accessibilityRole="header" className="text-xl font-semibold" style={{ color: colors.ink }}>Records · {displayed.length}</Text><Pressable accessibilityRole="button" onPress={() => router.navigate('/')} className="min-h-11 justify-center"><Text className="font-medium" style={{ color: colors.accentText }}>Log a dose</Text></Pressable></View>
     <View className="overflow-hidden rounded-[22px]" style={{ backgroundColor: colors.surface }}>{loading ? <Text className="p-5" style={{ color: colors.secondary }}>Loading history…</Text> : displayed.map(record => <Pressable key={record.id} accessibilityRole="button" accessibilityLabel={`${record.medicineName}, ${record.status}, ${record.date}`} onPress={() => openRecord(record)} className="min-h-20 flex-row items-center gap-3 border-b p-3" style={{ borderBottomColor: colors.border }}><View className="h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: COLORS[record.status] }}><Feather name={record.status === 'Taken' ? 'check' : 'minus'} size={20} color="white" /></View><View className="flex-1"><Text className="text-base font-semibold" style={{ color: colors.ink }}>{record.medicineName}</Text><Text className="mt-1 text-sm" style={{ color: colors.secondary }}>{record.date} · {record.status}{record.actualTakenAtMs ? ` at ${time(record.actualTakenAtMs)}` : ''}</Text><Text className="mt-1 text-xs" style={{ color: colors.secondary }}>{record.doseAmount} {record.doseUnit || record.dosageForm}{record.scheduledAtMs ? ` · Planned ${time(record.scheduledAtMs)}` : ''}</Text></View><Feather name="chevron-right" size={18} color={colors.ink} /></Pressable>)}{!loading && !displayed.length && <Text className="p-6 text-center" style={{ color: colors.secondary }}>No matching dose records.</Text>}</View>
   </ScrollView>
   <Modal visible={sheet !== null} transparent animationType="slide" onRequestClose={close}><View className="flex-1 justify-end bg-black/30"><GlassSheetSurface edges={['bottom']} className="max-h-[80%] w-full max-w-[440px] self-center overflow-hidden rounded-t-[28px]" tint={colors.background}><ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ padding: 20 }}><View className="mb-3 flex-row items-start gap-3"><Text className="min-w-0 flex-1 pt-2 text-xl font-semibold leading-7" style={{ color: colors.ink }}>{typeof sheet === 'object' ? sheet?.medicineName : sheet === 'range' ? 'Date range' : sheet === 'medicine' ? 'Medicine' : 'Status'}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: colors.surface }}><Feather name="x" size={24} color={colors.ink} /></Pressable></View>
@@ -116,16 +117,24 @@ function ProfileHistory() {
         <Text style={{ color: colors.ink }}>{sheet.doseAmount} {sheet.doseUnit || sheet.dosageForm}</Text>
         {sheet.scheduledAtMs && <Text style={{ color: colors.secondary }}>Scheduled: {time(sheet.scheduledAtMs)}</Text>}
         {sheet.actualTakenAtMs && <Text style={{ color: colors.secondary }}>Taken: {time(sheet.actualTakenAtMs)}</Text>}
-        {sheet.status === 'Taken' && (editingTime ? <View className="gap-2"><Text className="text-sm" style={{ color: colors.secondary }}>* Required</Text><TimePickerField required label="Correct logged time" value={editedTime} onChange={setEditedTime} /><Pressable accessibilityRole="button" disabled={busyUndo} onPress={() => void saveEditedTime(sheet)} className="min-h-12 items-center justify-center rounded-xl" style={{ backgroundColor: colors.accent }}><Text className="font-semibold text-white">Save corrected time</Text></Pressable></View> : <Pressable accessibilityRole="button" accessibilityLabel="Edit logged time" onPress={() => setEditingTime(true)} className="min-h-11 justify-center"><Text className="font-semibold" style={{ color: colors.accent }}>Edit logged time</Text></Pressable>)}
-        {!!recordError && <Text accessibilityRole="alert" style={{ color: '#DC2626' }}>{recordError}</Text>}
-        <Pressable
-          accessibilityRole="button"
+        {sheet.status === 'Taken' && (editingTime ? <View className="gap-2"><Text className="text-sm" style={{ color: colors.secondary }}>* Required</Text><TimePickerField required label="Correct logged time" value={editedTime} onChange={setEditedTime} /><Pressable accessibilityRole="button" disabled={busyUndo} onPress={() => void saveEditedTime(sheet)} className="min-h-12 items-center justify-center rounded-xl" style={{ backgroundColor: colors.primary }}><Text className="font-semibold" style={{ color: colors.onPrimary }}>Save corrected time</Text></Pressable></View> : <Pressable accessibilityRole="button" accessibilityLabel="Edit logged time" onPress={() => setEditingTime(true)} className="min-h-11 justify-center"><Text className="font-semibold" style={{ color: colors.accentText }}>Edit logged time</Text></Pressable>)}
+        {!!recordError && <Text accessibilityRole="alert" style={{ color: colors.dangerText }}>{recordError}</Text>}
+        <Button
+          variant="destructiveSoft"
+          icon="undo"
+          title={busyUndo ? 'Removing…' : 'Remove From History'}
           accessibilityLabel={`Undo and remove log for ${sheet.medicineName}`}
           disabled={busyUndo}
+          style={{ marginTop: 8 }}
           onPress={async () => {
+            const confirmed = await confirmDestructive({
+              title: 'Remove this dose?',
+              message: `The ${sheet.status.toLowerCase()} record for ${sheet.medicineName} on ${sheet.date} will be removed from history.`,
+              confirmLabel: 'Remove Dose',
+            });
+            if (!confirmed) return;
             setBusyUndo(true);
             try {
-              void hapticImpactLight();
               const result = await undoMedicationDose({
                 scheduleId: sheet.scheduleId,
                 date: sheet.date,
@@ -140,13 +149,7 @@ function ProfileHistory() {
               setBusyUndo(false);
             }
           }}
-          className="mt-3 min-h-12 flex-row items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30"
-        >
-          <Feather name="rotate-ccw" size={16} color="#DC2626" />
-          <Text className="font-semibold text-[#DC2626]">
-            {busyUndo ? 'Removing…' : 'Undo dose / Remove from history'}
-          </Text>
-        </Pressable>
+        />
       </View>
     )}
   </ScrollView></GlassSheetSurface></View></Modal></SafeAreaView>;

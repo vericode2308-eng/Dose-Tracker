@@ -72,7 +72,7 @@ export function MedicineDetailsForm(p: Props) {
         })}
       </View>
     </View>
-    <Pressable accessibilityRole="button" accessibilityState={{ expanded: showOptional }} onPress={() => setShowOptional(value => !value)} className="min-h-12 flex-row items-center justify-between"><Text style={{ color: colors.accent }}>{showOptional ? 'Hide extra details' : 'Add notes or instructions (optional)'}</Text><Feather name={showOptional ? 'chevron-up' : 'chevron-down'} size={20} color={colors.accent} /></Pressable>
+    <Pressable accessibilityRole="button" accessibilityState={{ expanded: showOptional }} onPress={() => setShowOptional(value => !value)} className="min-h-12 flex-row items-center justify-between"><Text style={{ color: colors.accentText }}>{showOptional ? 'Hide extra details' : 'Add notes or instructions (optional)'}</Text><Feather name={showOptional ? 'chevron-up' : 'chevron-down'} size={20} color={colors.accent} /></Pressable>
     {showOptional && <>
     <InputCard label="Purpose (optional)" value={p.purpose} onChangeText={p.setPurpose} placeholder="What is it for?" />
     <InputCard label="Instructions (optional)" value={p.instructions} onChangeText={p.setInstructions} placeholder="e.g. Take after food" />

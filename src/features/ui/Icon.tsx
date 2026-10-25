@@ -34,7 +34,6 @@ const ICONS = {
   check: { sf: 'checkmark', feather: 'check' },
   checkCircle: { sf: 'checkmark.circle.fill', feather: 'check-circle' },
   lock: { sf: 'lock.fill', feather: 'lock' },
-  faceId: { sf: 'faceid', feather: 'lock' },
   warning: { sf: 'exclamationmark.triangle.fill', feather: 'alert-triangle' },
   info: { sf: 'info.circle.fill', feather: 'info' },
   chevronRight: { sf: 'chevron.forward', feather: 'chevron-right' },

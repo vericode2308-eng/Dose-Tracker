@@ -8,7 +8,7 @@ import type { ReminderDiagnostics } from '@/notificationManager';
 import { useTheme } from '@/features/theme/ThemeContext';
 
 export default function ReminderStatusScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [status, setStatus] = useState<ReminderDiagnostics | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -35,9 +35,9 @@ export default function ReminderStatusScreen() {
     <Text className="mt-7 text-[18px] font-bold" style={{ color: colors.ink }}>Known issues · past 7 days</Text>
     <Text className="mt-2 text-[13px] leading-5" style={{ color: colors.secondary }}>These are problems DoseTracker observed while checking permissions or scheduling. Android does not provide a dependable receipt for every local reminder, so this list cannot prove that a notification was delivered or missed during deep sleep.</Text>
     {status?.issues.length ? <View className="mt-4 gap-2">{status.issues.map(issue => <View key={`${issue.code}-${issue.lastSeenMs}`} className="rounded-[18px] p-4" style={{ backgroundColor: colors.surface }}><Text className="text-[14px] font-semibold" style={{ color: colors.ink }}>{issue.message}</Text><Text className="mt-1 text-[12px]" style={{ color: colors.secondary }}>{new Date(issue.lastSeenMs).toLocaleString()}{issue.occurrences > 1 ? ` · seen ${issue.occurrences} times` : ''}</Text></View>)}</View> : <View className="mt-4 rounded-[18px] p-4" style={{ backgroundColor: colors.surface }}><Text className="text-[14px]" style={{ color: colors.secondary }}>No known setup or scheduling issues recorded.</Text></View>}
-    <Pressable accessibilityRole="button" disabled={busy} onPress={() => void (async () => { setBusy(true); try { await reconcileReminders(); await refresh(); } catch { setError('Could not retry reminder setup.'); } finally { setBusy(false); } })()} className="mt-6 min-h-[48px] items-center justify-center rounded-full" style={{ backgroundColor: isDark ? colors.accent : '#0B2540' }}><Text className="font-semibold text-white">Retry setup and refresh</Text></Pressable>
-    {Platform.OS === 'android' && !!status?.requested && status?.exact === false && <Pressable accessibilityRole="button" onPress={() => void openExactAlarmSettings().catch(() => setError('Alarms & reminders settings could not be opened.'))} className="mt-3 min-h-[48px] items-center justify-center"><Text className="font-semibold" style={{ color: colors.accent }}>Allow alarms & reminders</Text></Pressable>}
-    <Pressable accessibilityRole="button" onPress={() => void openNotificationSettings().catch(() => setError('Notification settings could not be opened.'))} className="mt-3 min-h-[48px] items-center justify-center"><Text className="font-semibold" style={{ color: colors.accent }}>Open DoseTracker notification settings</Text></Pressable>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={() => void (async () => { setBusy(true); try { await reconcileReminders(); await refresh(); } catch { setError('Could not retry reminder setup.'); } finally { setBusy(false); } })()} className="mt-6 min-h-[48px] items-center justify-center rounded-full" style={{ backgroundColor: colors.primary }}><Text className="font-semibold" style={{ color: colors.onPrimary }}>Retry setup and refresh</Text></Pressable>
+    {Platform.OS === 'android' && !!status?.requested && status?.exact === false && <Pressable accessibilityRole="button" onPress={() => void openExactAlarmSettings().catch(() => setError('Alarms & reminders settings could not be opened.'))} className="mt-3 min-h-[48px] items-center justify-center"><Text className="font-semibold" style={{ color: colors.accentText }}>Allow alarms & reminders</Text></Pressable>}
+    <Pressable accessibilityRole="button" onPress={() => void openNotificationSettings().catch(() => setError('Notification settings could not be opened.'))} className="mt-3 min-h-[48px] items-center justify-center"><Text className="font-semibold" style={{ color: colors.accentText }}>Open DoseTracker notification settings</Text></Pressable>
     {!!error && !!status && <Text className="mt-2 text-center text-[13px] text-[#9A3412]">{error}</Text>}
   </ScrollView></SafeAreaView>;
 }

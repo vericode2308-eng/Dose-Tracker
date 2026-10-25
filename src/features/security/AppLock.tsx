@@ -1,6 +1,7 @@
 import * as ScreenCapture from 'expo-screen-capture';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AppState, Platform, Pressable, Text, View } from 'react-native';
+import { AppState, Platform } from 'react-native';
+import { LockScreen } from './LockScreen';
 import { authenticateUser, isAuthEnabled } from './SecurityManager';
 
 type LockContextValue = { enabled: boolean; setEnabled: (enabled: boolean) => Promise<void>; authenticate: () => Promise<boolean> };
@@ -97,13 +98,7 @@ export function AppLock({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  if (status !== 'unlocked') return <View className="flex-1 items-center justify-center bg-[#FBF8F3] px-8">
-    <Text accessibilityRole="header" className="text-center text-[25px] font-bold text-[#102238]">{status === 'error' ? 'App lock unavailable' : status === 'loading' ? 'Opening DoseTracker…' : 'DoseTracker is locked'}</Text>
-    {status !== 'loading' && <>
-      <Text className="mt-3 text-center text-[15px] leading-6 text-[#536073]">{status === 'error' ? 'The secure app-lock setting could not be read. Try again after unlocking your phone.' : 'Use your phone’s fingerprint, face, or screen lock to continue.'}</Text>
-      <Pressable accessibilityRole="button" onPress={() => { if (status === 'error') { setStatus('loading'); void load(); } else void unlock(); }} className="mt-6 min-h-[48px] justify-center rounded-full bg-[#0B2540] px-8"><Text className="font-semibold text-white">{status === 'error' ? 'Try again' : 'Unlock'}</Text></Pressable>
-    </>}
-  </View>;
+  if (status !== 'unlocked') return <LockScreen status={status} onPress={() => { if (status === 'error') { setStatus('loading'); void load(); } else void unlock(); }} />;
 
   return <LockContext.Provider value={{ enabled, setEnabled, authenticate }}>{children}</LockContext.Provider>;
 }
@@ -113,3 +108,4 @@ export function useAppLock() {
   if (!value) throw new Error('AppLock is required.');
   return value;
 }
+

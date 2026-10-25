@@ -52,7 +52,7 @@ function MedicineCard({ medicine: m, onPress }: { medicine: Medicine; onPress: (
 export default function MedicinesListScreen() {
   const { medicines, error, loading, refresh } = useMedicines();
   const { currentProfile } = useProfiles();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
   const [filter, setFilter] = useState<Filter>('Active');
   const [query, setQuery] = useState('');
@@ -73,9 +73,9 @@ export default function MedicinesListScreen() {
         <ProfileSwitcherTrigger />
         <View className="mb-3 flex-row items-center gap-3 rounded-full border px-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><Feather name="search" size={21} color={colors.ink} /><TextInput accessibilityLabel="Search medicines" placeholder="Search medicines..." placeholderTextColor={colors.secondary} value={query} onChangeText={setQuery} returnKeyType="search" className="h-[40px] min-w-0 flex-1 text-[15px]" style={{ color: colors.ink }} />{query !== '' && <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={10}><Feather name="x" size={18} color={colors.secondary} /></Pressable>}</View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingBottom: 12 }}>
-          {FILTERS.map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: filter === value }} accessibilityLabel={`${value} (${count(value)})`} onPress={() => setFilter(value)} className="min-h-[38px] items-center justify-center rounded-full border px-[9px]" style={{ backgroundColor: filter === value ? (isDark ? '#08B8BE' : '#071629') : colors.surface, borderColor: filter === value ? (isDark ? '#08B8BE' : '#071629') : colors.border }}><Text className="text-[12px]" style={{ color: filter === value ? '#FFFFFF' : colors.secondary }}>{value} ({count(value)})</Text></Pressable>)}
+          {FILTERS.map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: filter === value }} accessibilityLabel={`${value} (${count(value)})`} onPress={() => setFilter(value)} className="min-h-[38px] items-center justify-center rounded-full border px-[9px]" style={{ backgroundColor: filter === value ? colors.primary : colors.surface, borderColor: filter === value ? colors.primary : colors.border }}><Text className="text-[12px]" style={{ color: filter === value ? colors.onPrimary : colors.secondary }}>{value} ({count(value)})</Text></Pressable>)}
         </ScrollView>
-        <Pressable accessibilityRole="button" onPress={() => router.push('/add-medicine')} className="mb-3 min-h-11 flex-row items-center justify-center gap-4 rounded-full active:opacity-80" style={{ backgroundColor: isDark ? '#08B8BE' : '#071629' }}><Feather name="plus" size={23} color="white" /><Text className="text-[17px] font-medium text-white">Add Medicine</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/add-medicine')} className="mb-3 min-h-11 flex-row items-center justify-center gap-4 rounded-full active:opacity-80" style={{ backgroundColor: colors.primary }}><Feather name="plus" size={23} color={colors.onPrimary} /><Text className="text-[17px] font-medium" style={{ color: colors.onPrimary }}>Add Medicine</Text></Pressable>
       </>}
       ListEmptyComponent={<View className="items-center rounded-[22px] px-6 py-10" style={{ backgroundColor: colors.surface }}><Feather name="inbox" size={28} color={colors.secondary} /><Text className="mt-3 text-base font-medium" style={{ color: colors.ink }}>{loading ? 'Loading medicines…' : error || (query ? 'No matching medicines' : `No ${filter.toLowerCase()} medicines`)}</Text><Text className="mt-2 text-center text-sm" style={{ color: colors.secondary }}>{query ? 'Try a different name or dosage.' : `There are no medicines in this category for ${profile}.`}</Text></View>}
     />
