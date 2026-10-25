@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { INITIAL_DATA, type OnboardingData } from './model';
 import { clearOnboarding, onboardingFlags, writeOnboarding } from './storage';
 import { loadOnboarding } from './migration';
+import { useTheme } from '@/features/theme/ThemeContext';
 
 type Context = { data: OnboardingData; save: (patch: Partial<OnboardingData>) => Promise<void>; reset: () => Promise<void> };
 const OnboardingContext = createContext<Context | null>(null);
@@ -46,11 +47,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     current.current = INITIAL_DATA;
     setData(INITIAL_DATA);
   }, []);
+  const { colors } = useTheme();
   if (loading || failed) return (
-    <View className="flex-1 items-center justify-center bg-luminous p-6">
-      {loading ? <ActivityIndicator accessibilityLabel="Loading your local setup" color="#0B2540" /> : <>
-        <Text className="text-center text-lg text-medical">Your saved setup couldn’t be opened.</Text>
-        <Pressable accessibilityRole="button" onPress={() => { setLoading(true); void load(); }} className="mt-6 rounded-pill bg-medical px-8 py-4"><Text className="text-white">Try again</Text></Pressable>
+    <View className="flex-1 items-center justify-center p-6" style={{ backgroundColor: colors.background }}>
+      {loading ? <ActivityIndicator accessibilityLabel="Loading your local setup" color={colors.secondaryLabel} /> : <>
+        <Text className="text-center text-lg" style={{ color: colors.label }}>Your saved setup couldn’t be opened.</Text>
+        <Pressable accessibilityRole="button" onPress={() => { setLoading(true); void load(); }} className="mt-6 rounded-pill px-8 py-4" style={{ backgroundColor: colors.primary }}><Text style={{ color: colors.onPrimary }}>Try again</Text></Pressable>
       </>}
     </View>
   );

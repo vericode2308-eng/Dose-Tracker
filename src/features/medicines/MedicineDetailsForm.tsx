@@ -42,7 +42,7 @@ function InputCard({ label, value, onChangeText, placeholder, outlined = false, 
 }
 
 export function MedicineDetailsForm(p: Props) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [showOptional, setShowOptional] = useState(!!(p.purpose || p.instructions || p.notes));
   return <>
     <InputCard required label="Medicine name" value={p.name} onChangeText={p.setName} placeholder="e.g. Amoxicillin" outlined />
@@ -54,7 +54,7 @@ export function MedicineDetailsForm(p: Props) {
     </View>
     <View className="mb-[10px] rounded-[17px] border px-[10px] pb-[8px] pt-[7px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
       <View className="mb-[3px] pl-[3px]"><Label required>Form</Label></View>
-      <View className="flex-row flex-wrap justify-between gap-y-[8px]">{FORMS.map(form => <Pressable key={form} accessibilityRole="radio" accessibilityLabel={`${form}, medicine form, required`} accessibilityState={{ checked: p.form === form }} onPress={() => p.setForm(form)} className="h-[72px] w-[32%] items-center justify-center rounded-[14px] border" style={{ borderWidth: p.form === form ? 2 : 1, borderColor: p.form === form ? colors.accent : colors.border, backgroundColor: p.form === form ? (isDark ? colors.pill : '#EFFBFA') : colors.surface }}><MedicineIcon form={form} selected={p.form === form} /><Text className={`mt-[3px] text-[14px] ${p.form === form ? 'font-semibold' : ''}`} style={{ color: p.form === form ? colors.ink : colors.secondary }}>{form}</Text></Pressable>)}</View>
+      <View className="flex-row flex-wrap justify-between gap-y-[8px]">{FORMS.map(form => <Pressable key={form} accessibilityRole="radio" accessibilityLabel={`${form}, medicine form, required`} accessibilityState={{ checked: p.form === form }} onPress={() => p.setForm(form)} className="h-[72px] w-[32%] items-center justify-center rounded-[14px] border" style={{ borderWidth: p.form === form ? 2 : 1, borderColor: p.form === form ? colors.accent : colors.border, backgroundColor: p.form === form ? colors.accentSoft : colors.surface }}><MedicineIcon form={form} selected={p.form === form} /><Text className={`mt-[3px] text-[14px] ${p.form === form ? 'font-semibold' : ''}`} style={{ color: p.form === form ? colors.ink : colors.secondary }}>{form}</Text></Pressable>)}</View>
     </View>
     <View className="mb-[10px] rounded-[17px] border px-[14px] py-[8px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><View className="flex-row items-center justify-between gap-3"><Label required>Dose unit</Label><ActionMenu title="Dose unit" accessibilityLabel={`Dose unit, required, ${p.doseUnit}`} onSelect={p.setDoseUnit}
         items={FORMS.map(unit => ({ id: unit, title: unit, checked: unit === p.doseUnit }))}>

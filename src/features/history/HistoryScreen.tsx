@@ -15,10 +15,11 @@ import { Button } from '@/features/ui/Button';
 import { confirmDestructive } from '@/features/ui/confirm';
 import { TimePickerField } from '@/features/ui/DateTimePickers';
 import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
+import { InlineMessage } from '@/features/ui/InlineMessage';
 
 type Status = HistoryRecord['status'];
 type Sheet = HistoryRecord | null;
-const COLORS: Record<Status, string> = { Taken: '#159E62', 'Skipped / missed': '#D97706' };
+const STATUSES: Status[] = ['Taken', 'Skipped / missed'];
 const time = (at: number) => new Date(at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 const pickerTime = (at: number) => new Date(at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
@@ -44,6 +45,7 @@ export default function HistoryScreen() {
 function ProfileHistory() {
   const { currentProfile } = useProfiles();
   const { colors } = useTheme();
+  const COLORS: Record<Status, string> = { Taken: colors.success, 'Skipped / missed': colors.warning };
   const [month, setMonth] = useState(() => { const date = new Date(); return new Date(date.getFullYear(), date.getMonth(), 1); });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [range, setRange] = useState('This month');
@@ -115,10 +117,10 @@ function ProfileHistory() {
       <FilterMenu label="Medicine" value={medicine} colors={colors} onSelect={setMedicine}
         options={[{ id: 'All', title: 'All medicines' }, ...medicines.map(([id, name]) => ({ id, title: name }))]} />
       <FilterMenu label="Status" value={status} colors={colors} onSelect={id => setStatus(id as Status | 'All')}
-        options={[{ id: 'All', title: 'All statuses' }, ...Object.keys(COLORS).map(id => ({ id, title: id }))]} />
+        options={[{ id: 'All', title: 'All statuses' }, ...STATUSES.map(id => ({ id, title: id }))]} />
     </ScrollView>
     {selectedDate && <Pressable accessibilityRole="button" accessibilityLabel="Show all days" onPress={() => setSelectedDate(null)} className="mt-2 min-h-11 justify-center"><Text className="font-medium" style={{ color: colors.accentText }}>{selectedDate} · Show all days</Text></Pressable>}
-    {!!error && <View className="mt-3 rounded-2xl bg-[#FFF0D8] p-3"><Text accessibilityRole="alert">{error}</Text><Pressable accessibilityRole="button" onPress={() => void reload()} className="min-h-11 justify-center"><Text>Retry</Text></Pressable></View>}
+    {!!error && <InlineMessage tone="warning" message={error} actionTitle="Retry" onAction={() => void reload()} style={{ marginTop: 12 }} />}
     <View className="mb-2 mt-4 flex-row items-center justify-between"><Text accessibilityRole="header" className="text-xl font-semibold" style={{ color: colors.ink }}>Records · {displayed.length}</Text><Pressable accessibilityRole="button" onPress={() => router.navigate('/')} className="min-h-11 justify-center"><Text className="font-medium" style={{ color: colors.accentText }}>Log a dose</Text></Pressable></View>
     <View className="overflow-hidden rounded-[22px]" style={{ backgroundColor: colors.surface }}>{loading ? <Text className="p-5" style={{ color: colors.secondary }}>Loading history…</Text> : displayed.map(record => <Pressable key={record.id} accessibilityRole="button" accessibilityLabel={`${record.medicineName}, ${record.status}, ${record.date}`} onPress={() => openRecord(record)} className="min-h-20 flex-row items-center gap-3 border-b p-3" style={{ borderBottomColor: colors.border }}><View className="h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: COLORS[record.status] }}><Feather name={record.status === 'Taken' ? 'check' : 'minus'} size={20} color="white" /></View><View className="flex-1"><Text className="text-base font-semibold" style={{ color: colors.ink }}>{record.medicineName}</Text><Text className="mt-1 text-sm" style={{ color: colors.secondary }}>{record.date} · {record.status}{record.actualTakenAtMs ? ` at ${time(record.actualTakenAtMs)}` : ''}</Text><Text className="mt-1 text-xs" style={{ color: colors.secondary }}>{record.doseAmount} {record.doseUnit || record.dosageForm}{record.scheduledAtMs ? ` · Planned ${time(record.scheduledAtMs)}` : ''}</Text></View><Feather name="chevron-right" size={18} color={colors.ink} /></Pressable>)}{!loading && !displayed.length && <Text className="p-6 text-center" style={{ color: colors.secondary }}>No matching dose records.</Text>}</View>
   </ScrollView>
@@ -126,7 +128,7 @@ function ProfileHistory() {
     {sheet && (
       <View className="gap-3 rounded-2xl p-5" style={{ backgroundColor: colors.surface }}>
         <Text style={{ color: colors.ink }}>{sheet.date}</Text>
-        <Text style={{ color: COLORS[sheet.status] }}>{sheet.status}</Text>
+        <Text style={{ color: sheet.status === 'Taken' ? colors.successText : colors.warningText }}>{sheet.status}</Text>
         <Text style={{ color: colors.ink }}>{sheet.doseAmount} {sheet.doseUnit || sheet.dosageForm}</Text>
         {sheet.scheduledAtMs && <Text style={{ color: colors.secondary }}>Scheduled: {time(sheet.scheduledAtMs)}</Text>}
         {sheet.actualTakenAtMs && <Text style={{ color: colors.secondary }}>Taken: {time(sheet.actualTakenAtMs)}</Text>}

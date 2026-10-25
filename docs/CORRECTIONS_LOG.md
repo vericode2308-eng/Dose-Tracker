@@ -1,5 +1,14 @@
 # Corrections log
 
+## 2026-10-25 — Remaining hard-coded colors moved to theme tokens (Phase 6)
+
+- **Request:** Replace the ~90 remaining hard-coded hex colors so every screen follows light/dark mode.
+- **Implemented:** Date and time picker modals (web/Android fallback), profile editor, onboarding feature rows and error text, Add Medicine (step indicator, weekday chips, switches, info box now `InlineMessage`, error text), Reminder status and Sound & vibration, History (status colors from tokens; error box now `InlineMessage` with Retry), the medicine-form selection fill, and the onboarding and profiles loading screens (previously always light) now use `useTheme().colors`. Selected states with text use `primary`/`onPrimary` (white on light teal failed contrast). The three extra avatar colors moved to `EXTRA_AVATAR_COLORS` in the onboarding model, with spoken names instead of hex codes.
+- **Intentionally kept:** white glyphs on user-chosen medicine/profile colors, white on the destructive button, and default colors stored with new medicines/profiles (user data).
+- **Affected files:** `src/features/ui/DateTimePickers.tsx`, `src/app/profile.tsx`, `src/features/onboarding/{ui,context,model}.ts(x)`, `src/features/profiles/context.tsx`, `src/features/medicines/{AddMedicineScreen,MedicineDetailsForm}.tsx`, `src/features/settings/{ReminderStatusScreen,ReminderSoundScreen}.tsx`, `src/features/history/HistoryScreen.tsx`, this log.
+- **Verification:** `tsc --noEmit` and `expo lint` clean, `npm test` 150/150, iOS and Android bundles export. Not rendered or viewed on a device.
+- **Status:** Source only.
+
 ## 2026-10-25 — Native controls: menus, date pickers, grouped Settings (Phase 5)
 
 - **Request:** Replace custom controls with native ones: Settings as a grouped list with a segmented theme control, native menus instead of the dose-options and History filter sheets, the native iOS date and time picker instead of the custom calendar, plus fixes for unformatted dates and times and a duplicated profile row in Settings.

@@ -96,7 +96,7 @@ export function DatePickerModal({
   maxDate,
   allowClear = false,
 }: DatePickerModalProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const parsed = useMemo(() => parseDateString(initialDate), [initialDate]);
   const [selectedYear, setSelectedYear] = useState(parsed.year);
@@ -175,7 +175,7 @@ export function DatePickerModal({
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           {/* Handle bar */}
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: colors.tertiaryLabel }]} />
 
           {/* Header */}
           <View style={styles.header}>
@@ -198,7 +198,7 @@ export function DatePickerModal({
               accessibilityRole="button"
               accessibilityLabel={`Select year ${selectedYear}`}
               onPress={() => setViewMode(v => v === 'calendar' ? 'years' : 'calendar')}
-              style={[styles.monthYearHeader, { backgroundColor: viewMode === 'years' ? (isDark ? '#142337' : '#EAF5FF') : colors.pill }]}
+              style={[styles.monthYearHeader, { backgroundColor: viewMode === 'years' ? colors.accentSoft : colors.pill }]}
             >
               <Text style={[styles.monthYearText, { color: colors.ink }]}>
                 {MONTH_NAMES[selectedMonth]} {selectedYear}
@@ -251,16 +251,16 @@ export function DatePickerModal({
                       onPress={() => setSelectedDay(day)}
                       style={[
                         styles.dayCell,
-                        isSelected && { backgroundColor: '#08B8BE', borderRadius: 999 },
-                        !isSelected && isToday && { borderWidth: 1.5, borderColor: '#08B8BE', borderRadius: 999 },
+                        isSelected && { backgroundColor: colors.primary, borderRadius: 999 },
+                        !isSelected && isToday && { borderWidth: 1.5, borderColor: colors.accent, borderRadius: 999 },
                       ]}
                     >
                       <Text
                         style={[
                           styles.dayText,
                           { color: colors.ink },
-                          isSelected && { color: '#FFFFFF', fontWeight: '700' },
-                          disabled && { color: isDark ? '#4B5563' : '#CBD5E1' },
+                          isSelected && { color: colors.onPrimary, fontWeight: '700' },
+                          disabled && { color: colors.tertiaryLabel, opacity: 0.6 },
                         ]}
                       >
                         {day}
@@ -330,13 +330,13 @@ export function DatePickerModal({
                         }}
                         style={[
                           styles.yearItem,
-                          { backgroundColor: isSelected ? '#08B8BE' : colors.pill },
+                          { backgroundColor: isSelected ? colors.primary : colors.pill },
                         ]}
                       >
                         <Text
                           style={[
                             styles.yearItemText,
-                            { color: isSelected ? '#FFFFFF' : colors.ink },
+                            { color: isSelected ? colors.onPrimary : colors.ink },
                             isSelected && { fontWeight: '700' },
                           ]}
                         >
@@ -356,9 +356,9 @@ export function DatePickerModal({
               <Pressable
                 accessibilityRole="button"
                 onPress={handleClear}
-                style={[styles.actionBtn, styles.clearBtn]}
+                style={[styles.actionBtn, styles.clearBtn, { backgroundColor: colors.dangerSoft }]}
               >
-                <Text style={[styles.clearBtnText, { color: '#EF4444' }]}>Clear</Text>
+                <Text style={[styles.clearBtnText, { color: colors.dangerText }]}>Clear</Text>
               </Pressable>
             )}
             <Pressable
@@ -371,9 +371,9 @@ export function DatePickerModal({
             <Pressable
               accessibilityRole="button"
               onPress={handleConfirm}
-              style={[styles.actionBtn, styles.confirmBtn]}
+              style={[styles.actionBtn, { backgroundColor: colors.primary }]}
             >
-              <Text style={styles.confirmBtnText}>Select Date</Text>
+              <Text style={[styles.confirmBtnText, { color: colors.onPrimary }]}>Select Date</Text>
             </Pressable>
           </View>
         </View>
@@ -413,7 +413,7 @@ export function TimePickerModal({
   initialTime,
   title = 'Select Dose Time',
 }: TimePickerModalProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const parsed = useMemo(() => parseTimeString(initialTime), [initialTime]);
   const [hour, setHour] = useState(parsed.hour);
@@ -445,7 +445,7 @@ export function TimePickerModal({
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           {/* Handle bar */}
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: colors.tertiaryLabel }]} />
 
           {/* Header */}
           <View style={styles.header}>
@@ -462,14 +462,14 @@ export function TimePickerModal({
                 onPress={() => setActiveTab('hour')}
                 style={[
                   styles.timeSegment,
-                  { backgroundColor: activeTab === 'hour' ? (isDark ? '#142337' : '#EAF5FF') : colors.pill },
-                  activeTab === 'hour' && { borderColor: '#08B8BE', borderWidth: 2 },
+                  { backgroundColor: activeTab === 'hour' ? colors.accentSoft : colors.pill },
+                  activeTab === 'hour' && { borderColor: colors.accent, borderWidth: 2 },
                 ]}
               >
                 <Text
                   style={[
                     styles.timeDigitText,
-                    { color: activeTab === 'hour' ? '#08B8BE' : colors.ink },
+                    { color: activeTab === 'hour' ? colors.accentText : colors.ink },
                   ]}
                 >
                   {padZero(hour)}
@@ -486,14 +486,14 @@ export function TimePickerModal({
                 onPress={() => setActiveTab('minute')}
                 style={[
                   styles.timeSegment,
-                  { backgroundColor: activeTab === 'minute' ? (isDark ? '#142337' : '#EAF5FF') : colors.pill },
-                  activeTab === 'minute' && { borderColor: '#08B8BE', borderWidth: 2 },
+                  { backgroundColor: activeTab === 'minute' ? colors.accentSoft : colors.pill },
+                  activeTab === 'minute' && { borderColor: colors.accent, borderWidth: 2 },
                 ]}
               >
                 <Text
                   style={[
                     styles.timeDigitText,
-                    { color: activeTab === 'minute' ? '#08B8BE' : colors.ink },
+                    { color: activeTab === 'minute' ? colors.accentText : colors.ink },
                   ]}
                 >
                   {padZero(minute)}
@@ -511,13 +511,13 @@ export function TimePickerModal({
                 onPress={() => setPeriod('AM')}
                 style={[
                   styles.periodBtn,
-                  period === 'AM' && { backgroundColor: '#08B8BE' },
+                  period === 'AM' && { backgroundColor: colors.primary },
                 ]}
               >
                 <Text
                   style={[
                     styles.periodText,
-                    { color: period === 'AM' ? '#FFFFFF' : colors.ink },
+                    { color: period === 'AM' ? colors.onPrimary : colors.ink },
                     period === 'AM' && { fontWeight: '700' },
                   ]}
                 >
@@ -532,13 +532,13 @@ export function TimePickerModal({
                 onPress={() => setPeriod('PM')}
                 style={[
                   styles.periodBtn,
-                  period === 'PM' && { backgroundColor: '#08B8BE' },
+                  period === 'PM' && { backgroundColor: colors.primary },
                 ]}
               >
                 <Text
                   style={[
                     styles.periodText,
-                    { color: period === 'PM' ? '#FFFFFF' : colors.ink },
+                    { color: period === 'PM' ? colors.onPrimary : colors.ink },
                     period === 'PM' && { fontWeight: '700' },
                   ]}
                 >
@@ -566,18 +566,18 @@ export function TimePickerModal({
                     }}
                     style={[
                       styles.presetCard,
-                      { backgroundColor: isSelected ? '#08B8BE' : colors.pill },
+                      { backgroundColor: isSelected ? colors.primary : colors.pill },
                     ]}
                   >
                     <MaterialCommunityIcons
                       name={p.icon as any}
                       size={18}
-                      color={isSelected ? '#FFFFFF' : colors.ink}
+                      color={isSelected ? colors.onPrimary : colors.ink}
                     />
                     <Text
                       style={[
                         styles.presetCardLabel,
-                        { color: isSelected ? '#FFFFFF' : colors.secondary },
+                        { color: isSelected ? colors.onPrimary : colors.secondary },
                       ]}
                     >
                       {p.label}
@@ -585,7 +585,7 @@ export function TimePickerModal({
                     <Text
                       style={[
                         styles.presetCardTime,
-                        { color: isSelected ? '#FFFFFF' : colors.ink },
+                        { color: isSelected ? colors.onPrimary : colors.ink },
                       ]}
                     >
                       {p.time}
@@ -598,15 +598,15 @@ export function TimePickerModal({
 
           {/* Hour vs Minute Grid Selection */}
           <View style={styles.selectorSection}>
-            <View style={styles.tabToggleRow}>
+            <View style={[styles.tabToggleRow, { borderBottomColor: colors.separator }]}>
               <Pressable
                 onPress={() => setActiveTab('hour')}
                 style={[
                   styles.selectorTab,
-                  activeTab === 'hour' && { borderBottomColor: '#08B8BE', borderBottomWidth: 2 },
+                  activeTab === 'hour' && { borderBottomColor: colors.accent, borderBottomWidth: 2 },
                 ]}
               >
-                <Text style={[styles.selectorTabText, { color: activeTab === 'hour' ? '#08B8BE' : colors.secondary }]}>
+                <Text style={[styles.selectorTabText, { color: activeTab === 'hour' ? colors.accentText : colors.secondary }]}>
                   Select Hour
                 </Text>
               </Pressable>
@@ -614,10 +614,10 @@ export function TimePickerModal({
                 onPress={() => setActiveTab('minute')}
                 style={[
                   styles.selectorTab,
-                  activeTab === 'minute' && { borderBottomColor: '#08B8BE', borderBottomWidth: 2 },
+                  activeTab === 'minute' && { borderBottomColor: colors.accent, borderBottomWidth: 2 },
                 ]}
               >
-                <Text style={[styles.selectorTabText, { color: activeTab === 'minute' ? '#08B8BE' : colors.secondary }]}>
+                <Text style={[styles.selectorTabText, { color: activeTab === 'minute' ? colors.accentText : colors.secondary }]}>
                   Select Minute
                 </Text>
               </Pressable>
@@ -638,13 +638,13 @@ export function TimePickerModal({
                       }}
                       style={[
                         styles.numberCell,
-                        { backgroundColor: isSelected ? '#08B8BE' : colors.pill },
+                        { backgroundColor: isSelected ? colors.primary : colors.pill },
                       ]}
                     >
                       <Text
                         style={[
                           styles.numberCellText,
-                          { color: isSelected ? '#FFFFFF' : colors.ink },
+                          { color: isSelected ? colors.onPrimary : colors.ink },
                           isSelected && { fontWeight: '700' },
                         ]}
                       >
@@ -667,13 +667,13 @@ export function TimePickerModal({
                         onPress={() => setMinute(m)}
                         style={[
                           styles.numberCell,
-                          { backgroundColor: isSelected ? '#08B8BE' : colors.pill },
+                          { backgroundColor: isSelected ? colors.primary : colors.pill },
                         ]}
                       >
                         <Text
                           style={[
                             styles.numberCellText,
-                            { color: isSelected ? '#FFFFFF' : colors.ink },
+                            { color: isSelected ? colors.onPrimary : colors.ink },
                             isSelected && { fontWeight: '700' },
                           ]}
                         >
@@ -724,9 +724,9 @@ export function TimePickerModal({
             <Pressable
               accessibilityRole="button"
               onPress={handleConfirm}
-              style={[styles.actionBtn, styles.confirmBtn]}
+              style={[styles.actionBtn, { backgroundColor: colors.primary }]}
             >
-              <Text style={styles.confirmBtnText}>Set Time</Text>
+              <Text style={[styles.confirmBtnText, { color: colors.onPrimary }]}>Set Time</Text>
             </Pressable>
           </View>
         </View>
@@ -803,7 +803,7 @@ export function DatePickerField({
         onPress={() => void openPicker()}
         style={[
           styles.fieldCard,
-          { backgroundColor: colors.card || '#FFFFFF', borderColor: colors.border || '#E8EAF0' },
+          { backgroundColor: colors.surface, borderColor: colors.separator },
         ]}
       >
         <Text style={[styles.fieldLabel, { color: colors.secondary }]}>{label}{required ? ' *' : ''}</Text>
@@ -811,7 +811,7 @@ export function DatePickerField({
           <Text
             style={[
               styles.fieldValueText,
-              { color: value ? colors.ink : '#8793A2' },
+              { color: value ? colors.ink : colors.tertiaryLabel },
             ]}
           >
             {value || placeholder}
@@ -884,7 +884,7 @@ export function TimePickerField({
         onPress={() => void openPicker()}
         style={[
           styles.fieldCard,
-          { backgroundColor: colors.card || '#FFFFFF', borderColor: colors.border || '#E8EAF0' },
+          { backgroundColor: colors.surface, borderColor: colors.separator },
         ]}
       >
         <Text style={[styles.fieldLabel, { color: colors.secondary }]}>{label}{required ? ' *' : ''}</Text>
@@ -892,7 +892,7 @@ export function TimePickerField({
           <Text
             style={[
               styles.fieldValueText,
-              { color: value ? colors.ink : '#8793A2' },
+              { color: value ? colors.ink : colors.tertiaryLabel },
             ]}
           >
             {value || placeholder}
@@ -936,7 +936,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#94A3B8',
     alignSelf: 'center',
     marginBottom: 12,
   },
@@ -1129,7 +1128,6 @@ const styles = StyleSheet.create({
   tabToggleRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
     marginBottom: 12,
   },
   selectorTab: {
@@ -1196,7 +1194,6 @@ const styles = StyleSheet.create({
   },
   clearBtn: {
     flex: 0.6,
-    backgroundColor: '#FEE2E2',
   },
   clearBtnText: {
     fontSize: 15,
@@ -1206,13 +1203,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  confirmBtn: {
-    backgroundColor: '#08B8BE',
-  },
   confirmBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   inlineRow: {
     flexDirection: 'row',

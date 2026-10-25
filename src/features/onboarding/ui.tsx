@@ -38,7 +38,7 @@ export function Button({ title, onPress, secondary = false, busy = false, icon }
   const { colors } = useTheme();
   const foreground = secondary ? colors.ink : colors.onPrimary;
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={onPress}
-    className={secondary ? 'rounded-pill border border-border bg-surface active:opacity-70' : 'rounded-pill bg-medical active:opacity-70'}
+    className="rounded-pill active:opacity-70"
     style={[styles.button, { opacity: busy ? 0.7 : 1, backgroundColor: secondary ? colors.surface : colors.primary, borderColor: colors.border }]}>
     {busy ? <ActivityIndicator color={foreground} /> : <>
       <Text style={[styles.buttonText, { color: foreground }]}>{title}</Text>
@@ -48,10 +48,10 @@ export function Button({ title, onPress, secondary = false, busy = false, icon }
 }
 
 export function Feature({ icon, title, children, green = false }: { icon: IconName; title: string; children: ReactNode; green?: boolean }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   return <View style={styles.feature}>
-    <View style={[styles.featureIcon, { backgroundColor: isDark ? colors.pill : green ? '#DCF5EF' : '#EAF5FF' }]}><Icon name={icon} size={29} color={green ? '#08AD77' : '#168CF4'} /></View>
-    <View className="flex-1"><Text style={[styles.featureTitle, isDark && { color: colors.ink }]}>{title}</Text><Text style={[styles.featureBody, isDark && { color: colors.secondary }]}>{children}</Text></View>
+    <View style={[styles.featureIcon, { backgroundColor: green ? colors.successSoft : colors.infoSoft }]}><Icon name={icon} size={29} color={green ? colors.successText : colors.infoText} /></View>
+    <View className="flex-1"><Text style={[styles.featureTitle, { color: colors.label }]}>{title}</Text><Text style={[styles.featureBody, { color: colors.secondaryLabel }]}>{children}</Text></View>
   </View>;
 }
 
@@ -64,8 +64,8 @@ export function PrivacyNote() {
 }
 
 export function ErrorMessage({ message }: { message: string }) {
-  const { isDark } = useTheme();
-  return message ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.error, isDark && { color: '#F97066' }]}>{message}</Text> : null;
+  const { colors } = useTheme();
+  return message ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.error, { color: colors.dangerText }]}>{message}</Text> : null;
 }
 
 // Only the illustration regions are displayed; all text and controls are native.
@@ -142,7 +142,7 @@ export const styles = StyleSheet.create({
   back: { minWidth: 44, minHeight: 44, justifyContent: 'center' },
   title: { fontSize: 26, fontWeight: '700', color: theme.palette.navy, letterSpacing: -0.5, lineHeight: 32 },
   subtitle: { fontSize: 16, lineHeight: 22, color: theme.palette.textSecondary, marginTop: 6 },
-  card: { backgroundColor: theme.colors.surface, borderRadius: theme.radii.card, padding: 14, borderWidth: 1, borderColor: '#E8EAF0' },
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.radii.card, padding: 14, borderWidth: 1, borderColor: theme.light.separator },
   feature: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   featureIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   featureTitle: { fontSize: 15, lineHeight: 20, fontWeight: '600', color: theme.palette.textDark, marginTop: 1, marginBottom: 2 },
@@ -150,5 +150,5 @@ export const styles = StyleSheet.create({
   button: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 12, gap: 10, borderRadius: 999 },
   buttonText: { fontSize: 17, lineHeight: 22, fontWeight: '600', textAlign: 'center' },
   footer: { gap: 10, paddingHorizontal: 4, paddingTop: 8, marginTop: 'auto' },
-  error: { color: '#B42318', fontSize: 14, lineHeight: 20, marginVertical: 6 },
+  error: { fontSize: 14, lineHeight: 20, marginVertical: 6 },
 });
