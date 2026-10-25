@@ -41,6 +41,10 @@ const ICONS = {
   history: { sf: 'clock.arrow.circlepath', feather: 'clock' },
   bell: { sf: 'bell', feather: 'bell' },
   undo: { sf: 'arrow.uturn.backward', feather: 'rotate-ccw' },
+  medicines: { sf: 'pills', mci: 'pill-multiple' },
+  add: { sf: 'plus', feather: 'plus' },
+  snooze: { sf: 'moon.zzz', feather: 'moon' },
+  emptyDay: { sf: 'sun.max', feather: 'sun' },
 } as const satisfies Record<string, { sf: SFSymbol } & Fallback>;
 
 export type IconName = keyof typeof ICONS;

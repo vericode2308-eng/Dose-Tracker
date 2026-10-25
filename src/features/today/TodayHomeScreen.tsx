@@ -1,8 +1,7 @@
 import { publicErrorMessage } from '@/features/security/errors';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Animated, { ReduceMotion, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -20,6 +19,9 @@ import { DoseOptionsMenu } from './DoseOptionsMenu';
 import { hapticImpactLight, hapticSuccess } from '@/features/ui/haptics';
 import { AppText } from '@/features/ui/AppText';
 import { Button } from '@/features/ui/Button';
+import { Card } from '@/features/ui/Card';
+import { IconButton } from '@/features/ui/IconButton';
+import { radii } from '../../../theme';
 import { Icon } from '@/features/ui/Icon';
 import { InlineMessage } from '@/features/ui/InlineMessage';
 import { EASE_OUT, listItemEntering, listItemExiting, listItemLayout, motion } from '@/features/ui/motion';
@@ -79,7 +81,7 @@ export default function TodayHomeScreen() {
 function ProfileToday() {
   const params = useLocalSearchParams<{ medicineId?: string; scheduleId?: string; doseDate?: string; scheduledAtMs?: string }>();
   const { currentProfile } = useProfiles();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [busyId, setBusyId] = useState<string | null>(null);
   const busy = useRef(false);
   const [message, setMessage] = useState('');
@@ -132,38 +134,115 @@ function ProfileToday() {
     finally { await reload(); busy.current = false; setBusyId(null); }
   }, [reload]);
   function card(dose: ScheduledDose) {
+    const isSelected = selected(dose);
     const snoozed = !dose.status && !!dose.snoozedUntilMs && dose.snoozedUntilMs > data.now;
-    return <Animated.View key={`${dose.id}:${dose.status || 'pending'}`} entering={listItemEntering} exiting={listItemExiting} layout={listItemLayout} style={{ marginBottom: dose.status ? 10 : 16, paddingHorizontal: 16, paddingVertical: dose.status ? 10 : 16, borderRadius: 22, borderWidth: selected(dose) ? 2 : 1, borderColor: selected(dose) ? colors.accent : colors.border, backgroundColor: colors.surface }}>
-      {selected(dose) && <Text className="mb-2 text-sm font-semibold" style={{ color: colors.accentText }}>Opened from reminder · {dose.date}</Text>}
-      <View className="flex-row gap-3"><View className="h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: dose.medicine.color || '#079D9D' }}><MaterialCommunityIcons name="pill" size={25} color="white" /></View><View className="min-w-0 flex-1">
-        <Text className="text-lg font-semibold" style={{ color: colors.ink }}>{dose.medicine.name}</Text>
-        <Text className={dose.status ? "text-sm" : "mt-1 text-sm"} style={{ color: colors.secondary }}>{[dose.medicine.strength, `${dose.schedule.doseAmount} ${dose.medicine.doseUnit || dose.medicine.dosageForm}`].filter(Boolean).join(' · ')}</Text>
-        <Text className={dose.status ? "mt-1 font-medium" : "mt-2 font-medium"} style={{ color: colors.ink }}>{time(dose.scheduledAtMs)} · {dose.status || (snoozed ? `Snoozed until ${time(dose.snoozedUntilMs!)}` : dose.scheduledAtMs > data.now ? 'Upcoming' : 'Due now')}</Text>
-        {dose.status === 'Taken' && dose.actualTakenAtMs != null && <Text className="text-sm" style={{ color: isDark ? '#22C55E' : '#15803D' }}>Taken at {time(dose.actualTakenAtMs)}</Text>}
-        {!!dose.medicine.instructions && <Text className="mt-2 text-sm" style={{ color: colors.secondary }}>{dose.medicine.instructions}</Text>}
-      </View>
-      {!!dose.status && <Pressable accessibilityRole="button" accessibilityLabel={`More options for ${dose.medicine.name}`}
-        accessibilityHint="Change or reset this dose" accessibilityState={{ disabled: busyId !== null, expanded: menuDose?.id === dose.id }}
-        disabled={busyId !== null} onPress={() => setMenuDose(dose)}
-        style={{ minWidth: 48, minHeight: 48, marginLeft: -4, marginRight: -8, marginTop: -6, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' }}>
-        <MaterialCommunityIcons name="dots-vertical" size={24} color={colors.secondary} />
-      </Pressable>}
-      </View>
-      {!dose.status && dose.scheduledAtMs <= data.now && <View className="mt-4 flex-row gap-2">{(['Taken', 'Skipped', 'Snooze'] as const).map(action => { const label = action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action; return <Button key={action} title={label} accessibilityLabel={`${label} ${dose.medicine.name}`} disabled={busyId !== null} onPress={() => void act(dose, action)} variant={action === 'Taken' ? 'primary' : action === 'Skipped' ? 'secondary' : 'plain'} style={{ flex: 1, paddingHorizontal: 8 }} />; })}</View>}
+    const isDue = !dose.status && !snoozed && dose.scheduledAtMs <= data.now;
+    const detail = [dose.medicine.strength, `${dose.schedule.doseAmount} ${dose.medicine.doseUnit || dose.medicine.dosageForm}`].filter(Boolean).join(' · ');
+    const avatar = (size: number) => <View style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: dose.medicine.color || colors.accent }}>
+      <Icon name="pill" size={size * 0.5} color="#FFFFFF" />
+    </View>;
+    const outline = isSelected ? { borderWidth: 2, borderColor: colors.accent } : undefined;
+
+    if (dose.status) {
+      // Logged doses collapse to a compact row; the menu changes or resets them.
+      const takenDose = dose.status === 'Taken';
+      return <Animated.View key={`${dose.id}:${dose.status}`} entering={listItemEntering} exiting={listItemExiting} layout={listItemLayout}>
+        <Card style={[{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingRight: 4 }, outline]}>
+          {avatar(36)}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText variant="headline" numberOfLines={1}>{dose.medicine.name}</AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Icon name={takenDose ? 'checkCircle' : 'skipped'} size={14} color={takenDose ? colors.successText : colors.warningText} weight="semibold" />
+              <AppText variant="footnote" tone={takenDose ? 'success' : 'warning'} style={{ fontVariant: ['tabular-nums'] }}>
+                {takenDose && dose.actualTakenAtMs != null ? `Taken at ${time(dose.actualTakenAtMs)}` : dose.status}
+              </AppText>
+              <AppText variant="footnote" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>· {time(dose.scheduledAtMs)}</AppText>
+            </View>
+          </View>
+          <IconButton icon="more" accessibilityLabel={`More options for ${dose.medicine.name}`} accessibilityHint="Change or reset this dose"
+            color={colors.secondaryLabel} disabled={busyId !== null} onPress={() => setMenuDose(dose)} />
+        </Card>
+      </Animated.View>;
+    }
+
+    const pill = snoozed
+      ? { text: `Snoozed · ${time(dose.snoozedUntilMs!)}`, background: colors.warningSoft, color: colors.warningText }
+      : isDue ? { text: time(dose.scheduledAtMs), background: colors.accentSoft, color: colors.accentText }
+      : { text: time(dose.scheduledAtMs), background: colors.fill, color: colors.secondaryLabel };
+    return <Animated.View key={`${dose.id}:pending`} entering={listItemEntering} exiting={listItemExiting} layout={listItemLayout}>
+      <Card style={[{ gap: 12 }, outline]}>
+        {isSelected && <AppText variant="footnote" weight="600" tone="accent">Opened from reminder · {dose.date}</AppText>}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+          {avatar(44)}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText variant="headline">{dose.medicine.name}</AppText>
+            {!!detail && <AppText variant="subhead" tone="secondary">{detail}</AppText>}
+          </View>
+          <View accessibilityLabel={snoozed ? `Snoozed until ${time(dose.snoozedUntilMs!)}` : `${isDue ? 'Due' : 'Scheduled'} at ${time(dose.scheduledAtMs)}`}
+            style={{ backgroundColor: pill.background, borderRadius: radii.chip, borderCurve: 'continuous', paddingHorizontal: 9, paddingVertical: 4 }}>
+            <AppText variant="caption" weight="600" style={{ color: pill.color, fontVariant: ['tabular-nums'] }}>{pill.text}</AppText>
+          </View>
+        </View>
+        {!!dose.medicine.instructions && <AppText variant="footnote" tone="secondary">{dose.medicine.instructions}</AppText>}
+        {dose.scheduledAtMs <= data.now && <View style={{ flexDirection: 'row', gap: 8 }}>
+          {(['Taken', 'Skipped', 'Snooze'] as const).map(action => {
+            const label = action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action;
+            return <Button key={action} title={label} accessibilityLabel={`${label} ${dose.medicine.name}`} disabled={busyId !== null}
+              onPress={() => void act(dose, action)} variant={action === 'Taken' ? 'primary' : action === 'Skipped' ? 'secondary' : 'plain'}
+              style={{ flex: action === 'Taken' ? 1.4 : 1, paddingHorizontal: 8 }} />;
+          })}
+        </View>}
+      </Card>
     </Animated.View>;
   }
-  return <SafeAreaView className="flex-1" edges={['top']} style={{ backgroundColor: colors.background }}><ScrollView contentContainerClassName="px-4 pb-6 pt-4">
-    <ProfileSwitcherTrigger showOtherProfiles />
-    <Text accessibilityRole="header" className="text-[28px] font-bold" style={{ color: colors.ink }}>Today’s Schedule</Text>
-    <Text className="mb-3 mt-1 text-base" style={{ color: colors.secondary }}>{data.now ? new Date(data.now).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Loading…'}</Text>
-    <View className="flex-row items-center justify-between rounded-[26px] px-5 py-2" style={{ backgroundColor: colors.surface }}><View><Text className="text-sm" style={{ color: colors.secondary }}>Daily Progress</Text><Text className="mt-1 text-2xl font-semibold" style={{ color: colors.ink }}>{taken} / {todaysDoses.length}<Text className="text-sm font-normal" style={{ color: colors.secondary }}> doses taken</Text></Text></View><ProgressRing percent={todaysDoses.length ? Math.round(taken / todaysDoses.length * 100) : 0} /></View>
-    <View className="my-3 flex-row gap-2"><Button title="View Medicines" onPress={() => router.push('/medicines')} style={{ flex: 1 }} /><Button title="Add Medicine" variant="secondary" onPress={() => router.push('/add-medicine')} style={{ flex: 1 }} /></View>
-    {!!(error || message) && <InlineMessage tone={error ? 'danger' : 'info'} message={error || message} actionTitle={error ? 'Retry' : undefined} onAction={() => void reload()} style={{ marginBottom: 12 }} />}
-    {!!params.scheduleId && !loading && !data.doses.some(selected) && <InlineMessage tone="warning" message="This reminder is no longer active." style={{ marginBottom: 12 }} />}
-    {loading ? <Text style={{ color: colors.secondary }}>Loading doses…</Text> : <>
-      {([['Due now', due], ['Upcoming', upcoming], ['Earlier', earlier]] as const).map(([title, doses]) => <View key={title}><Text accessibilityRole="header" className="mb-2 mt-3 text-lg font-semibold" style={{ color: colors.ink }}>{title} · {doses.length}</Text>{doses.map(card)}{title === 'Due now' && !doses.length && <Text className="rounded-2xl p-4" style={{ backgroundColor: colors.surface, color: colors.secondary }}>{data.doses.length ? 'You’re all caught up.' : 'No scheduled doses today. Add a medicine to get started.'}</Text>}</View>)}
-    </>}
-  </ScrollView>
+
+  const sections = ([['Due Now', due], ['Upcoming', upcoming], ['Logged', earlier]] as const).filter(([, doses]) => doses.length > 0);
+  const percent = todaysDoses.length ? Math.round(taken / todaysDoses.length * 100) : 0;
+  const dateLabel = data.now ? new Date(data.now).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : '';
+  return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 }}>
+      <ProfileSwitcherTrigger showOtherProfiles />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <View style={{ flex: 1 }}>
+          <AppText accessibilityRole="header" variant="largeTitle">Today</AppText>
+          {!!dateLabel && <AppText variant="subhead" tone="secondary">{dateLabel}</AppText>}
+        </View>
+        <IconButton icon="medicines" filled accessibilityLabel="View medicines" color={colors.label} onPress={() => router.push('/medicines')} />
+        <IconButton icon="add" filled accessibilityLabel="Add medicine" color={colors.label} onPress={() => router.push('/add-medicine')} />
+      </View>
+
+      {todaysDoses.length > 0 && <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12 }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <AppText variant="footnote" tone="secondary">{percent === 100 ? 'All doses logged' : 'Daily progress'}</AppText>
+          <AppText variant="title1" style={{ fontVariant: ['tabular-nums'] }}>{taken} <AppText variant="subhead" tone="secondary">of {todaysDoses.length} {todaysDoses.length === 1 ? 'dose' : 'doses'} taken</AppText></AppText>
+        </View>
+        <ProgressRing percent={percent} />
+      </Card>}
+
+      {!!(error || message) && <InlineMessage tone={error ? 'danger' : 'info'} message={error || message} actionTitle={error ? 'Retry' : undefined} onAction={() => void reload()} />}
+      {!!params.scheduleId && !loading && !data.doses.some(selected) && <InlineMessage tone="warning" message="This reminder is no longer active." />}
+
+      {loading ? <View style={{ paddingVertical: 32, alignItems: 'center' }}><ActivityIndicator color={colors.secondaryLabel} accessibilityLabel="Loading doses" /></View>
+        : !data.doses.length ? <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 28 }}>
+          <View style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft, marginBottom: 4 }}>
+            <Icon name="emptyDay" size={28} color={colors.accentText} />
+          </View>
+          <AppText variant="headline" style={{ textAlign: 'center' }}>No doses scheduled today</AppText>
+          <AppText variant="subhead" tone="secondary" style={{ textAlign: 'center', maxWidth: 280 }}>Add a medicine and its dose times to start tracking.</AppText>
+          <Button title="Add Medicine" icon="add" onPress={() => router.push('/add-medicine')} style={{ marginTop: 8 }} />
+        </Card>
+        : <>
+          {!due.length && <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Icon name="checkCircle" size={22} color={colors.successText} />
+            <AppText variant="subhead" style={{ flex: 1 }}>{upcoming.length ? 'You’re all caught up. Your next dose is listed below.' : 'You’re all caught up for today.'}</AppText>
+          </Card>}
+          {sections.map(([title, doses]) => <View key={title} style={{ gap: 10 }}>
+            <AppText accessibilityRole="header" accessibilityLabel={`${title}, ${doses.length}`} variant="footnote" tone="secondary"
+              style={{ textTransform: 'uppercase', paddingHorizontal: 4, marginTop: 8 }}>{title} · {doses.length}</AppText>
+            {doses.map(card)}
+          </View>)}
+        </>}
+    </ScrollView>
     {snackbar && <UndoSnackbar key={snackbar.message + snackbar.receipt.dose.scheduledAtMs} message={snackbar.message}
       disabled={busyId !== null} onDismiss={dismissSnackbar} onUndo={() => void act(snackbar.dose, 'Undo', snackbar.receipt)} />}
     {menuDose && <DoseOptionsMenu dose={menuDose} onClose={() => setMenuDose(null)} onAction={(dose, action) => void act(dose, action)} />}

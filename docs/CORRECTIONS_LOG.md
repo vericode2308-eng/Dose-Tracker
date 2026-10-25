@@ -1,5 +1,13 @@
 # Corrections log
 
+## 2026-10-25 — Today redesign as the reference screen (Phase 3)
+
+- **Request:** Redesign the main screen as the visual reference for the app, using the approved design system.
+- **Implemented:** Today now opens with the profile row, a large "Today" title with the full date, and Medicines and Add Medicine as 44pt icon actions (these were two full-width buttons above every dose). The progress card shows "3 of 5 doses taken" with the UI-thread ring and appears only when doses are scheduled. Empty sections are hidden ("Upcoming · 0" no longer shows). "Earlier" is renamed "Logged". Pending doses are cards with a time chip (accent when due, amber when snoozed, neutral when upcoming), with Take as the widest action. Logged doses collapse to compact rows with a status icon and a 44pt menu button. There is a designed empty state with an Add Medicine action, and a spinner replaces the "Loading doses…" text. The dose options and profile switcher use theme tokens; the options menu uses the shared `Sheet`. Business logic (queries, `act`, undo, reminder deep-link selection) is unchanged.
+- **Affected files:** `src/features/today/{TodayHomeScreen,DoseOptionsMenu}.tsx`, `src/features/profiles/ProfileSwitcher.tsx`, `src/features/ui/Icon.tsx`, this log.
+- **Verification:** `tsc --noEmit` and `expo lint` clean, `npm test` 150/150, iOS and Android bundles export.
+- **Status:** Source only; not yet viewed on a device or simulator.
+
 ## 2026-10-25 — Premium iOS design system, dark-mode fixes and native motion (Phases 1–2)
 
 - **Request:** iOS-first native-quality UI audit using the Expo skills, then implement Phases 1–2 with a hybrid architecture (Expo Router, `@expo/ui`, semantic tokens, NativeWind for layout, SF Symbols, Liquid Glass only where Apple recommends it). Owner approved the visual direction from the design preview: deeper teal in light mode, teal-with-dark-ink primary in dark mode, warm neutrals, shadow/hairline cards, SF Symbols on iOS, native confirmations.
