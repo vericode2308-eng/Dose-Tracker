@@ -16,6 +16,7 @@ import { confirmDestructive } from '@/features/ui/confirm';
 import { TimePickerField } from '@/features/ui/DateTimePickers';
 import { GlassSheetSurface } from '@/features/ui/GlassSheetSurface';
 import { InlineMessage } from '@/features/ui/InlineMessage';
+import { ScreenTitle } from '@/features/ui/ScreenTitle';
 
 type Status = HistoryRecord['status'];
 type Sheet = HistoryRecord | null;
@@ -24,14 +25,17 @@ const time = (at: number) => new Date(at).toLocaleTimeString(undefined, { hour: 
 const pickerTime = (at: number) => new Date(at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
 /** Filter chip that opens a native menu of choices; the current choice is checked. */
-function FilterMenu({ label, value, options, onSelect, colors }: {
+function FilterMenu({ label, value, options, onSelect, colors, unsetLabel }: {
   label: string; value: string; options: { id: string; title: string }[]; onSelect: (id: string) => void; colors: ThemeColors;
+  /** Short chip text while the first ("all") option is chosen, so three chips share one row. */
+  unsetLabel?: string;
 }) {
   const current = options.find(option => option.id === value)?.title ?? value;
+  const unset = value === options[0]?.id;
   return <ActionMenu title={label} accessibilityLabel={`${label}, ${current}`} onSelect={onSelect}
     items={options.map(option => ({ ...option, checked: option.id === value }))}>
     <View className="min-h-[40px] flex-row items-center gap-1.5 rounded-full px-3.5" style={{ backgroundColor: value === options[0]?.id ? colors.fill : colors.accentSoft }}>
-      <Text numberOfLines={1} className="text-subhead font-semibold" style={{ color: value === options[0]?.id ? colors.label : colors.accentText }}>{current}</Text>
+      <Text numberOfLines={1} className="text-subhead font-semibold" style={{ color: value === options[0]?.id ? colors.label : colors.accentText }}>{unset && unsetLabel ? unsetLabel : current}</Text>
       <Feather name="chevron-down" size={14} color={value === options[0]?.id ? colors.secondaryLabel : colors.accentText} />
     </View>
   </ActionMenu>;
@@ -98,7 +102,7 @@ function ProfileHistory() {
     } finally { setBusyUndo(false); }
   };
 
-  return <View style={{ flex: 1 }} collapsable={false}><ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="px-4 pb-8 pt-1">
+  return <View style={{ flex: 1 }} collapsable={false}><ScreenTitle title="History" /><ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="px-4 pb-8 pt-1">
     <View className="mb-2"><ProfileSwitcherTrigger /></View>
     <View className="rounded-[24px] p-3" style={{ backgroundColor: colors.surface }}>
       <View className="mb-2 flex-row items-center justify-between"><Pressable accessibilityRole="button" accessibilityLabel="Previous month" onPress={() => changeMonth(-1)} className="h-11 w-11 items-center justify-center"><Feather name="chevron-left" size={23} color={colors.ink} /></Pressable><Text className="text-base font-semibold" style={{ color: colors.ink }}>{title}</Text><Pressable accessibilityRole="button" accessibilityLabel="Next month" onPress={() => changeMonth(1)} className="h-11 w-11 items-center justify-center"><Feather name="chevron-right" size={23} color={colors.ink} /></Pressable></View>
@@ -111,14 +115,14 @@ function ProfileHistory() {
       })}</View>)}
       <View className="mt-2 flex-row justify-around">{Object.entries(COLORS).map(([label, color]) => <View key={label} className="flex-row items-center gap-1"><View className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} /><Text className="text-xs" style={{ color: colors.secondary }}>{label}</Text></View>)}</View>
     </View>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-4 mt-3" contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>
+    <View className="mt-3 flex-row flex-wrap" style={{ gap: 8 }}>
       <FilterMenu label="Date range" value={range} colors={colors} onSelect={id => { setRange(id); setSelectedDate(null); }}
         options={['This month', 'Last 30 days', 'Last 90 days'].map(id => ({ id, title: id }))} />
-      <FilterMenu label="Medicine" value={medicine} colors={colors} onSelect={setMedicine}
+      <FilterMenu label="Medicine" unsetLabel="Medicine" value={medicine} colors={colors} onSelect={setMedicine}
         options={[{ id: 'All', title: 'All medicines' }, ...medicines.map(([id, name]) => ({ id, title: name }))]} />
-      <FilterMenu label="Status" value={status} colors={colors} onSelect={id => setStatus(id as Status | 'All')}
+      <FilterMenu label="Status" unsetLabel="Status" value={status} colors={colors} onSelect={id => setStatus(id as Status | 'All')}
         options={[{ id: 'All', title: 'All statuses' }, ...STATUSES.map(id => ({ id, title: id }))]} />
-    </ScrollView>
+    </View>
     {selectedDate && <Pressable accessibilityRole="button" accessibilityLabel="Show all days" onPress={() => setSelectedDate(null)} className="mt-2 min-h-11 justify-center"><Text className="font-medium" style={{ color: colors.accentText }}>{selectedDate} · Show all days</Text></Pressable>}
     {!!error && <InlineMessage tone="warning" message={error} actionTitle="Retry" onAction={() => void reload()} style={{ marginTop: 12 }} />}
     <View className="mb-2 mt-4 flex-row items-center justify-between"><Text accessibilityRole="header" className="text-xl font-semibold" style={{ color: colors.ink }}>Records · {displayed.length}</Text><Pressable accessibilityRole="button" onPress={() => router.navigate('/')} className="min-h-11 justify-center"><Text className="font-medium" style={{ color: colors.accentText }}>Log a dose</Text></Pressable></View>

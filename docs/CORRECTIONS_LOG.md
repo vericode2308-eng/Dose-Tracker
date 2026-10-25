@@ -1,5 +1,13 @@
 # Corrections log
 
+## 2026-10-25 — History and Settings: empty top space, overflowing History filters
+
+- **Request:** The History and Settings pages have empty space at the top; the three filter buttons on History overflow the screen.
+- **Implemented:** History and Settings now put their title at the left of the header row, as Today does, instead of a large title in a band of its own. This is the new shared `ScreenTitle` component (`Stack.Toolbar` left view plus `headerLargeTitleEnabled: false`). The History filters are a wrapping row instead of a sideways scroller, so nothing is cut off at the right edge. While nothing is chosen the Medicine and Status chips read "Medicine" and "Status" instead of "All medicines" and "All statuses", so all three sit on one line at normal text size; the menus still list "All medicines" and "All statuses", and a chosen value shows as the chip text. At larger text or with a long medicine name the chips wrap to a second line.
+- **Affected files:** `src/features/ui/ScreenTitle.tsx` (new), `src/features/history/HistoryScreen.tsx`, `src/features/settings/SettingsHomeScreen.tsx`.
+- **Verification:** iPhone 17 Pro simulator: History and Settings start right under the status bar, the three chips fit on one row, and the Medicine menu opens with "All medicines" checked. Typecheck, lint and 152 tests pass. Not checked: Android (the left toolbar title is untested there, same as Today), dark mode, large text on History, selecting a medicine with a long name.
+- **Status:** Source change, committed.
+
 ## 2026-10-25 — Settings: fewer Reminders options
 
 - **Request:** The Reminders section of Settings has too many items; reduce them to what people actually need.

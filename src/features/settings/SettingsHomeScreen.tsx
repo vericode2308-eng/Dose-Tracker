@@ -16,6 +16,7 @@ import { clearAuthEnabled } from '@/features/security/SecurityManager';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { AppText } from '@/features/ui/AppText';
 import { BottomOverlay } from '@/features/ui/BottomOverlay';
+import { ScreenTitle } from '@/features/ui/ScreenTitle';
 import { Button } from '@/features/ui/Button';
 import { confirmDestructive } from '@/features/ui/confirm';
 import { toastEntering, toastExiting } from '@/features/ui/motion';
@@ -128,6 +129,7 @@ export default function SettingsHomeScreen() {
   const themeIndex = (['system', 'light', 'dark'] as const).indexOf(prefs.theme);
 
   return <View style={{ flex: 1, backgroundColor: colors.background }} collapsable={false}>
+    <ScreenTitle title="Settings" />
     <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}
       contentContainerStyle={{ width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32, gap: 24 }}>
       <ListSection>
