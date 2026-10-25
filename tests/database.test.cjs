@@ -838,3 +838,31 @@ test('final corrected status survives closing and reopening the SQLite database'
     assert.equal(h.sql.prepare('PRAGMA user_version').get().user_version, 8);
   } finally { h.sql.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 });
+
+test('upcoming doses can be taken or skipped early today, with exact Undo; snooze and later days stay locked', async t => {
+  clockAt(t, '2020-01-01T07:00:00');
+  const h = harness(); const ids = await h.add();
+  const input = await correctionInput(h, ids);
+  assert.ok(input.scheduledAtMs > Date.now());
+  await assert.rejects(h.db.changeDoseWithUndo(input, 'Snooze', Date.now() + 600000), /not due yet/);
+  const receipt = await h.db.changeDoseWithUndo(input, 'Taken');
+  assert.equal((await correctionInput(h, ids)).status, 'Taken');
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 9);
+  await h.db.restoreDoseChange(receipt);
+  assert.equal((await correctionInput(h, ids)).status, null);
+  assert.equal((await h.db.fetchMedicineDetails(ids.medicineId)).stockRemaining, 10);
+  await h.db.changeDoseWithUndo(await correctionInput(h, ids), 'Skipped');
+  assert.equal((await correctionInput(h, ids)).status, 'Skipped');
+  await assert.rejects(h.db.changeDoseWithUndo(await correctionInput(h, ids, '2020-01-02'), 'Taken'), /not due yet/);
+  h.sql.close();
+});
+
+test('fetchScheduledDosesForDates returns each requested day and validates its input', async () => {
+  const h = harness(); await h.add();
+  const byDate = await h.db.fetchScheduledDosesForDates(['2020-01-01', '2020-01-02']);
+  assert.deepEqual(Object.keys(byDate), ['2020-01-01', '2020-01-02']);
+  assert.deepEqual(byDate['2020-01-02'].map(dose => dose.id), (await h.db.fetchScheduledDoses('2020-01-02')).map(dose => dose.id));
+  await assert.rejects(h.db.fetchScheduledDosesForDates(['2020-13-45']), /valid calendar date/);
+  await assert.rejects(h.db.fetchScheduledDosesForDates('2020-01-01'), /valid calendar date/);
+  h.sql.close();
+});

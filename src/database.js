@@ -472,7 +472,7 @@ export async function deleteMedicine(medicineId) {
 /** Records a dose and deducts tracked stock for Taken entries in one transaction.
  * Pass the same requestId when retrying an action to avoid a second stock deduction.
  */
-async function validatedOccurrence(transaction, scheduleId, date, scheduledAtMs) {
+async function validatedOccurrence(transaction, scheduleId, date, scheduledAtMs, { allowEarly = false } = {}) {
   const row = await transaction.getFirstAsync(
     `SELECT s.*, m.status AS medicine_status, p.status AS profile_status FROM schedules s JOIN medicines m ON m.id = s.medicine_id JOIN profiles p ON p.id = m.profile_id WHERE s.id = ?`, [scheduleId]);
   if (!row || row.medicine_status !== 'Active' || row.profile_status !== 'Active') throw new UserFacingError('This medicine is no longer active.');
@@ -486,7 +486,7 @@ async function validatedOccurrence(transaction, scheduleId, date, scheduledAtMs)
     const snoozed = await transaction.getFirstAsync('SELECT 1 FROM dose_snoozes WHERE schedule_id = ? AND date = ? AND scheduled_at_ms = ?', [scheduleId, date, at]);
     if (!recorded && !snoozed) throw new UserFacingError('This dose predates the schedule being added.');
   }
-  if (at > Date.now()) throw new UserFacingError('This dose is not due yet.');
+  if (at > Date.now() && !allowEarly) throw new UserFacingError('This dose is not due yet.');
   return { row, at };
 }
 
@@ -593,7 +593,8 @@ export async function changeDoseWithUndo(dose, action, untilMs) {
   const db = await initializeDatabase();
   let receipt;
   await withWriteTransaction(db, async transaction => {
-    const occurrence = await validatedOccurrence(transaction, dose.scheduleId, dose.date, dose.scheduledAtMs);
+    // Today's upcoming doses may be taken or skipped early; a snooze needs the dose to be due, and later days stay locked.
+    const occurrence = await validatedOccurrence(transaction, dose.scheduleId, dose.date, dose.scheduledAtMs, { allowEarly: action !== 'Snooze' && dose.date <= dateKey() });
     const before = await doseChangeSnapshot(transaction, dose);
     // A menu can remain open while a notification changes the same dose.
     if ((before.history?.status || null) !== dose.status
@@ -708,10 +709,21 @@ export async function fetchPendingSnoozes() {
 
 /** Real occurrences for a local calendar day, including history and persisted snoozes. */
 export async function fetchScheduledDoses(date = dateKey(), profileId) {
-  if (!isCalendarDate(date)) throw new UserFacingError('Choose a valid calendar date.');
+  return (await fetchScheduledDosesForDates([date], profileId))[date];
+}
+
+/** Several days at once (the Today week strip) with one missed-history pass and one medicine read. */
+export async function fetchScheduledDosesForDates(dates, profileId) {
+  if (!Array.isArray(dates) || dates.length > 31 || !dates.every(isCalendarDate)) throw new UserFacingError('Choose a valid calendar date.');
   const db = await initializeDatabase();
   await withWriteTransaction(db, reconcileMissedHistory, false);
   const medicines = await fetchAllMedicines({ profileId });
+  const result = {};
+  for (const date of dates) result[date] = await scheduledDosesOnDate(db, medicines, date);
+  return result;
+}
+
+async function scheduledDosesOnDate(db, medicines, date) {
   const history = await db.getAllAsync('SELECT * FROM history WHERE date = ? ORDER BY created_at_ms', [date]);
   const snoozes = await db.getAllAsync('SELECT * FROM dose_snoozes WHERE date = ? OR (date < ? AND until_ms >= ? AND until_ms < ?)', [date, date, new Date(`${date}T00:00:00`).getTime(), new Date(`${date}T00:00:00`).setDate(new Date(`${date}T00:00:00`).getDate() + 1)]);
   const doses = [];

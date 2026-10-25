@@ -1,5 +1,22 @@
 # Corrections log
 
+## 2026-10-25 — Today: week strip and taking upcoming doses early
+
+- **Request:** Redesign Today from the shared reference: a row of days for a quick glance at the week, and the option to take an upcoming dose early and log it.
+- **Implemented:** A seven-day strip (three days back, today, three ahead) with a dot per day (green all taken, amber missed/skipped, teal still pending); selecting a day shows its doses. Today's upcoming doses show "Scheduled in N min" with **Take early** and **Skip**. Past days list logged doses with the existing menu; future days are view-only. The database now allows Take/Skip (and Reset/Undo) for a later dose **today** (`allowEarly`); Snooze before the dose is due and any action on a future day are still rejected. New `fetchScheduledDosesForDates` loads the week in one pass.
+- **Known limitation:** Taking a dose early does not cancel its recurring daily/weekday reminder, so the OS alarm still fires at the scheduled time. Fixing that needs a native reminder change.
+- **Affected files:** `src/features/today/WeekStrip.tsx` (new), `src/features/today/TodayHomeScreen.tsx`, `src/database.js`, `src/database.d.ts`, `tests/database.test.cjs`.
+- **Verification:** Typecheck, lint and `npm test` (152 pass). On the iPhone 17 Pro simulator: Take early logged the dose and Undo restored it; tomorrow's view was read-only; a past day with no doses showed the empty state. Not checked: dark mode, a past day with Missed doses, large text, Android.
+- **Status:** Source change, not committed.
+
+## 2026-10-25 — Bottom tab bar stays expanded
+
+- **Request:** The bottom tabs hide automatically on scroll; keep them expanded.
+- **Implemented:** `NativeTabs` `minimizeBehavior` changed from `onScrollDown` to `never` so the iOS 26 tab bar no longer shrinks to a single icon while scrolling. Android's Material bar never minimized.
+- **Affected files:** `src/features/navigation/AppTabs.tsx`.
+- **Verification:** On the iPhone 17 Pro simulator (iOS 27) the bar stayed expanded after scrolling Settings down. Typecheck not re-run; Android not checked.
+- **Status:** Source change, not committed; supersedes the "shrinks on scroll" behavior in the Phase 4 entry below.
+
 ## 2026-10-25 — Settings rows and other function-style Pressables rendered unstyled
 
 - **Request:** Run the app in the iOS simulator, check the UI (Settings looked wrong) and look for other bugs.

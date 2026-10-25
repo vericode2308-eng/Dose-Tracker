@@ -6,7 +6,7 @@ import { useTheme } from '@/features/theme/ThemeContext';
 export function AppTabs() {
   const { colors } = useTheme();
   return <NativeTabs
-    minimizeBehavior="onScrollDown"
+    minimizeBehavior="never"
     tintColor={colors.accentText}
     // iOS 26 draws the Liquid Glass bar itself; earlier iOS and Android use the themed surface.
     backgroundColor={colors.tabBar}

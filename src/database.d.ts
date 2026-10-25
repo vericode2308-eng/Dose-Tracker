@@ -108,6 +108,8 @@ export function undoDoseLog(input: DoseReference): Promise<{ manualStockCorrecti
 export function updateDoseLogTime(input: { historyId: string; actualTakenAtMs: number }): Promise<void>;
 export function fetchPendingSnoozes(): Promise<PendingSnooze[]>;
 export function fetchScheduledDoses(date?: string, profileId?: string): Promise<ScheduledDose[]>;
+/** Doses for each requested date (at most 31), keyed by date. */
+export function fetchScheduledDosesForDates(dates: string[], profileId?: string): Promise<Record<string, ScheduledDose[]>>;
 export type HistoryRecord = {
   id: string; date: string; scheduledAtMs: number | null; actualTakenAtMs: number | null;
   status: 'Taken' | 'Skipped / missed'; scheduleId: string; scheduledTimeLocalMinute: number | null;

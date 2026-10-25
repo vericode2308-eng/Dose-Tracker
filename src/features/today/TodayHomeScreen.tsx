@@ -4,7 +4,7 @@ import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import Animated, { ReduceMotion, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
-import { fetchScheduledDoses, type ScheduledDose, type DoseAction, type DoseChangeReceipt } from '@/database';
+import { fetchScheduledDosesForDates, type ScheduledDose, type DoseAction, type DoseChangeReceipt } from '@/database';
 import { changeMedicationDose, undoMedicationChange } from '@/notificationManager';
 import { useProfiles } from '@/features/profiles/context';
 import { ProfileSwitcherTrigger } from '@/features/profiles/ProfileSwitcher';
@@ -13,6 +13,7 @@ import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { useTheme } from '@/features/theme/ThemeContext';
 
 import { UndoSnackbar } from '@/features/ui/UndoSnackbar';
+import { WeekStrip, type DayStatus, type WeekDay } from './WeekStrip';
 
 import { hapticImpactLight, hapticSuccess } from '@/features/ui/haptics';
 import { AppText } from '@/features/ui/AppText';
@@ -27,6 +28,25 @@ import { InlineMessage } from '@/features/ui/InlineMessage';
 import { EASE_OUT, listItemEntering, listItemExiting, listItemLayout, motion } from '@/features/ui/motion';
 
 const time = (at: number) => new Date(at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+const WINDOW_DAYS_BEFORE = 3;
+const WINDOW_DAYS_AFTER = 3;
+
+const parseDateKey = (key: string) => { const [year, month, day] = key.split('-').map(Number); return new Date(year, month - 1, day); };
+
+/** "in 42 min", "in 2 h 5 min" */
+function relativeTime(at: number, now: number) {
+  const minutes = Math.max(1, Math.round((at - now) / 60000));
+  if (minutes < 60) return `in ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return minutes % 60 ? `in ${hours} h ${minutes % 60} min` : `in ${hours} h`;
+}
+
+function dayStatus(doses: ScheduledDose[]): DayStatus {
+  if (!doses.length) return 'none';
+  if (doses.some(dose => dose.status === 'Missed' || dose.status === 'Skipped')) return 'attention';
+  return doses.every(dose => dose.status === 'Taken') ? 'done' : 'pending';
+}
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const RING_RADIUS = 32;
@@ -92,24 +112,35 @@ function ProfileToday() {
     focused.current = true;
     return () => { focused.current = false; setSnackbar(null); };
   }, []));
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
   const query = useCallback(async () => {
     const now = Date.now();
-    const today = dateKey(new Date(now));
-    const doses = await fetchScheduledDoses(today, currentProfile?.id);
+    const base = new Date(now);
+    const today = dateKey(base);
+    const dates = Array.from({ length: WINDOW_DAYS_BEFORE + 1 + WINDOW_DAYS_AFTER }, (_, index) =>
+      dateKey(new Date(base.getFullYear(), base.getMonth(), base.getDate() + index - WINDOW_DAYS_BEFORE)));
+    const days = await fetchScheduledDosesForDates(dates, currentProfile?.id);
+    // A reminder for an older day opens alongside today's doses.
+    let reminder: ScheduledDose[] = [];
     if (isDateKey(params.doseDate) && params.doseDate !== today && params.scheduleId) {
-      const older = await fetchScheduledDoses(params.doseDate, currentProfile?.id);
-      doses.unshift(...older.filter(dose => dose.schedule.id === params.scheduleId && dose.medicine.id === params.medicineId && !doses.some(existing => existing.id === dose.id)));
+      const older = days[params.doseDate] ?? (await fetchScheduledDosesForDates([params.doseDate], currentProfile?.id))[params.doseDate];
+      reminder = older.filter(dose => dose.schedule.id === params.scheduleId && dose.medicine.id === params.medicineId);
     }
-    return { doses, now, today };
+    return { days, dates, reminder, now, today };
   }, [params.doseDate, params.scheduleId, params.medicineId, currentProfile?.id]);
-  const { data, loading, error, reload } = useLocalQuery(query, { doses: [] as ScheduledDose[], now: 0, today: '' }, 30000);
-  const todaysDoses = data.doses.filter(dose => dose.date === data.today);
+  const { data, loading, error, reload } = useLocalQuery(query, { days: {} as Record<string, ScheduledDose[]>, dates: [] as string[], reminder: [] as ScheduledDose[], now: 0, today: '' }, 30000);
+  const viewedDate = pickedDate && data.dates.includes(pickedDate) ? pickedDate : data.today;
+  const viewingToday = viewedDate === data.today;
+  const viewingFuture = viewedDate > data.today;
+  const viewedDoses = data.days[viewedDate] ?? [];
+  const shown = viewingToday ? [...data.reminder, ...viewedDoses.filter(dose => !data.reminder.some(other => other.id === dose.id))] : viewedDoses;
+  const todaysDoses = viewedDoses;
   const taken = todaysDoses.filter(dose => dose.status === 'Taken').length;
   const selected = (dose: ScheduledDose) => dose.schedule.id === params.scheduleId && dose.medicine.id === params.medicineId
     && (!params.scheduledAtMs || dose.scheduledAtMs === Number(params.scheduledAtMs));
-  const due = data.doses.filter(dose => !dose.status && Math.max(dose.scheduledAtMs, dose.snoozedUntilMs || 0) <= data.now);
-  const upcoming = data.doses.filter(dose => !dose.status && Math.max(dose.scheduledAtMs, dose.snoozedUntilMs || 0) > data.now);
-  const earlier = data.doses.filter(dose => dose.status);
+  const due = shown.filter(dose => !dose.status && Math.max(dose.scheduledAtMs, dose.snoozedUntilMs || 0) <= data.now);
+  const upcoming = shown.filter(dose => !dose.status && Math.max(dose.scheduledAtMs, dose.snoozedUntilMs || 0) > data.now);
+  const earlier = shown.filter(dose => dose.status);
   const act = useCallback(async (dose: ScheduledDose, action: DoseAction | 'Undo', receipt?: DoseChangeReceipt) => {
     if (busy.current) return;
     busy.current = true; setBusyId(dose.id); setMessage(''); setSnackbar(null);
@@ -176,6 +207,7 @@ function ProfileToday() {
       ? { text: `Snoozed · ${time(dose.snoozedUntilMs!)}`, background: colors.warningSoft, color: colors.warningText }
       : isDue ? { text: time(dose.scheduledAtMs), background: colors.accentSoft, color: colors.accentText }
       : { text: time(dose.scheduledAtMs), background: colors.fill, color: colors.secondaryLabel };
+    const canLogEarly = !dose.status && !snoozed && !isDue && dose.date === data.today;
     return <Animated.View key={`${dose.id}:pending`} entering={listItemEntering} exiting={listItemExiting} layout={listItemLayout}>
       <Card style={[{ gap: 12 }, outline]}>
         {isSelected && <AppText variant="footnote" weight="600" tone="accent">Opened from reminder · {dose.date}</AppText>}
@@ -191,6 +223,15 @@ function ProfileToday() {
           </View>
         </View>
         {!!dose.medicine.instructions && <AppText variant="footnote" tone="secondary">{dose.medicine.instructions}</AppText>}
+        {canLogEarly && <AppText variant="footnote" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>Scheduled {relativeTime(dose.scheduledAtMs, data.now)}</AppText>}
+        {canLogEarly && <View style={{ flexDirection: 'row', gap: 8 }}>
+          {(['Taken', 'Skipped'] as const).map(action => {
+            const label = action === 'Taken' ? 'Take early' : 'Skip';
+            return <Button key={action} title={label} accessibilityLabel={`${label} ${dose.medicine.name}`} disabled={busyId !== null}
+              onPress={() => void act(dose, action)} variant={action === 'Taken' ? 'secondary' : 'plain'}
+              style={{ flex: action === 'Taken' ? 1.4 : 1, paddingHorizontal: 8 }} />;
+          })}
+        </View>}
         {dose.scheduledAtMs <= data.now && <View style={{ flexDirection: 'row', gap: 8 }}>
           {(['Taken', 'Skipped', 'Snooze'] as const).map(action => {
             const label = action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action;
@@ -203,9 +244,18 @@ function ProfileToday() {
     </Animated.View>;
   }
 
-  const sections = ([['Due Now', due], ['Upcoming', upcoming], ['Logged', earlier]] as const).filter(([, doses]) => doses.length > 0);
+  const sections = ([['Due Now', due], [viewingToday ? 'Upcoming' : 'Scheduled', upcoming], ['Logged', earlier]] as const).filter(([, doses]) => doses.length > 0);
   const percent = todaysDoses.length ? Math.round(taken / todaysDoses.length * 100) : 0;
-  const dateLabel = data.now ? new Date(data.now).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : '';
+  const dateLabel = viewedDate ? parseDateKey(viewedDate).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : '';
+  const weekDays: WeekDay[] = data.dates.map(date => {
+    const doses = data.days[date] ?? [];
+    const day = parseDateKey(date);
+    const takenCount = doses.filter(dose => dose.status === 'Taken').length;
+    const summary = doses.length ? `${takenCount} of ${doses.length} ${doses.length === 1 ? 'dose' : 'doses'} taken` : 'no doses';
+    return { date, weekday: day.toLocaleDateString(undefined, { weekday: 'short' }), dayNumber: day.getDate(), isToday: date === data.today,
+      status: dayStatus(doses), label: `${date === data.today ? 'Today, ' : ''}${day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}, ${date > data.today ? `${doses.length} scheduled` : summary}` };
+  });
+  const dayWord = viewingToday ? 'today' : 'this day';
   // The native stack header carries the large "Today" title and the screen's actions.
   return <View style={{ flex: 1 }} collapsable={false}>
     <Stack.Screen options={{ headerRight: () => <View style={{ flexDirection: 'row' }}>
@@ -215,29 +265,30 @@ function ProfileToday() {
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 96, gap: 12 }}>
       {!!dateLabel && <AppText variant="subhead" tone="secondary">{dateLabel}</AppText>}
       <ProfileSwitcherTrigger showOtherProfiles />
+      {weekDays.length > 0 && <WeekStrip days={weekDays} selected={viewedDate} onSelect={setPickedDate} />}
 
-      {todaysDoses.length > 0 && <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12 }}>
+      {todaysDoses.length > 0 && !viewingFuture && <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12 }}>
         <View style={{ flex: 1, gap: 2 }}>
-          <AppText variant="footnote" tone="secondary">{percent === 100 ? 'All doses logged' : 'Daily progress'}</AppText>
+          <AppText variant="footnote" tone="secondary">{percent === 100 ? 'All doses taken' : viewingToday ? 'Daily progress' : 'Day summary'}</AppText>
           <AppText variant="title1" style={{ fontVariant: ['tabular-nums'] }}>{taken} <AppText variant="subhead" tone="secondary">of {todaysDoses.length} {todaysDoses.length === 1 ? 'dose' : 'doses'} taken</AppText></AppText>
         </View>
         <ProgressRing percent={percent} />
       </Card>}
 
       {!!(error || message) && <InlineMessage tone={error ? 'danger' : 'info'} message={error || message} actionTitle={error ? 'Retry' : undefined} onAction={() => void reload()} />}
-      {!!params.scheduleId && !loading && !data.doses.some(selected) && <InlineMessage tone="warning" message="This reminder is no longer active." />}
+      {!!params.scheduleId && !loading && !shown.some(selected) && <InlineMessage tone="warning" message="This reminder is no longer active." />}
 
       {loading ? <View style={{ paddingVertical: 32, alignItems: 'center' }}><ActivityIndicator color={colors.secondaryLabel} accessibilityLabel="Loading doses" /></View>
-        : !data.doses.length ? <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 28 }}>
+        : !shown.length ? <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 28 }}>
           <View style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft, marginBottom: 4 }}>
             <Icon name="emptyDay" size={28} color={colors.accentText} />
           </View>
-          <AppText variant="headline" style={{ textAlign: 'center' }}>No doses scheduled today</AppText>
-          <AppText variant="subhead" tone="secondary" style={{ textAlign: 'center', maxWidth: 280 }}>Add a medicine and its dose times to start tracking.</AppText>
-          <Button title="Add Medicine" icon="add" onPress={() => router.push('/add-medicine')} style={{ marginTop: 8 }} />
+          <AppText variant="headline" style={{ textAlign: 'center' }}>No doses scheduled {dayWord}</AppText>
+          <AppText variant="subhead" tone="secondary" style={{ textAlign: 'center', maxWidth: 280 }}>{viewingToday ? 'Add a medicine and its dose times to start tracking.' : 'Pick another day, or add a medicine to schedule doses.'}</AppText>
+          {viewingToday && <Button title="Add Medicine" icon="add" onPress={() => router.push('/add-medicine')} style={{ marginTop: 8 }} />}
         </Card>
         : <>
-          {!due.length && <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {viewingToday && !due.length && <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <Icon name="checkCircle" size={22} color={colors.successText} />
             <AppText variant="subhead" style={{ flex: 1 }}>{upcoming.length ? 'You’re all caught up. Your next dose is listed below.' : 'You’re all caught up for today.'}</AppText>
           </Card>}
