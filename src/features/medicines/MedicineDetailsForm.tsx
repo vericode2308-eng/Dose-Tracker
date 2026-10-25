@@ -4,6 +4,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { MEDICINE_COLORS, type MedicineColor as Color } from './colors';
 import { useTheme } from '@/features/theme/ThemeContext';
+import { ActionMenu } from '@/features/ui/ActionMenu';
 
 const FORMS = ['Tablet', 'Capsule', 'Liquid', 'Injection', 'Inhaler', 'Other'];
 type Props = {
@@ -43,21 +44,22 @@ function InputCard({ label, value, onChangeText, placeholder, outlined = false, 
 export function MedicineDetailsForm(p: Props) {
   const { colors, isDark } = useTheme();
   const [showOptional, setShowOptional] = useState(!!(p.purpose || p.instructions || p.notes));
-  const [open, setOpen] = useState<'strength' | 'dose' | null>(null);
-  function choices(kind: 'strength' | 'dose', values: string[], onSelect: (value: string) => void) {
-    return open === kind && <View className="mt-2 border-t" style={{ borderColor: colors.border }}>{values.map(value => <Pressable key={value} accessibilityRole="button" onPress={() => { onSelect(value); setOpen(null); }} className="min-h-11 justify-center"><Text className="text-[16px]" style={{ color: colors.ink }}>{value}</Text></Pressable>)}</View>;
-  }
   return <>
     <InputCard required label="Medicine name" value={p.name} onChangeText={p.setName} placeholder="e.g. Amoxicillin" outlined />
     <View className="mb-[10px] rounded-[17px] border px-[14px] py-[8px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
-      <View className="flex-row items-center"><View className="flex-1"><Label>Strength (optional)</Label><TextInput accessibilityLabel="Strength (optional)" value={p.strength} onChangeText={p.setStrength} placeholder="e.g. 250" placeholderTextColor={colors.secondary} keyboardType="decimal-pad" className="min-h-[28px] py-0 text-[18px]" style={{ color: colors.ink }} /></View><Pressable accessibilityRole="button" accessibilityLabel={`Strength unit, ${p.strengthUnit}`} onPress={() => setOpen(open === 'strength' ? null : 'strength')} className="min-h-[42px] w-[85px] flex-row items-center justify-between border-l pl-4" style={{ borderColor: colors.border }}><Text className="text-[18px]" style={{ color: colors.ink }}>{p.strengthUnit}</Text><Feather name="chevron-down" size={19} color={colors.ink} /></Pressable></View>
-      {choices('strength', ['mg', 'mcg', 'g', 'mL', 'IU'], p.setStrengthUnit)}
+      <View className="flex-row items-center"><View className="flex-1"><Label>Strength (optional)</Label><TextInput accessibilityLabel="Strength (optional)" value={p.strength} onChangeText={p.setStrength} placeholder="e.g. 250" placeholderTextColor={colors.secondary} keyboardType="decimal-pad" className="min-h-[28px] py-0 text-[18px]" style={{ color: colors.ink }} /></View><View className="border-l pl-3" style={{ borderColor: colors.border }}><ActionMenu title="Strength unit" accessibilityLabel={`Strength unit, ${p.strengthUnit}`} onSelect={p.setStrengthUnit}
+        items={['mg', 'mcg', 'g', 'mL', 'IU'].map(unit => ({ id: unit, title: unit, checked: unit === p.strengthUnit }))}>
+        <View className="min-h-[44px] w-[76px] flex-row items-center justify-between"><Text className="text-[18px]" style={{ color: colors.accentText }}>{p.strengthUnit || 'Unit'}</Text><Feather name="chevron-down" size={17} color={colors.accentText} /></View>
+      </ActionMenu></View></View>
     </View>
     <View className="mb-[10px] rounded-[17px] border px-[10px] pb-[8px] pt-[7px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
       <View className="mb-[3px] pl-[3px]"><Label required>Form</Label></View>
       <View className="flex-row flex-wrap justify-between gap-y-[8px]">{FORMS.map(form => <Pressable key={form} accessibilityRole="radio" accessibilityLabel={`${form}, medicine form, required`} accessibilityState={{ checked: p.form === form }} onPress={() => p.setForm(form)} className="h-[72px] w-[32%] items-center justify-center rounded-[14px] border" style={{ borderWidth: p.form === form ? 2 : 1, borderColor: p.form === form ? colors.accent : colors.border, backgroundColor: p.form === form ? (isDark ? colors.pill : '#EFFBFA') : colors.surface }}><MedicineIcon form={form} selected={p.form === form} /><Text className={`mt-[3px] text-[14px] ${p.form === form ? 'font-semibold' : ''}`} style={{ color: p.form === form ? colors.ink : colors.secondary }}>{form}</Text></Pressable>)}</View>
     </View>
-    <View className="mb-[10px] rounded-[17px] border px-[14px] py-[8px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><Pressable accessibilityRole="button" accessibilityLabel={`Dose unit, required, ${p.doseUnit}`} onPress={() => setOpen(open === 'dose' ? null : 'dose')} className="flex-row items-center justify-between"><View><Label required>Dose unit</Label><Text className="text-[18px] leading-[28px]" style={{ color: colors.ink }}>{p.doseUnit}</Text></View><Feather name="chevron-down" size={19} color={colors.ink} /></Pressable>{choices('dose', FORMS, p.setDoseUnit)}</View>
+    <View className="mb-[10px] rounded-[17px] border px-[14px] py-[8px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><View className="flex-row items-center justify-between gap-3"><Label required>Dose unit</Label><ActionMenu title="Dose unit" accessibilityLabel={`Dose unit, required, ${p.doseUnit}`} onSelect={p.setDoseUnit}
+        items={FORMS.map(unit => ({ id: unit, title: unit, checked: unit === p.doseUnit }))}>
+        <View className="min-h-[44px] flex-row items-center gap-2"><Text className="text-[18px]" style={{ color: colors.accentText }}>{p.doseUnit}</Text><Feather name="chevron-down" size={17} color={colors.accentText} /></View>
+      </ActionMenu></View></View>
     <View className="mb-[10px] rounded-[17px] border px-[14px] py-[8px]" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
       <Label>Color & icon</Label>
       <View accessibilityRole="radiogroup" accessibilityLabel="Medicine color" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
@@ -66,7 +68,7 @@ export function MedicineDetailsForm(p: Props) {
           return <Pressable key={color.value} accessibilityRole="radio" accessibilityLabel={`${color.name} medicine color`} accessibilityState={{ checked: selected }} onPress={() => p.setColor(color)}
             style={({ pressed }) => ({ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, borderWidth: 2, borderColor: selected ? colors.ink : 'transparent', opacity: pressed ? 0.7 : 1 })}>
             <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: color.value, alignItems: 'center', justifyContent: 'center' }}>
-              {selected && <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#102238', alignItems: 'center', justifyContent: 'center' }}><Feather name="check" size={16} color="white" /></View>}
+              {selected && <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}><Feather name="check" size={16} color={colors.onPrimary} /></View>}
             </View>
           </Pressable>;
         })}

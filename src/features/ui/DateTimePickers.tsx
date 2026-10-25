@@ -2,6 +2,24 @@ import React, { useState, useMemo } from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/features/theme/ThemeContext';
+import { hasInlineNativeDatePicker, NativeDatePicker } from './NativeDatePicker';
+
+/** iOS row: label on the left, SwiftUI compact picker (or an Add button while empty) on the right. */
+function InlinePickerRow({ label, required, children }: { label: string; required: boolean; children: React.ReactNode }) {
+  const { colors } = useTheme();
+  return <View style={[styles.fieldCard, styles.inlineRow, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+    <Text style={[styles.inlineLabel, { color: colors.label }]}>{label}{required ? ' *' : ''}</Text>
+    <View style={styles.inlineControls}>{children}</View>
+  </View>;
+}
+
+function InlineTextButton({ title, accessibilityLabel, onPress }: { title: string; accessibilityLabel: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} hitSlop={8}
+    style={({ pressed }) => [styles.inlineTextButton, { opacity: pressed ? 0.6 : 1 }]}>
+    <Text style={[styles.inlineTextButtonLabel, { color: colors.accentText }]}>{title}</Text>
+  </Pressable>;
+}
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -746,6 +764,20 @@ export function DatePickerField({
 }: DatePickerFieldProps) {
   const { colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+  if (hasInlineNativeDatePicker) {
+    const toDate = (text: string) => { const parsed = parseDateString(text); return new Date(parsed.year, parsed.month, parsed.day); };
+    const set = (date: Date) => onChange(formatDateString(date.getFullYear(), date.getMonth(), date.getDate()));
+    const minimum = minDate ? toDate(minDate) : undefined;
+    const maximum = maxDate ? toDate(maxDate) : undefined;
+    const today = toDate('');
+    const initial = maximum && today > maximum ? maximum : minimum && today < minimum ? minimum : today;
+    return <InlinePickerRow label={label} required={required}>
+      {value ? <>
+        <NativeDatePicker mode="date" label={label} value={toDate(value)} onChange={set} minimumDate={minimum} maximumDate={maximum} />
+        {allowClear && <InlineTextButton title="Clear" accessibilityLabel={`Clear ${label}`} onPress={() => onChange('')} />}
+      </> : <InlineTextButton title="Add" accessibilityLabel={`Add ${label}`} onPress={() => set(initial)} />}
+    </InlinePickerRow>;
+  }
   async function openPicker() {
     if (Platform.OS !== 'android') { setModalVisible(true); return; }
     const { DateTimePickerAndroid } = await import('@react-native-community/datetimepicker');
@@ -823,6 +855,15 @@ export function TimePickerField({
 }: TimePickerFieldProps) {
   const { colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+  if (hasInlineNativeDatePicker) {
+    const parsedTime = parseTimeString(value);
+    const date = new Date(2000, 0, 1, parsedTime.hour % 12 + (parsedTime.period === 'PM' ? 12 : 0), parsedTime.minute);
+    const set = (selected: Date) => onChange(formatTimeString(selected.getHours() % 12 || 12, selected.getMinutes(), selected.getHours() < 12 ? 'AM' : 'PM'));
+    return <InlinePickerRow label={label} required={required}>
+      {value ? <NativeDatePicker mode="time" label={label} value={date} onChange={set} />
+        : <InlineTextButton title="Add" accessibilityLabel={`Add ${label}`} onPress={() => set(date)} />}
+    </InlinePickerRow>;
+  }
   async function openPicker() {
     if (Platform.OS !== 'android') { setModalVisible(true); return; }
     const { DateTimePickerAndroid } = await import('@react-native-community/datetimepicker');
@@ -1172,6 +1213,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  inlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    minHeight: 56,
+    paddingVertical: 8,
+  },
+  inlineLabel: {
+    flex: 1,
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  inlineControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inlineTextButton: {
+    minHeight: 44,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+  },
+  inlineTextButtonLabel: {
+    fontSize: 17,
+    fontWeight: '600',
   },
   fieldCard: {
     marginBottom: 12,

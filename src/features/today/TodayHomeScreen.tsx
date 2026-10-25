@@ -13,10 +13,10 @@ import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { useTheme } from '@/features/theme/ThemeContext';
 
 import { UndoSnackbar } from '@/features/ui/UndoSnackbar';
-import { DoseOptionsMenu } from './DoseOptionsMenu';
 
 import { hapticImpactLight, hapticSuccess } from '@/features/ui/haptics';
 import { AppText } from '@/features/ui/AppText';
+import { ActionMenu } from '@/features/ui/ActionMenu';
 import { BottomOverlay } from '@/features/ui/BottomOverlay';
 import { Button } from '@/features/ui/Button';
 import { Card } from '@/features/ui/Card';
@@ -85,13 +85,12 @@ function ProfileToday() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const busy = useRef(false);
   const [message, setMessage] = useState('');
-  const [menuDose, setMenuDose] = useState<ScheduledDose | null>(null);
   const [snackbar, setSnackbar] = useState<{ dose: ScheduledDose; receipt: DoseChangeReceipt; message: string } | null>(null);
   const dismissSnackbar = useCallback(() => setSnackbar(null), []);
   const focused = useRef(false);
   useFocusEffect(useCallback(() => {
     focused.current = true;
-    return () => { focused.current = false; setSnackbar(null); setMenuDose(null); };
+    return () => { focused.current = false; setSnackbar(null); };
   }, []));
   const query = useCallback(async () => {
     const now = Date.now();
@@ -159,8 +158,16 @@ function ProfileToday() {
               <AppText variant="footnote" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>· {time(dose.scheduledAtMs)}</AppText>
             </View>
           </View>
-          <IconButton icon="more" accessibilityLabel={`More options for ${dose.medicine.name}`} accessibilityHint="Change or reset this dose"
-            color={colors.secondaryLabel} disabled={busyId !== null} onPress={() => setMenuDose(dose)} />
+          <ActionMenu accessibilityLabel={`More options for ${dose.medicine.name}`} title={`${dose.medicine.name} · ${time(dose.scheduledAtMs)}`}
+            items={(['Taken', 'Skipped', 'Reset'] as const).filter(action => action !== dose.status).map(action => ({
+              id: action, title: action === 'Reset' ? 'Reset to Pending' : `Mark as ${action}`,
+              icon: action === 'Taken' ? 'checkmark.circle' : action === 'Skipped' ? 'minus.circle' : 'arrow.uturn.backward',
+            }))}
+            onSelect={id => { if (busyId === null) void act(dose, id as DoseAction); }}>
+            <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="more" size={22} color={colors.secondaryLabel} />
+            </View>
+          </ActionMenu>
         </Card>
       </Animated.View>;
     }
@@ -243,6 +250,5 @@ function ProfileToday() {
     </ScrollView>
     {snackbar && <BottomOverlay><UndoSnackbar key={snackbar.message + snackbar.receipt.dose.scheduledAtMs} message={snackbar.message}
       disabled={busyId !== null} onDismiss={dismissSnackbar} onUndo={() => void act(snackbar.dose, 'Undo', snackbar.receipt)} /></BottomOverlay>}
-    {menuDose && <DoseOptionsMenu dose={menuDose} onClose={() => setMenuDose(null)} onAction={(dose, action) => void act(dose, action)} />}
   </View>;
 }

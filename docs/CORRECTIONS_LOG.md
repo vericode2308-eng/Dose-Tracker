@@ -1,5 +1,19 @@
 # Corrections log
 
+## 2026-10-25 — Native controls: menus, date pickers, grouped Settings (Phase 5)
+
+- **Request:** Replace custom controls with native ones: Settings as a grouped list with a segmented theme control, native menus instead of the dose-options and History filter sheets, the native iOS date and time picker instead of the custom calendar, plus fixes for unformatted dates and times and a duplicated profile row in Settings.
+- **Implemented:**
+  1. `ActionMenu` (`src/features/ui/ActionMenu.tsx`): native menu through `@expo/ui/community/menu` (UIMenu on iOS with SF Symbols, checkmarks and destructive styling; Material menu on Android); web falls back to the shared `Sheet`. Used for Today's logged-dose actions (replaces `DoseOptionsMenu.tsx`), Medicine detail's header More menu (Refill, History, Pause/Resume, Archive/Restore, Delete; the bottom Pause/Archive buttons are removed), History filter chips (period, medicine, status) and the Add/Edit strength and dose unit selectors.
+  2. `NativeDatePicker.ios.tsx`: compact SwiftUI `DatePicker` (`@expo/ui/swift-ui`) shown inline in `DatePickerField`/`TimePickerField` on iOS, with Add and Clear actions for optional dates. Android keeps the system dialogs, web keeps its modals.
+  3. Settings rebuilt as a brand-themed grouped list (`GroupedList.tsx`: `ListSection`, `ListRow` with icon tiles): one Profile row (was two rows opening the same switcher); Appearance is a native `SegmentedControl`; default snooze is a native `Picker` menu; privacy shows its value as a subtitle; Privacy Policy and Terms open externally; Export/Restore/About stay in sheets.
+  4. Medicine detail and Medicines list format dates and times for the locale (`format.ts`: "Daily at 9:00 AM", "Oct 25, 2026" instead of "09:00" and "2026-10-25").
+  5. History filter chips scroll horizontally instead of wrapping.
+- **Tradeoff:** Settings uses native controls inside a themed list rather than `@expo/ui` `List`. SwiftUI `List` forces the system grouped background (#F2F2F7 / black), which would break the ivory/navy brand, and its own scroll view would not drive the native large-title collapse.
+- **Affected files:** new `src/features/ui/{ActionMenu,ActionMenu.web,GroupedList,NativeDatePicker,NativeDatePicker.ios,format}.ts(x)`, `src/features/ui/{DateTimePickers,Icon}.tsx`, `src/features/settings/SettingsHomeScreen.tsx`, `src/features/today/TodayHomeScreen.tsx` (removed `DoseOptionsMenu.tsx`), `src/features/medicines/{MedicineDetailScreen,MedicinesListScreen,MedicineDetailsForm}.tsx`, `src/features/history/HistoryScreen.tsx`, `docs/DESIGN_SYSTEM.md`, this log.
+- **Verification:** `tsc --noEmit` and `expo lint` clean, `npm test` passes, iOS and Android bundles export. Settings and Medicine detail were rendered on web in light and dark before the final chip/subtitle fixes; the final pass was not re-rendered.
+- **Status:** Source only. Native menus (including inside the header and with VoiceOver), the compact date picker, `SegmentedControl` and the snooze `Picker` need a development build on iOS and Android.
+
 ## 2026-10-25 — Native navigation: native tabs, native headers, Add/Edit sheets (Phase 4)
 
 - **Request:** Establish native navigation. Owner chose native tabs that stay visible while browsing medicines, and Add/Edit Medicine as sheets that swipe down to dismiss.

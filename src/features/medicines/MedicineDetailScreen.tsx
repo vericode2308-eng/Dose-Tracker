@@ -9,6 +9,7 @@ import { useLocalQuery } from '@/features/doses/useLocalQuery';
 import { updateMedicineWithReminders, deleteMedicineWithReminders, setScheduleReminderEnabled } from '@/notificationManager';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { AppText } from '@/features/ui/AppText';
+import { ActionMenu } from '@/features/ui/ActionMenu';
 import { Button } from '@/features/ui/Button';
 import { Card } from '@/features/ui/Card';
 import { Icon, type IconName } from '@/features/ui/Icon';
@@ -16,9 +17,10 @@ import { IconButton } from '@/features/ui/IconButton';
 import { InlineMessage } from '@/features/ui/InlineMessage';
 import { Sheet } from '@/features/ui/Sheet';
 import { confirmDestructive } from '@/features/ui/confirm';
+import { formatClockList, formatDateKey } from '@/features/ui/format';
 import { radii } from '../../../theme';
 
-type Panel = 'options' | 'refill' | number | null;
+type Panel = 'refill' | number | null;
 
 /** Stock unit from the medicine form, e.g. "1 capsule", "4 capsules". */
 function unitLabel(form: string | undefined, count: number) {
@@ -153,7 +155,21 @@ export default function MedicineDetailScreen() {
   return <View style={{ flex: 1 }} collapsable={false}>
     <Stack.Screen options={{ title: medicine.name, headerRight: () => <View style={{ flexDirection: 'row' }}>
       <IconButton icon="edit" accessibilityLabel="Edit medicine" color={colors.accentText} onPress={edit} />
-      <IconButton icon="more" accessibilityLabel="More options" color={colors.accentText} onPress={() => setPanel('options')} />
+      <ActionMenu accessibilityLabel="More options" title={medicine.name} onSelect={id => {
+        if (id === 'refill') { setQuantity('30'); setPanel('refill'); }
+        else if (id === 'history') router.push('/history');
+        else if (id === 'pause') void update({ status: paused ? 'Active' : 'Paused' });
+        else if (id === 'archive') { if (archived) void update({ status: 'Active' }); else void confirmArchive(); }
+        else if (id === 'delete') void confirmDelete();
+      }} items={[
+        { id: 'refill', title: 'Log Refill', icon: 'plus.circle' },
+        { id: 'history', title: 'View Dose History', icon: 'clock.arrow.circlepath' },
+        { id: 'pause', title: paused ? 'Resume Medicine' : 'Pause Medicine', icon: paused ? 'play.circle' : 'pause.circle' },
+        { id: 'archive', title: archived ? 'Restore Medicine' : 'Archive Medicine', icon: archived ? 'arrow.uturn.backward.circle' : 'archivebox' },
+        { id: 'delete', title: 'Delete Medicine', icon: 'trash', destructive: true },
+      ]}>
+        <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Icon name="more" size={22} color={colors.accentText} /></View>
+      </ActionMenu>
     </View> }} />
     <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32, gap: 12 }}>
 
@@ -184,16 +200,16 @@ export default function MedicineDetailScreen() {
         const frequency = s.pattern.kind === 'daily' ? 'Every day' : s.pattern.kind === 'weekdays' ? s.pattern.weekdays?.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') : s.pattern.kind === 'prn' ? 'As needed' : `Every ${s.pattern.interval} ${s.pattern.kind === 'hour_interval' ? 'hours' : 'days'}`;
         return <GroupCard key={s.id}>
           <Row icon="clock" label={`${time} · ${s.doseAmount} ${medicine.doseAmount?.split(' ').slice(1).join(' ') || medicine.form}`}
-            detail={`${frequency} · From ${s.pattern.startDate}${s.pattern.endDate ? ` until ${s.pattern.endDate}` : ' · Ongoing'}`} />
+            detail={`${frequency} · From ${formatDateKey(s.pattern.startDate)}${s.pattern.endDate ? ` until ${formatDateKey(s.pattern.endDate)}` : ' · Ongoing'}`} />
           <Row icon="bell" label="Dose reminder" detail={supported ? undefined : 'Tracking only: this schedule does not support reminders yet.'} last>
             <Switch accessibilityLabel={`Dose ${index + 1} reminder, ${time}`} value={s.reminderEnabled} disabled={!supported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value, s.id)} {...switchColors} />
           </Row>
         </GroupCard>;
       }) : <GroupCard>
-        <Row icon="clock" label={medicine.schedule ?? (medicine.time ? `Daily at ${medicine.time}` : 'As needed')} />
+        <Row icon="clock" label={medicine.time ? `${medicine.schedule ?? 'Daily'} at ${formatClockList(medicine.time)}` : medicine.schedule ?? 'As needed'} />
         <Row icon="dose" label="Dose amount" value={medicine.doseAmount ?? '1 tablet'} />
-        <Row icon="calendar" label="Started" value={medicine.startDate ?? 'Not set'} />
-        <Row icon="duration" label={medicine.duration ?? 'No end date'} last={!medicine.scheduleId} />
+        <Row icon="calendar" label="Started" value={medicine.startDate ? formatDateKey(medicine.startDate) : 'Not set'} />
+        <Row icon="duration" label={medicine.duration?.replace(/\d{4}-\d{2}-\d{2}/, formatDateKey) ?? 'No end date'} last={!medicine.scheduleId} />
         {!!medicine.scheduleId && <Row icon="bell" label="Dose reminders" last
           detail={medicine.reminderSupported ? 'Tracking works with reminders off.' : 'Available for ongoing daily or weekday schedules starting today.'}>
           <Switch accessibilityLabel="Dose reminders" value={!!medicine.reminderEnabled} disabled={!medicine.reminderSupported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value)} {...switchColors} />
@@ -240,33 +256,22 @@ export default function MedicineDetailScreen() {
         {!records.length && <AppText variant="subhead" tone="secondary" style={{ paddingVertical: 14 }}>No doses recorded yet.</AppText>}
       </Card>
 
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
-        <Button style={{ flex: 1 }} variant="secondary" icon={paused ? 'resume' : 'pause'} title={paused ? 'Resume' : 'Pause'}
-          onPress={() => { void update({ status: paused ? 'Active' : 'Paused' }); }} />
-        <Button style={{ flex: 1 }} variant="secondary" icon={archived ? 'restore' : 'archive'} title={archived ? 'Restore' : 'Archive'}
-          onPress={() => { if (archived) void update({ status: 'Active' }); else void confirmArchive(); }} />
-      </View>
-      <Button variant="destructiveSoft" icon="trash" title="Delete Medicine" onPress={() => void confirmDelete()} />
+      <Button variant="destructiveSoft" icon="trash" title="Delete Medicine" onPress={() => void confirmDelete()} style={{ marginTop: 8 }} />
       {!!feedback && <AppText accessibilityLiveRegion="polite" variant="footnote" tone="secondary" style={{ textAlign: 'center' }}>{feedback}</AppText>}
     </ScrollView>
 
     <Sheet visible={panel !== null} onClose={close}
-      title={panel === 'refill' ? 'Log Refill' : panel === 'options' ? medicine.name : 'Dose Record'}>
+      title={panel === 'refill' ? 'Log Refill' : 'Dose Record'}>
       {panel === 'refill' && <>
         <AppText variant="subhead" tone="secondary">How many {unitLabel(medicine.form, 2)} did you add?</AppText>
         <TextInput accessibilityLabel={`${unitLabel(medicine.form, 2)} added, required`} keyboardType="number-pad" value={quantity} onChangeText={setQuantity} autoFocus selectTextOnFocus
           style={{ backgroundColor: colors.surface, color: colors.label, borderRadius: radii.control, borderCurve: 'continuous', paddingHorizontal: 16, minHeight: 52, fontSize: 22, fontVariant: ['tabular-nums'], borderWidth: 1, borderColor: colors.separator }} />
         <Button title="Save Refill" onPress={() => { const amount = Number(quantity); if (!/^\d+$/.test(quantity) || !Number.isSafeInteger(amount) || amount < 1 || amount > 10000) { setError('Enter a whole number between 1 and 10,000.'); return; } void update({ stock: (medicine.stock ?? 0) + amount }); }} />
       </>}
-      {panel === 'options' && <>
-        <Button title="Log Refill" icon="refill" variant="secondary" onPress={() => { setQuantity('30'); setPanel('refill'); }} />
-        <Button title="View Dose History" icon="history" variant="secondary" onPress={() => { close(); router.push('/history'); }} />
-        <Button title="Delete Medicine" icon="trash" variant="destructiveSoft" onPress={() => void confirmDelete()} />
-      </>}
       {record && <Card style={{ gap: 6 }}>
         <AppText variant="headline">{dayLabel(record.date)}, {record.time}</AppText>
         <AppText variant="subhead" tone={record.status === 'Taken' ? 'success' : 'warning'}>{record.status}</AppText>
-        <AppText variant="subhead" tone="secondary" selectable>Dose: {record.amount} · {record.date}</AppText>
+        <AppText variant="subhead" tone="secondary" selectable>Dose: {record.amount} · {formatDateKey(record.date)}</AppText>
       </Card>}
       {!!error && <AppText accessibilityRole="alert" variant="footnote" tone="danger">{error}</AppText>}
     </Sheet>

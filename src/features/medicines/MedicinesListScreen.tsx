@@ -13,6 +13,7 @@ import { Icon } from '@/features/ui/Icon';
 import { IconButton } from '@/features/ui/IconButton';
 import { InlineMessage } from '@/features/ui/InlineMessage';
 import { PressableScale } from '@/features/ui/PressableScale';
+import { formatClockList } from '@/features/ui/format';
 import { radii } from '../../../theme';
 
 type Filter = 'Active' | 'Paused' | 'Archived' | 'As needed';
@@ -51,7 +52,7 @@ function MedicineCard({ medicine: m, onPress }: { medicine: Medicine; onPress: (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
           <Icon name={m.time ? 'clock' : 'pill'} size={13} color={colors.secondaryLabel} />
           <AppText variant="footnote" tone="secondary" style={{ flexShrink: 1 }}>
-            {m.schedule || (m.time ? `Daily at ${m.time}` : 'As needed')}{m.time && m.next ? ` · Next ${m.next}` : ''}
+            {m.time ? `${m.schedule ?? 'Daily'} at ${formatClockList(m.time)}` : m.schedule ?? 'As needed'}{m.time && m.next ? ` · Next ${m.next}` : ''}
           </AppText>
         </View>
         {lowStock && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, alignSelf: 'flex-start', backgroundColor: colors.dangerSoft, borderRadius: radii.chip, paddingHorizontal: 8, paddingVertical: 3 }}>

@@ -15,7 +15,8 @@ The app's visual source of truth. Read this before changing any screen.
 
 - **Colors come from `useTheme().colors`**, applied with `style`. They change with light/dark mode, so they are never Tailwind color classes. Hex literals in screens are drift.
 - **NativeWind classes are for layout and static sizing**: flex, gap, padding, text-style classes (`text-headline`, `text-footnote`, …) and radius classes (`rounded-card`, `rounded-sheet`).
-- **Native controls before custom ones**: system `Alert` for confirmations (`confirmDestructive`), `Switch`, system date pickers. Later phases move menus, pickers and grouped settings to `@expo/ui`, and headers and sheets to native Expo Router options.
+- **Native controls before custom ones**: system `Alert` for confirmations (`confirmDestructive`), `ActionMenu` for choices and overflow actions, `@expo/ui` `Switch`, `SegmentedControl` and `Picker` (menu) inside rows, the native date picker (`DatePickerField`/`TimePickerField`). Custom sheets are for multi-step content only (export, restore, refill).
+- **Settings-style screens** use `ListSection` + `ListRow` (`GroupedList.tsx`), not `@expo/ui` `List`: SwiftUI `List` forces the system grouped background and breaks the brand palette and large-title collapse.
 - **Liquid Glass** only on sheets and system bars (`GlassSheetSurface` / `Sheet`, iOS 26+, respects Reduce Transparency). Never on cards or list rows.
 
 ## Navigation
@@ -59,6 +60,10 @@ Medicine colors (`src/features/medicines/colors.ts`) are user data and stay as c
 | `Sheet` | The only bottom sheet: grabber, title, close, scrollable body. |
 | `Icon` | Registry name → SF Symbol on iOS, vector icon elsewhere. Add new glyphs to the registry; SF names are type-checked. |
 | `PressableScale` | Press feedback for custom tappables (scale 0.97 + dim, 120ms; dim only under Reduce Motion). |
+| `ActionMenu` | Native menu around any trigger: `items` with SF `icon`, `checked`, `destructive`. The trigger is a plain `View` (the native menu owns the tap). Web shows a `Sheet`. |
+| `ListSection` / `ListRow` | Grouped settings rows: icon tile, title, subtitle or value, chevron/external accessory, or a `trailing` native control. |
+| `DatePickerField` / `TimePickerField` | Compact native picker inline on iOS, system dialog on Android, modal on web. |
+| `formatClockList` / `formatDateKey` | Locale-formatted times and dates; never show raw `HH:mm` or `YYYY-MM-DD`. |
 | `confirmDestructive` | Native confirmation alert; destructive by default, `destructive: false` for reversible actions such as Archive. |
 
 ## Motion rules (from the expo-animation skill)
