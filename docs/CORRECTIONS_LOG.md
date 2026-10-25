@@ -1,5 +1,13 @@
 # Corrections log
 
+## 2026-10-25 — Settings: fewer Reminders options
+
+- **Request:** The Reminders section of Settings has too many items; reduce them to what people actually need.
+- **Implemented:** The section now shows only the Reminders switch. With reminders on it adds Default snooze, Notification privacy, Sound & vibration and Reminder status (5 rows instead of 7 on iOS and 8 on Android). With reminders off, the dependent rows are hidden. "Send a test reminder" moved onto the Reminder status screen next to its existing "Allow alarms & reminders" (Android) and "Open DoseTracker notification settings" actions, so the separate "Alarms & reminders access" and "System notification settings" rows are gone from the main list. No setting or stored preference was removed.
+- **Affected files:** `src/features/settings/SettingsHomeScreen.tsx`, `src/features/settings/ReminderStatusScreen.tsx`, `docs/SETTINGS_ARCHITECTURE.md`.
+- **Verification:** iPhone 17 Pro simulator: switch on shows the four rows, Reminder status opens with the new test link, switch off collapses the section, switched back on afterwards. Typecheck, lint and 152 tests pass. Not checked: the test reminder actually firing, Android (the Alarms & reminders access link now only appears on Reminder status when exact-alarm access is off), dark mode.
+- **Status:** Source change, not committed.
+
 ## 2026-10-25 — Today: title on the icon row, past-day and large-text checks
 
 - **Request:** Check a past day with Missed doses and large text sizes; align the "Today" title with the icons at the top right.

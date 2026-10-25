@@ -1,11 +1,10 @@
 import { Host, Picker } from '@expo/ui';
 import { SegmentedControl } from '@expo/ui/community/segmented-control';
-import { publicErrorMessage } from '@/features/security/errors';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Image, Linking, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
+import { Image, Linking, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { openExactAlarmSettings, openNotificationSettings, reconcileReminders, eraseMedicineDataWithReminders, scheduleTestReminder } from '@/notificationManager';
+import { reconcileReminders, eraseMedicineDataWithReminders } from '@/notificationManager';
 import { useOnboarding } from '@/features/onboarding/context';
 import { initials } from '@/features/onboarding/model';
 import { useProfiles } from '@/features/profiles/context';
@@ -68,23 +67,6 @@ export default function SettingsHomeScreen() {
         catch { setMessage('Preference saved. Reminder setup failed; open Reminder status to retry.'); }
       }
     } catch { setMessage('This setting could not be saved. Please try again.'); }
-    finally { setBusy(false); }
-  }
-
-  function requestExactAccess() {
-    Alert.alert('Allow alarms & reminders', 'DoseTracker needs this Android access to request alarms while your phone is asleep. Inexact reminders can be delayed.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Open settings', onPress: () => { void openExactAlarmSettings().catch(() => setMessage('Install a new Android development build to enable exact-alarm access.')); } },
-    ]);
-  }
-
-  async function testReminder() {
-    if (Platform.OS === 'web') { setMessage('Test reminders require the Android or iOS app.'); return; }
-    if (!prefs.remindersEnabled) { setMessage('Enable reminders before sending a test.'); return; }
-    setBusy(true);
-    try {
-      setMessage(await scheduleTestReminder());
-    } catch (error) { setMessage(publicErrorMessage(error, 'The test reminder could not be scheduled.')); }
     finally { setBusy(false); }
   }
 
@@ -171,21 +153,19 @@ export default function SettingsHomeScreen() {
       </ListSection>
 
       <ListSection title="Reminders" footer="Reminders are local notifications. Dose tracking works with reminders off.">
-        <ListRow icon="bell" title="Reminders" trailing={<Switch accessibilityLabel="Reminders enabled" value={prefs.remindersEnabled} disabled={!loaded || busy}
+        <ListRow icon="bell" title="Reminders" last={!prefs.remindersEnabled} trailing={<Switch accessibilityLabel="Reminders enabled" value={prefs.remindersEnabled} disabled={!loaded || busy}
           onValueChange={(remindersEnabled) => void update({ remindersEnabled })} trackColor={{ false: colors.fill, true: colors.accent }} ios_backgroundColor={colors.fill} />} />
-        <ListRow icon="snooze" title="Default snooze" trailing={<Host matchContents>
-          <Picker selectedValue={prefs.snoozeMinutes} enabled={loaded && !busy} appearance="menu"
-            onValueChange={(minutes) => void update({ snoozeMinutes: minutes as SettingsPreferences['snoozeMinutes'] })}>
-            {([5, 10, 15, 30] as const).map(minutes => <Picker.Item key={minutes} label={`${minutes} min`} value={minutes} />)}
-          </Picker>
-        </Host>} />
-        <ListRow icon="privacyEye" title="Notification privacy" subtitle={privacyLabel} disabled={busy || !loaded} onPress={() => router.push('/notification-privacy')} />
-        <ListRow icon="sound" title="Sound & vibration" value={prefs.reminderSound === 'silent' && !prefs.vibrationEnabled ? 'Off' : 'On'} disabled={busy || !loaded} onPress={() => router.push('/reminder-sound')} />
-        <ListRow icon="status" title="Reminder status" disabled={busy || !loaded} onPress={() => router.push('/reminder-status')} />
-        <ListRow icon="test" title="Send a test reminder" accessory="none" disabled={busy || !loaded} onPress={() => void testReminder()} last={Platform.OS === 'web'} />
-        {Platform.OS === 'android' && <ListRow icon="alarm" title="Alarms & reminders access" accessory="external" disabled={busy || !loaded} onPress={requestExactAccess} />}
-        {Platform.OS !== 'web' && <ListRow icon="systemSettings" title="System notification settings" accessory="external" last disabled={busy || !loaded}
-          onPress={() => { void openNotificationSettings().catch(() => setMessage('System settings could not be opened.')); }} />}
+        {prefs.remindersEnabled && <>
+          <ListRow icon="snooze" title="Default snooze" trailing={<Host matchContents>
+            <Picker selectedValue={prefs.snoozeMinutes} enabled={loaded && !busy} appearance="menu"
+              onValueChange={(minutes) => void update({ snoozeMinutes: minutes as SettingsPreferences['snoozeMinutes'] })}>
+              {([5, 10, 15, 30] as const).map(minutes => <Picker.Item key={minutes} label={`${minutes} min`} value={minutes} />)}
+            </Picker>
+          </Host>} />
+          <ListRow icon="privacyEye" title="Notification privacy" value={privacyLabel} disabled={busy || !loaded} onPress={() => router.push('/notification-privacy')} />
+          <ListRow icon="sound" title="Sound & vibration" value={prefs.reminderSound === 'silent' && !prefs.vibrationEnabled ? 'Off' : 'On'} disabled={busy || !loaded} onPress={() => router.push('/reminder-sound')} />
+          <ListRow icon="status" title="Reminder status" subtitle="Send a test, fix delays, open system settings" last disabled={busy || !loaded} onPress={() => router.push('/reminder-status')} />
+        </>}
       </ListSection>
 
       <ListSection title="Privacy">
