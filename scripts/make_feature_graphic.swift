@@ -142,7 +142,7 @@ guard let pngData = canvas.representation(using: .png, properties: [:]) else {
     exit(1)
 }
 
-let outputPath = "playstore_assets/feature_graphic_1024x500.png"
+let outputPath = "MEDIA/playstore_assets/feature_graphic_1024x500.png"
 do {
     try pngData.write(to: URL(fileURLWithPath: outputPath))
     print("Successfully generated \(outputPath)")

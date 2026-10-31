@@ -1,6 +1,6 @@
 # Local profiles — implementation and verification
 
-Verified 2026-09-26 against `design/switch profile.png`.
+Verified 2026-09-26 against `MEDIA/design/switch profile.png`.
 
 ## Implemented
 

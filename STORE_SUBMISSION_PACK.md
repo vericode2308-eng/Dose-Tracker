@@ -1,6 +1,6 @@
 # Dose Tracker — Apple App Store submission pack
 
-Scope: **Apple App Store only.** Google Play is already live and out of scope for this pack (see `playstore_assets/LISTING.md`, `docs/GOOGLE_PLAY_POLICY_AUDIT.md`, `docs/ANDROID_RELEASE_CHECKS.md` for that history). This document covers the iOS release of the same codebase.
+Scope: **Apple App Store only.** Google Play is already live and out of scope for this pack (see `MEDIA/playstore_assets/LISTING.md`, `docs/GOOGLE_PLAY_POLICY_AUDIT.md`, `docs/ANDROID_RELEASE_CHECKS.md` for that history). This document covers the iOS release of the same codebase.
 
 Last refreshed 2026‑10‑23, after Sentry and the optional diagnostics feature were removed from the app (commit `7dd2ed0`). This is preparation for submission, not permission to publish, and not a guarantee of App Review approval.
 
@@ -20,7 +20,7 @@ Resolved 2026‑10‑23:
 
 Remaining blockers, in order:
 1. **No App Store build yet.** Run `bunx`/`npx eas-cli@latest credentials` and `eas build --platform ios --profile production` (interactive Apple sign-in required). `ios/` is gitignored, so EAS prebuilds from `app.json`; the stale local `ios/` (which still contains `sentry.properties`) is not used.
-2. **No real screenshots.** `appstore_assets/creative-v1/` has correctly sized 1206×2622 design proofs, but every phone says "Capture pending". Capture from the build in step 1 using the storyboard in `appstore_assets/creative-v1/README.md`.
+2. **No real screenshots.** `MEDIA/appstore_assets/creative-v1/` has correctly sized 1206×2622 design proofs, but every phone says "Capture pending". Capture from the build in step 1 using the storyboard in `MEDIA/appstore_assets/creative-v1/README.md`.
 3. **Owner inputs:** review contact name and phone; EU trader status (§3.10); confirm Agreements, Tax and Banking shows Active.
 
 ---
@@ -119,7 +119,7 @@ Statuses: READY / PROPOSED / NEEDS INPUT / NOT APPLICABLE / STORE-GENERATED.
 | Asset | Required | Status |
 | --- | --- | --- |
 | App icon 1024×1024, no alpha | Required | READY — `assets/images/icon-ios.png` (RGB). Delivered inside the build; App Store Connect takes it from the binary. The artwork has a drawn rounded-square frame, so iOS's own mask will show a faint inner border; a full-bleed redraw is optional polish, not a blocker. |
-| iPhone screenshots, 1206×2622 or 1179×2556 portrait, 1–10, no alpha | Required | **MISSING** — `appstore_assets/creative-v1/01–04` are capture-pending design proofs at the right size. Do not upload until real captures replace the placeholder panels. Apple scales these down for smaller iPhones. |
+| iPhone screenshots, 1206×2622 or 1179×2556 portrait, 1–10, no alpha | Required | **MISSING** — `MEDIA/appstore_assets/creative-v1/01–04` are capture-pending design proofs at the right size. Do not upload until real captures replace the placeholder panels. Apple scales these down for smaller iPhones. |
 | iPad screenshots | Not required | NOT APPLICABLE — iPhone-only build |
 | App previews (video) | Optional | Not prepared |
 
@@ -205,7 +205,7 @@ Apple's 2025–26 questionnaire: tiers 4+, 9+, 13+, 16+, 18+, with a separate "M
 **Have:**
 - iOS icon `assets/images/icon-ios.png` (1024×1024, no alpha)
 - Privacy, Terms, Support, Data-deletion pages live at `dosetracker.pages.dev` (deployment `d8b9cce4`, verified 2026‑10‑23)
-- Screenshot storyboard and 1206×2622 design frames in `appstore_assets/creative-v1/`
+- Screenshot storyboard and 1206×2622 design frames in `MEDIA/appstore_assets/creative-v1/`
 
 **Missing:**
 - An App Store build (EAS production) and its linked credentials

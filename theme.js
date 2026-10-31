@@ -1,6 +1,6 @@
 // Single source of DoseTracker design tokens. Tailwind (tailwind.config.js) and the runtime
 // theme (src/features/theme/ThemeContext.tsx) both read this file; do not add a second one.
-// Brand origin: design/Design System Board.png (ivory, navy, teal). Semantic light/dark roles
+// Brand origin: MEDIA/design/Design System Board.png (ivory, navy, teal). Semantic light/dark roles
 // below refine those values for WCAG AA contrast; see docs/DESIGN_SYSTEM.md.
 const palette = {
   ivory: '#FBF8F3',

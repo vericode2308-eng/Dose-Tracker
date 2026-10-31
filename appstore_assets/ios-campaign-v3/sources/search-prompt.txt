@@ -1,8 +1,0 @@
-Use case: ads-marketing. Create a finished premium Apple App Store SEARCH RESULTS image for Dose Tracker, landscape 3:2 composition, requested 3840x2560 pixels.
-Reference image 1 is the authoritative app icon; reference image 2 is the campaign header. Faithfully match the header's ivory, mint and lavender palette, large navy sans-serif typography, translucent orbital ribbons, soft studio lighting, shadows and tactile dimensional icon.
-Recompose for 3:2 rather than cropping the wide header. Large recognizable lavender-blue clock-and-teal-capsule icon with white check on right. Flowing translucent mint and lavender ribbon curves around it, never through lettering. Calm, refined, uncluttered editorial composition. Keep all copy comfortably within 10% margins and make it readable at thumbnail size.
-Exact text, left aligned on left half:
-small brand "DOSE TRACKER"
-large bold headline on three lines "Your medicines.\nYour routine.\nOne clear place."
-supporting text on two short lines "Track doses,\nstock and history."
-Make hierarchy immaculate, generous spacing, clear separation of type and icon. All text must be verbatim and legible. Opaque full bleed artwork. No phone frames, no app UI, no additional text, no badges, no ratings, no medical promises, no guarantees, no watermark.

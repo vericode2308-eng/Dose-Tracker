@@ -58,11 +58,11 @@ example
 *.apks
 
 # launch video output
-brag-output/
+/MEDIA/videos/brag-output/
 
 # promo video output
-promo-output/
+/MEDIA/videos/promo-output/
 
 # App Store screenshot exports (regenerated from the editor; kept local)
-/appstore_assets/ios-screenshot-editor/exports/
-/app store screenshot/
+/MEDIA/appstore_assets/ios-screenshot-editor/exports/
+/MEDIA/app-store-exports/

@@ -10,4 +10,4 @@ android {
 }
 // SDK 57 autolinks Expo's bundled Maven artifact rather than a Gradle project.
 // Keep this version aligned with the pinned JS package.
-dependencies { implementation 'host.exp.exponent:expo.modules.notifications:57.0.21' }
+dependencies { implementation 'host.exp.exponent:expo.modules.notifications:57.0.24' }

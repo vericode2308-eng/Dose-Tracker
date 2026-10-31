@@ -2,7 +2,7 @@
 
 ## Current release/legal update — 2026-10-03
 
-The dated findings below are historical and do not describe the corrected release. The current form worksheet is [playstore_assets/LISTING.md](../playstore_assets/LISTING.md#play-console-answer-worksheet--checked-2026-10-03); exact AAB evidence and remaining runtime checks are in [ANDROID_RELEASE_CHECKS.md](ANDROID_RELEASE_CHECKS.md).
+The dated findings below are historical and do not describe the corrected release. The current form worksheet is [MEDIA/playstore_assets/LISTING.md](../MEDIA/playstore_assets/LISTING.md#play-console-answer-worksheet--checked-2026-10-03); exact AAB evidence and remaining runtime checks are in [ANDROID_RELEASE_CHECKS.md](ANDROID_RELEASE_CHECKS.md).
 
 Owner confirmed adults 18+, no prior Play upload, deletion/support email support@vericodestudio.com, and email deletion within 90 days after resolution unless legally required longer. Optional diagnostics now have three separate default-off categories: errors, fixed logs and manual performance traces. Earlier errors-only descriptions are superseded.
 
@@ -24,10 +24,10 @@ Scope: app screens and navigation, data storage/deletion, notifications and nati
 The implementation now addresses the confirmed source-level findings:
 
 - Sentry initializes only after explicit consent in Settings; withdrawal and local erasure stop future reporting. Consent is separate from preferences backups. Only allowlisted JavaScript error fields are sent; native dumps, replay, screenshots, remote logs and tracing are disabled. Reports are not persistently queued.
-- Privacy text identifies VeriCode and support@vericodestudio.com, covers adult (18+) operators, Sentry, deletion, website hosting/fonts and support email. A static `landing/privacy.html` is generated from `legal/PRIVACY_POLICY.md` with `python3 scripts/render-privacy.py`; it works without JavaScript. Settings and onboarding link to it.
+- Privacy text identifies VeriCode and support@vericodestudio.com, covers adult (18+) operators, Sentry, deletion, website hosting/fonts and support email. A static `MEDIA/landing/privacy.html` is generated from `legal/PRIVACY_POLICY.md` with `python3 scripts/render-privacy.py`; it works without JavaScript. Settings and onboarding link to it.
 - Medical disclaimers and realistic reminder/stock limits appear in the app, landing page and store-listing draft. Unsupported competitor claims were removed. The support form now prepares an email instead of falsely reporting receipt.
 - Expo blocks overlay, broad media and legacy storage permissions. Prebuild regenerated Android from configuration; generated native files remain untracked.
-- `playstore_assets/LISTING.md` supplies accurate proposed listing copy and the remaining submission work. Design previews are labeled and still need final release captures.
+- `MEDIA/playstore_assets/LISTING.md` supplies accurate proposed listing copy and the remaining submission work. Design previews are labeled and still need final release captures.
 
 The findings below are retained as historical evidence. Publication, Console declarations, actual Sentry retention, final native behavior and the submitted AAB still need release verification. Terms operator/contact/age details were updated; unresolved legal clauses have not been invented.
 
@@ -39,8 +39,8 @@ Evidence:
 
 - `src/app/_layout.tsx:15` initializes Sentry immediately with a remote HTTPS DSN, logs enabled, and production traces sampled at 0.2. Initialization is before onboarding or any disclosure/consent choice.
 - `src/app/_layout.tsx:33` sends a database-initialization span; lines 35, 41 and 53 emit operational logs. These explicit log messages do not include medicine names.
-- `legal/PRIVACY_POLICY.md:41` says logs are never automatically transmitted; line 56 denies crash-reporting SDKs and remote telemetry. The copied `landing/legal/PRIVACY_POLICY.md` also needs revision.
-- `src/app/welcome.tsx:24` promises no cloud; `src/features/settings/SettingsHomeScreen.tsx:187` says no cloud connection is used. The landing privacy section (`landing/index.html:991`) omits Sentry entirely.
+- `legal/PRIVACY_POLICY.md:41` says logs are never automatically transmitted; line 56 denies crash-reporting SDKs and remote telemetry. The copied `MEDIA/landing/legal/PRIVACY_POLICY.md` also needs revision.
+- `src/app/welcome.tsx:24` promises no cloud; `src/features/settings/SettingsHomeScreen.tsx:187` says no cloud connection is used. The landing privacy section (`MEDIA/landing/index.html:991`) omits Sentry entirely.
 
 `sendDefaultPii: false` does not disable SDK transmission. This review did not observe transmitted event bodies and does not establish that medication records are being uploaded.
 
@@ -50,7 +50,7 @@ Policy basis: [User Data](https://support.google.com/googleplay/android-develope
 
 ### 2. High — privacy notice is incomplete
 
-`legal/PRIVACY_POLICY.md:3-6` still contains a draft warning and unresolved operator/contact/date placeholders. The HTML policy at `landing/index.html:991-1025` lacks an identified privacy contact and a remote-diagnostics retention/deletion explanation, and links to the unfinished draft. Settings does provide a privacy link (`SettingsHomeScreen.tsx:138`), so the problem is the content and publication verification, not absence of an in-app link.
+`legal/PRIVACY_POLICY.md:3-6` still contains a draft warning and unresolved operator/contact/date placeholders. The HTML policy at `MEDIA/landing/index.html:991-1025` lacks an identified privacy contact and a remote-diagnostics retention/deletion explanation, and links to the unfinished draft. Settings does provide a privacy link (`SettingsHomeScreen.tsx:138`), so the problem is the content and publication verification, not absence of an in-app link.
 
 Finalize the notice with the actual operator/contact and accurate data handling. The [User Data policy](https://support.google.com/googleplay/android-developer/answer/10144311) requires developer/contact information, data practices, security, and retention/deletion disclosures. A Markdown document is not inherently forbidden; unresolved draft content is the issue here.
 
@@ -60,7 +60,7 @@ The linked URL is `https://dosetracker.pages.dev/?legal=privacy`. Both web retri
 
 - `src/app/notifications.tsx:50`: “Never miss a dose”.
 - `src/features/medicines/AddMedicineScreen.tsx:213`: “Get low-stock alerts and never run out.”
-- `landing/support.html:103-105`: promises reliable alarms every time and guaranteed on-time reminders.
+- `MEDIA/landing/support.html:103-105`: promises reliable alarms every time and guaranteed on-time reminders.
 
 The implementation correctly describes system-dependent delivery (`src/notificationManager.js:109`) and limits recurring alarms to supported schedules (`:47`). The medicine form disables reminders for unsupported recurrence (`AddMedicineScreen.tsx:88`, `:212`). Stock warnings depend on user-maintained quantities; they cannot guarantee supply.
 
@@ -85,7 +85,7 @@ Policy basis: [Health Content and Services](https://support.google.com/googlepla
 | Health declaration | Complete/verify the Play Console form. The app fits the medication/treatment-management category in Google's [declaration guidance](https://support.google.com/googleplay/android-developer/answer/14738291). |
 | Health disclaimer | The actual store description was unavailable. For a non-medical-device app, add the required disclaimer that it is not a medical device and does not diagnose, treat, cure or prevent conditions, plus a reminder to consult a healthcare professional. The website's existing medical-advice statement is narrower. See [Health Content and Services](https://support.google.com/googleplay/android-developer/answer/16679511). |
 | Data safety | Do not declare no collection simply because the health database is local. Inspect Sentry events for crash logs, diagnostics, performance data and identifiers, then declare actual practices. Local-only records need not be declared as collected; SDK transmissions do. A service-provider sharing exception does not remove collection obligations. See [Data safety guidance](https://support.google.com/googleplay/android-developer/answer/10787469). |
-| Store screenshots | `playstore_assets/README.md:3` and `design/README.md` identify screenshots as unverified design previews. Replace them with accurate release captures or verify every depicted feature. Mockups are not automatically forbidden; misleading depictions are. See [Metadata](https://support.google.com/googleplay/android-developer/answer/9898842). |
+| Store screenshots | `MEDIA/playstore_assets/README.md:3` and `MEDIA/design/README.md` identify screenshots as unverified design previews. Replace them with accurate release captures or verify every depicted feature. Mockups are not automatically forbidden; misleading depictions are. See [Metadata](https://support.google.com/googleplay/android-developer/answer/9898842). |
 | Target API | New phone-app submissions/updates need API 36 or higher from August 31, 2026, unless an applicable extension applies. SDK 57 alone is not proof of the submitted bundle's target. Inspect the AAB. See [target API requirements](https://support.google.com/googleplay/android-developer/answer/11926878). |
 | Audience and rating | Verify target age groups and content-rating answers. Caregiver-managed child profiles do not by themselves establish a child-directed audience. The draft's age/audience placeholder remains unresolved. Check [Families policy](https://play.google/developer-content-policy/) if children are part of the intended audience. |
 | Native runtime | Test onboarding, denied permissions, reminders, reboot/time changes, erasure and app lock on the release build. Test notification actions while app lock is enabled: `backgroundActions.ts:14` calls `handleReminderAction`, which mutates records without checking app lock (`notificationManager.js:513`). This is a security/product-behavior question requiring device verification, not a confirmed Play violation. |

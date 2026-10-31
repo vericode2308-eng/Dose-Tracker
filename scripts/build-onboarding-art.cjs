@@ -4,7 +4,7 @@ const path = require('node:path');
 const { PNG } = require('pngjs');
 
 const root = path.resolve(__dirname, '..');
-const input = PNG.sync.read(fs.readFileSync(path.join(root, 'design/onboaarding image.png')));
+const input = PNG.sync.read(fs.readFileSync(path.join(root, 'MEDIA/design/onboaarding image.png')));
 const { width, height, data } = input;
 const count = width * height;
 const background = new Uint8Array(count);

@@ -1,14 +1,14 @@
 """Generate iOS App Store Connect header artwork (brand creative, no device UI).
 
 Apple header sizes: 5244 x 2950 and 3840 x 1646. Output is opaque RGB PNG
-(no alpha), written to appstore_assets/ios-campaign-v2/header-and-search/.
+(no alpha), written to MEDIA/appstore_assets/ios-campaign-v2/header-and-search/.
 Run: python3 scripts/make_appstore_header.py
 """
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "appstore_assets" / "ios-campaign-v2" / "header-and-search"
+OUT = ROOT / "MEDIA" / "appstore_assets" / "ios-campaign-v2" / "header-and-search"
 TARGETS = [
     ("01-universal-5244x2950.png", 5244, 2950),
     ("02-header-wide-3840x1646.png", 3840, 1646),

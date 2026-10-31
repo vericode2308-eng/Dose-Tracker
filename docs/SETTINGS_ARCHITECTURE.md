@@ -97,7 +97,7 @@ The app avoids creating a new alert channel if the currently selected channel is
 
 Sentry and the optional-diagnostics feature were removed: no onboarding consent step, no Settings → Privacy → Optional diagnostics item, no remote error/log/trace reporting. The app makes no diagnostics network requests. Legacy `@dosetracker/diagnostics-*` AsyncStorage keys on existing installs are no longer read or written. The 2026-09-30 design is in git history and `docs/CORRECTIONS_LOG.md`.
 
-The public privacy source is `legal/PRIVACY_POLICY.md`; `python3 scripts/render-privacy.py` synchronizes `landing/legal/PRIVACY_POLICY.md` and `landing/privacy.html`. Publish the updated landing files with the app release.
+The public privacy source is `legal/PRIVACY_POLICY.md`; `python3 scripts/render-privacy.py` synchronizes `MEDIA/landing/legal/PRIVACY_POLICY.md` and `MEDIA/landing/privacy.html`. Publish the updated landing files with the app release.
 
 ## Security remediation (2026-10-01)
 

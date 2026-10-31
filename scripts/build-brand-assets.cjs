@@ -4,7 +4,7 @@ const path = require('node:path');
 const { PNG } = require('pngjs');
 
 const root = path.resolve(__dirname, '..');
-const source = PNG.sync.read(fs.readFileSync(path.join(root, 'assets/brand/source.png')));
+const source = PNG.sync.read(fs.readFileSync(path.join(root, 'MEDIA/brand/source.png')));
 const out = path.join(root, 'assets/images');
 // The supplied PNG includes a painted checkerboard, not real transparency.
 // Its colored rounded square is 1767 × 1767, starting at (224, 105).
@@ -71,7 +71,9 @@ const assets = [
   ['favicon.png', 64, 'mark'],
 ];
 for (const [file, size, kind] of assets) {
-  const destination = path.join(out, file);
+  const outputFolder = file === 'splash-icon.png' ? path.join(root, 'MEDIA/unused-app-assets') : out;
+  fs.mkdirSync(outputFolder, { recursive: true });
+  const destination = path.join(outputFolder, file);
   fs.writeFileSync(destination, PNG.sync.write(render(size, kind)));
   console.log(`${file}: ${size}×${size}`);
 }

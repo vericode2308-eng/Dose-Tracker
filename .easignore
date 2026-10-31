@@ -1,19 +1,82 @@
-# EAS Build upload exclusions (same syntax as .gitignore).
-# node_modules, ios/, android/ are already excluded via .gitignore and don't need repeating.
+# Keep the .gitignore baseline here: EAS uses this file instead of .gitignore.
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# Environment files; examples must contain placeholders only.
+.env
+.env.*
+.env*.local
+!.env.example
+
+# typescript
+*.tsbuildinfo
+
+example
+
+# generated native folders
+/ios
+/android
+
+# Local Expo module build output
+/modules/*/android/build/
+/modules/*/android/.gradle/
+
+# Private build output and signing material
+/release-artifacts/
+/credentials.json
+*.keystore
+*.aab
+*.apk
+*.apks
+
+# launch video output
+/MEDIA/videos/brag-output/
+
+# promo video output
+/MEDIA/videos/promo-output/
+
+# App Store screenshot exports (regenerated from the editor; kept local)
+/MEDIA/appstore_assets/ios-screenshot-editor/exports/
+/MEDIA/app-store-exports/
+
+# Source-independent media and development/reference material
+/MEDIA/
 .git/
 docs/
 *.md
 !README.md
-
-# test files not needed to produce a build
 __tests__/
+tests/
 *.test.js
 *.test.ts
 *.test.tsx
-
-# local tooling output
-brag-output/
-promo-output/
-release-artifacts/
 .claude/

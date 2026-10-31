@@ -7,5 +7,5 @@ module.exports = defineConfig([
     files: ['scripts/**/*.cjs'],
     languageOptions: { globals: { __dirname: 'readonly' } },
   },
-  { ignores: ['vericode/**', 'dist/**', '.expo/**'] },
+  { ignores: ['MEDIA/**', 'vericode/**', 'dist/**', '.expo/**'] },
 ]);
