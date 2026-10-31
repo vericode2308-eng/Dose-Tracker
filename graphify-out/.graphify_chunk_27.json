@@ -1,0 +1,87 @@
+{
+  "nodes": [
+    {
+      "id": "media_artifacts_landing_android_ios_live_2026_10_25_image",
+      "label": "Android and iOS landing comparison",
+      "file_type": "image",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/artifacts/landing-android-ios-live-2026-10-25.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Your routine. Your device."
+    },
+    {
+      "id": "media_artifacts_landing_android_ios_live_2026_10_25_health_records_do_not_sync_between_android_and_iphone",
+      "label": "Health records do not sync between Android and iPhone",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/artifacts/landing-android-ios-live-2026-10-25.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "media_artifacts_landing_android_ios_live_2026_10_25_android_google_play_download",
+      "label": "Android Google Play download",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/artifacts/landing-android-ios-live-2026-10-25.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "media_artifacts_landing_android_ios_live_2026_10_25_ios_26_1_alarmkit_repeated_ringing__no_public_app_store_link_yet",
+      "label": "iOS 26.1 AlarmKit repeated ringing; no public App Store link yet",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/artifacts/landing-android-ios-live-2026-10-25.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "media_artifacts_landing_android_ios_live_2026_10_25_image",
+      "target": "media_artifacts_landing_android_ios_live_2026_10_25_health_records_do_not_sync_between_android_and_iphone",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/artifacts/landing-android-ios-live-2026-10-25.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "media_artifacts_landing_android_ios_live_2026_10_25_image",
+      "target": "media_artifacts_landing_android_ios_live_2026_10_25_android_google_play_download",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/artifacts/landing-android-ios-live-2026-10-25.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "media_artifacts_landing_android_ios_live_2026_10_25_image",
+      "target": "media_artifacts_landing_android_ios_live_2026_10_25_ios_26_1_alarmkit_repeated_ringing__no_public_app_store_link_yet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/artifacts/landing-android-ios-live-2026-10-25.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/artifacts/landing-android-ios-live-2026-10-25.png": 0
+  }
+}

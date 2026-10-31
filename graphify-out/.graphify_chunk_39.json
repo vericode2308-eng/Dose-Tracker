@@ -1,0 +1,87 @@
+{
+  "nodes": [
+    {
+      "id": "media_design_onboarding_welcome_screen_2_image",
+      "label": "First profile onboarding design mockup",
+      "file_type": "image",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/Onboarding/welcome screen 2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Create your first profile step one of three"
+    },
+    {
+      "id": "media_design_onboarding_welcome_screen_2_name_and_avatar_color",
+      "label": "Name and avatar color",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/Onboarding/welcome screen 2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "media_design_onboarding_welcome_screen_2_optional_photo__birth_date_and_notes",
+      "label": "Optional photo, birth date and notes",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/Onboarding/welcome screen 2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "media_design_onboarding_welcome_screen_2_add_first_medicine_later",
+      "label": "Add first medicine later",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/Onboarding/welcome screen 2.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "media_design_onboarding_welcome_screen_2_image",
+      "target": "media_design_onboarding_welcome_screen_2_name_and_avatar_color",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/Onboarding/welcome screen 2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "media_design_onboarding_welcome_screen_2_image",
+      "target": "media_design_onboarding_welcome_screen_2_optional_photo__birth_date_and_notes",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/Onboarding/welcome screen 2.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "media_design_onboarding_welcome_screen_2_image",
+      "target": "media_design_onboarding_welcome_screen_2_add_first_medicine_later",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/Onboarding/welcome screen 2.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/Onboarding/welcome screen 2.png": 0
+  }
+}

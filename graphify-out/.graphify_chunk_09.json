@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    {
+      "id": "media_appstore_assets_ios_screenshot_editor_public_frames_duo_inner_landscape_image",
+      "label": "Foldable inner landscape device frame",
+      "file_type": "image",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/appstore_assets/ios-screenshot-editor/public/frames/duo-inner-landscape.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Black hinged landscape display with empty screen"
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/appstore_assets/ios-screenshot-editor/public/frames/duo-inner-landscape.png": 0
+  }
+}

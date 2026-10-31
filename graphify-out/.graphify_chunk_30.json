@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    {
+      "id": "media_brand_source_image",
+      "label": "DoseTracker source brand icon",
+      "file_type": "image",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/brand/source.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Teal capsule and checkmark on a clock dial"
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/brand/source.png": 0
+  }
+}

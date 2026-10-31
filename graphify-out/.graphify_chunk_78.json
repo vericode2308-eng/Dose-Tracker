@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    {
+      "id": "media_unused_app_assets_logo_glow_image",
+      "label": "Blue glow decorative asset",
+      "file_type": "image",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/unused-app-assets/logo-glow.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Soft blue circular glow with transparent surroundings"
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/unused-app-assets/logo-glow.png": 0
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "nodes": [
+    {
+      "id": "media_playstore_assets_screenshots_08_privacy_and_security_image",
+      "label": "Privacy and security settings design screenshot",
+      "file_type": "image",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/playstore_assets/screenshots/08_privacy_and_security.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Settings groups for profiles, appearance, reminders, privacy and data"
+    },
+    {
+      "id": "media_playstore_assets_screenshots_08_privacy_and_security_device_authentication_off",
+      "label": "Device authentication off",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/playstore_assets/screenshots/08_privacy_and_security.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "media_playstore_assets_screenshots_08_privacy_and_security_notification_privacy_shows_content",
+      "label": "Notification privacy shows content",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/playstore_assets/screenshots/08_privacy_and_security.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "media_playstore_assets_screenshots_08_privacy_and_security_export_backup__export_csv_and_erase_all_data",
+      "label": "Export backup, export CSV and erase all data",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/playstore_assets/screenshots/08_privacy_and_security.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "media_playstore_assets_screenshots_08_privacy_and_security_image",
+      "target": "media_playstore_assets_screenshots_08_privacy_and_security_device_authentication_off",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/playstore_assets/screenshots/08_privacy_and_security.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "media_playstore_assets_screenshots_08_privacy_and_security_image",
+      "target": "media_playstore_assets_screenshots_08_privacy_and_security_notification_privacy_shows_content",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/playstore_assets/screenshots/08_privacy_and_security.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "media_playstore_assets_screenshots_08_privacy_and_security_image",
+      "target": "media_playstore_assets_screenshots_08_privacy_and_security_export_backup__export_csv_and_erase_all_data",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/playstore_assets/screenshots/08_privacy_and_security.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/playstore_assets/screenshots/08_privacy_and_security.png": 0
+  }
+}

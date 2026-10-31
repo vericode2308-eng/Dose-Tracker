@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    {
+      "id": "media_appstore_assets_ios_screenshot_editor_public_mockup_image",
+      "label": "Gold phone mockup frame",
+      "file_type": "image",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/appstore_assets/ios-screenshot-editor/public/mockup.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Portrait phone bezel with centered camera opening"
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/appstore_assets/ios-screenshot-editor/public/mockup.png": 0
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    {
+      "id": "media_marketing_youtube_vericode_avatar_image",
+      "label": "VeriCode avatar mark",
+      "file_type": "image",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/marketing/youtube/vericode-avatar.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Blue, navy and teal rounded geometric tiles"
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/marketing/youtube/vericode-avatar.png": 0
+  }
+}

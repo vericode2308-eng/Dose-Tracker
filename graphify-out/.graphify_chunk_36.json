@@ -1,0 +1,87 @@
+{
+  "nodes": [
+    {
+      "id": "media_design_06_add_medicine_step_2_schedule_image",
+      "label": "Schedule wizard design mockup",
+      "file_type": "image",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/06-add-medicine-step-2-schedule.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Every eight hours selected in step two"
+    },
+    {
+      "id": "media_design_06_add_medicine_step_2_schedule_daily__weekday__interval_and_as_needed_choices",
+      "label": "Daily, weekday, interval and as-needed choices",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/06-add-medicine-step-2-schedule.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "media_design_06_add_medicine_step_2_schedule_seven_day_course_duration",
+      "label": "Seven day course duration",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/06-add-medicine-step-2-schedule.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "media_design_06_add_medicine_step_2_schedule_dose_times_preview",
+      "label": "Dose times preview",
+      "file_type": "concept",
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/06-add-medicine-step-2-schedule.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "media_design_06_add_medicine_step_2_schedule_image",
+      "target": "media_design_06_add_medicine_step_2_schedule_daily__weekday__interval_and_as_needed_choices",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/06-add-medicine-step-2-schedule.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "media_design_06_add_medicine_step_2_schedule_image",
+      "target": "media_design_06_add_medicine_step_2_schedule_seven_day_course_duration",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/06-add-medicine-step-2-schedule.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "media_design_06_add_medicine_step_2_schedule_image",
+      "target": "media_design_06_add_medicine_step_2_schedule_dose_times_preview",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/06-add-medicine-step-2-schedule.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/Users/shome/Documents/Projects/DoseTrackerApp/MEDIA/design/06-add-medicine-step-2-schedule.png": 0
+  }
+}
