@@ -73,8 +73,8 @@ The app avoids creating a new alert channel if the currently selected channel is
 | Restore preferences | Imports a validated JSON file | `expo-document-picker` / `expo-file-system` read a size-limited file, accepts current and migrated legacy settings, writes AsyncStorage, and reconciles reminders. |
 | Erase all data | Deletes app-owned local information, then returns to onboarding | Cancels/dismisses native notifications, clears SQLite medicines/schedules/history/snoozes/profiles/reminder issues, removes Settings and onboarding AsyncStorage, deletes matching local profile photos, clears the app-lock SecureStore key, and returns to onboarding. |
 | Offline-first | Opens About text | Informational copy only; no separate preference. SQLite and Settings/Onboarding AsyncStorage are local. Exports are user-directed. |
-| Privacy Policy | Opens `https://dosetracker.pages.dev/privacy.html` in the browser | Expo Router external link; the standalone page presents the full Privacy Policy without JavaScript. Internet access required. No app data is sent in the URL. |
-| Terms of Service | Opens `https://dosetracker.pages.dev/?legal=terms` in the browser | Expo Router external link; the published site automatically selects the Terms of Service. Internet access required. No backend setting. |
+| Privacy Policy | Opens `https://vericodestudio.com/products/dose-tracker/privacy/` in the browser | Expo Router external link; the standalone page presents the full Privacy Policy without JavaScript. Internet access required. No app data is sent in the URL. |
+| Terms of Service | Opens `https://vericodestudio.com/products/dose-tracker/terms/` in the browser | Expo Router external link; the published site automatically selects the Terms of Service. Internet access required. No backend setting. |
 
 ## Gaps and polish priorities
 

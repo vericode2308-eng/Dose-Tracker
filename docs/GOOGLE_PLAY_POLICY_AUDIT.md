@@ -54,7 +54,7 @@ Policy basis: [User Data](https://support.google.com/googleplay/android-develope
 
 Finalize the notice with the actual operator/contact and accurate data handling. The [User Data policy](https://support.google.com/googleplay/android-developer/answer/10144311) requires developer/contact information, data practices, security, and retention/deletion disclosures. A Markdown document is not inherently forbidden; unresolved draft content is the issue here.
 
-The linked URL is `https://dosetracker.pages.dev/?legal=privacy`. Both web retrieval and a direct request failed from this environment. This does **not** prove the site is unavailable to users. Confirm the live policy opens directly, without login or geographic restrictions, and matches the final text.
+The linked URL is `https://vericodestudio.com/products/dose-tracker/privacy/`. Both web retrieval and a direct request failed from this environment. This does **not** prove the site is unavailable to users. Confirm the live policy opens directly, without login or geographic restrictions, and matches the final text.
 
 ### 3. Medium — absolute reminder and stock claims
 

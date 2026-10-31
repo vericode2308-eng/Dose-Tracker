@@ -13,7 +13,7 @@ Last refreshed 2026‑10‑23, after Sentry and the optional diagnostics feature
 **Metadata, policy and config: READY. Submission: still blocked on the build and screenshots, plus four owner inputs.**
 
 Resolved 2026‑10‑23:
-- ~~Privacy policy Android-only / not deployed~~ — iOS-inclusive and Sentry-free policy is **live** at `https://dosetracker.pages.dev/privacy.html` (Cloudflare Pages deployment `d8b9cce4`, effective October 23, 2026). The previous production deployment returned 404 for every `.html` URL; that is fixed and verified.
+- ~~Privacy policy Android-only / not deployed~~ — iOS-inclusive and Sentry-free policy is **live** at `https://vericodestudio.com/products/dose-tracker/privacy/` (Cloudflare Pages deployment `d8b9cce4`, effective October 23, 2026). The previous production deployment returned 404 for every `.html` URL; that is fixed and verified.
 - ~~Sentry/diagnostics described in policy, description, App Privacy and reviewer notes~~ — removed everywhere. The app now collects no data off-device (§3.6).
 - ~~App icon has alpha~~ — `assets/images/icon-ios.png` (1024×1024 RGB, no alpha) is set as `expo.ios.icon`. Android icon unchanged.
 - ~~iPad support unknown~~ — `ios.supportsTablet` is not set in `app.json`, so Expo builds iPhone-only (`UIDeviceFamily = [1]`). No iPad screenshots required.
@@ -67,7 +67,7 @@ Reminders depend on your device permissions, notification settings, Focus/Do Not
 
 Dose Tracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment. Follow your care team's instructions.
 
-Privacy policy: https://dosetracker.pages.dev/privacy.html
+Privacy policy: https://vericodestudio.com/products/dose-tracker/privacy/
 Support: support@vericodestudio.com
 ```
 1,675 characters (limit 4,000). Claims checked against source: AlarmKit "Ring Repeatedly" (`modules/dose-alarm-access/ios/DoseAlarmAccessModule.swift`), Face ID lock (`expo-local-authentication` plugin `faceIDPermission` in `app.json`), no ads/account/subscription/analytics (no such dependency in `package.json`; no network calls in `src/` or `modules/` other than links to the website).
@@ -109,9 +109,9 @@ Statuses: READY / PROPOSED / NEEDS INPUT / NOT APPLICABLE / STORE-GENERATED.
 | Description | Required | §2 block | READY |
 | Keywords | Required | §2 block | READY |
 | Promotional text | Optional | §2 block | READY |
-| Support URL | Required | `https://dosetracker.pages.dev/support.html` | READY — live, verified 2026‑10‑23 |
-| Marketing URL | Optional | `https://dosetracker.pages.dev/` | READY — live |
-| Privacy policy URL | Required | `https://dosetracker.pages.dev/privacy.html` | READY — live, Sentry-free, verified 2026‑10‑23 |
+| Support URL | Required | `https://vericodestudio.com/products/dose-tracker/support/` | READY — live, verified 2026‑10‑23 |
+| Marketing URL | Optional | `https://vericodestudio.com/products/dose-tracker/` | READY — live |
+| Privacy policy URL | Required | `https://vericodestudio.com/products/dose-tracker/privacy/` | READY — live, Sentry-free, verified 2026‑10‑23 |
 | What's New | Not required for a first version | — | NOT APPLICABLE |
 
 ### 3.4 Media
@@ -204,7 +204,7 @@ Apple's 2025–26 questionnaire: tiers 4+, 9+, 13+, 16+, 18+, with a separate "M
 
 **Have:**
 - iOS icon `assets/images/icon-ios.png` (1024×1024, no alpha)
-- Privacy, Terms, Support, Data-deletion pages live at `dosetracker.pages.dev` (deployment `d8b9cce4`, verified 2026‑10‑23)
+- Privacy, Terms, Support, Data-deletion pages live at `vericodestudio.com/products/dose-tracker/` (deployment `d8b9cce4`, verified 2026‑10‑23)
 - Screenshot storyboard and 1206×2622 design frames in `MEDIA/appstore_assets/creative-v1/`
 
 **Missing:**

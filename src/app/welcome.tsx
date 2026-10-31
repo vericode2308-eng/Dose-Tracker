@@ -1,6 +1,7 @@
 import { Link, Redirect, useRouter } from 'expo-router';
 import { Image, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PRIVACY_URL } from '@/constants/legal';
 import { useOnboarding } from '@/features/onboarding/context';
 import { Button, Feature, Page, PrivacyNote, ReferenceArt, useOnboardingStyles } from '@/features/onboarding/ui';
 import { useTheme } from '@/features/theme/ThemeContext';
@@ -36,6 +37,6 @@ export default function WelcomeScreen() {
       <Feature icon="lock" title="No subscription">Free features, with no sign up.</Feature>
     </View>
     <Text style={{ marginTop: 6, paddingHorizontal: 4, fontSize: 12, lineHeight: 16, color: colors.secondary }}>For adults 18+ managing their own or authorized dependents’ medicines. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment.</Text>
-    <Link href="https://dosetracker.pages.dev/privacy.html" style={{ padding: 10, textAlign: 'center', color: colors.label, textDecorationLine: 'underline' }}>Privacy Policy</Link>
+    <Link href={PRIVACY_URL} style={{ padding: 10, textAlign: 'center', color: colors.label, textDecorationLine: 'underline' }}>Privacy Policy</Link>
   </Page>;
 }

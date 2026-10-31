@@ -2,9 +2,10 @@ import { Host, Picker } from '@expo/ui';
 import { SegmentedControl } from '@expo/ui/community/segmented-control';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Linking, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { reconcileReminders, eraseMedicineDataWithReminders } from '@/notificationManager';
+import { openLegalUrl, PRIVACY_URL, TERMS_URL } from '@/constants/legal';
 import { useOnboarding } from '@/features/onboarding/context';
 import { initials } from '@/features/onboarding/model';
 import { useProfiles } from '@/features/profiles/context';
@@ -182,8 +183,8 @@ export default function SettingsHomeScreen() {
 
       <ListSection title="About" footer="Offline-first: your records stay on this device. No account or cloud sync.">
         <ListRow icon="aboutApp" title="About DoseTracker" value="1.0.0" onPress={() => setMenu('about')} />
-        <ListRow icon="policy" title="Privacy Policy" accessory="external" accessibilityHint="Opens in your browser" onPress={() => void Linking.openURL('https://dosetracker.pages.dev/privacy.html')} />
-        <ListRow icon="terms" title="Terms of Service" accessory="external" accessibilityHint="Opens in your browser" last onPress={() => void Linking.openURL('https://dosetracker.pages.dev/?legal=terms')} />
+        <ListRow icon="policy" title="Privacy Policy" accessory="external" accessibilityHint="Opens in your browser" onPress={() => openLegalUrl(PRIVACY_URL)} />
+        <ListRow icon="terms" title="Terms of Service" accessory="external" accessibilityHint="Opens in your browser" last onPress={() => openLegalUrl(TERMS_URL)} />
       </ListSection>
     </ScrollView>
 

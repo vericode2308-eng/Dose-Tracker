@@ -658,3 +658,13 @@ Record user-requested corrections here with the request date, affected screen, i
 - **Status:** Source review complete; authorized production deployment and live checks follow. No mobile app code, native configuration or app-store submission changed.
 
 - **Publication verified:** Final production deployment `https://4c29a2fe.vericode-studio.pages.dev` (`vericode-studio/main`). Verified live landing, support, terms/use and privacy coverage; browser proof confirms styled Android/iPhone cards and properly sized Google Play button. Versioned stylesheet/script URLs resolve previously cached assets. Recorded final artifact hashes and owner-confirmed no-iOS-link status in website internal records. Proof: `MEDIA/artifacts/landing-android-ios-live-2026-10-25.png`. Complete; unrelated site files preserved and no mobile release performed.
+
+## 2026-10-31 — Point legal links at the VeriCode studio website
+
+- **Request:** Replace every Privacy Policy and Terms of Service link with the DoseTracker pages on vericodestudio.com; links only.
+- **Implemented:** Added `src/constants/legal.ts` (single definition of both URLs plus a crash-safe `openLegalUrl`). Settings > About and the Welcome privacy link now use it; both open in the system browser. Store-listing docs updated for the privacy URL.
+- **Affected files:** `src/constants/legal.ts`, `src/features/settings/SettingsHomeScreen.tsx`, `src/app/welcome.tsx`, `STORE_SUBMISSION_PACK.md`, `MEDIA/playstore_assets/LISTING.md`, `docs/SETTINGS_ARCHITECTURE.md`.
+- **Verification:** Lint, TypeScript and `npm test` passed; both URLs return HTTP 200. Source change only; not verified on a device.
+- **Status:** Source changed, not released. Play Console / App Store Connect fields must be updated by hand.
+
+- **Follow-up (2026-10-31):** Support, marketing and data-deletion URLs in `STORE_SUBMISSION_PACK.md`, `MEDIA/playstore_assets/LISTING.md` and `docs/GOOGLE_PLAY_POLICY_AUDIT.md` moved to `vericodestudio.com/products/dose-tracker/{,support/,delete-data/}` (all HTTP 200). Historical deployment logs keep the old domain on purpose.
