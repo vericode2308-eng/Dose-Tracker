@@ -58,7 +58,7 @@ example
 *.apks
 
 # launch video output
-/MEDIA/videos/brag-output/
+/MEDIA
 
 # promo video output
 /MEDIA/videos/promo-output/
