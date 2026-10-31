@@ -1,0 +1,21 @@
+{
+  "captured": "2026-10-25",
+  "platform": "iOS simulator development build",
+  "dimensions": [
+    1206,
+    2622
+  ],
+  "data": "Fictional Juniper, Rowan and Sage Vale profiles; fictional medicines. No personal records.",
+  "source": "MEDIA/appstore_assets/ios-screenshot-editor/public/screenshots/apple/iphone/en",
+  "files": {
+    "01-today.png": "cf44b70129e8251bdeaba6df4ddabbff7083dbb6d4bad90d92dec9999e09ac6d",
+    "02-profiles.png": "57c0fe22f8d6ca462964627397cc0964b4d88c05e04050439b0c71e468b4fb43",
+    "03-history.png": "afc64cacf37d924c6ed6df2524e3a05045ddf2e68ad77e2ea9c19741eba842f2",
+    "04-medicines.png": "c74dbd025a7fbdbe99c89c252348bdec910f3de196c446dce0797dc6a4f2eff7",
+    "05-detail.png": "ceaec5d9d2abb15cf3d8061f12b9acac04809f70c8fd669e497a7d964899fbaf",
+    "06-settings.png": "024cc433af8f419a7605598aa1ea37d099c602959dcb1a86dc1c308bb0ac63d9",
+    "07-privacy.png": "2960edb2bd0d1ef7ea742fa799e480db9411478218b31d5aa90cc80d5d26a89b",
+    "08-sound.png": "c0a4bdd29e58919857955627ebbc86400718d6ca54d7259c1e8df07978bb589c"
+  },
+  "shipping_build_verified": false
+}
