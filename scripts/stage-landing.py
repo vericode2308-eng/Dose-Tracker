@@ -3,7 +3,7 @@ import shutil
 import sys
 from pathlib import Path
 
-source = Path(__file__).resolve().parent.parent / "MEDIA" / "landing"
+source = Path(__file__).resolve().parent.parent / "landing"
 destination = Path(sys.argv[1]).resolve()
 destination.mkdir(parents=True, exist_ok=False)
 for filename in (
