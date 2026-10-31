@@ -1,6 +1,6 @@
 # DoseTracker Settings and Android reminder architecture
 
-This describes the implemented Expo SDK 57 code as of October 2026. DoseTracker has no account or cloud reminder service. `app.json` configures the generated standalone Android application; Expo Router presents the Settings screens.
+This describes the implemented code as of October 2026. It was written against Expo SDK 57; the app now runs SDK 58 (upgraded 2026-10-31), and the native reminder internals described below have not yet been re-verified on a device under SDK 58. DoseTracker has no account or cloud reminder service. `app.json` configures the generated standalone Android application; Expo Router presents the Settings screens.
 
 ## Storage map
 

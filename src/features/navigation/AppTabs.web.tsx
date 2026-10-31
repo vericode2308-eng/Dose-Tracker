@@ -12,8 +12,8 @@ export function AppTabs() {
     tabBarInactiveTintColor: colors.secondaryLabel,
     tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.separator },
   }}>
-    <Tabs.Screen name="(today)" options={{ title: 'Today', tabBarIcon: ({ color, size }) => <Feather name="sun" color={color} size={size} /> }} />
-    <Tabs.Screen name="(history)" options={{ title: 'History', tabBarIcon: ({ color, size }) => <Feather name="clock" color={color} size={size} /> }} />
-    <Tabs.Screen name="(settings)" options={{ title: 'Settings', tabBarIcon: ({ color, size }) => <Feather name="settings" color={color} size={size} /> }} />
+    <Tabs.Screen name="(today)" options={{ title: 'Today', tabBarIcon: ({ color, size }) => <Feather name="sun" color={color as string} size={size} /> }} />
+    <Tabs.Screen name="(history)" options={{ title: 'History', tabBarIcon: ({ color, size }) => <Feather name="clock" color={color as string} size={size} /> }} />
+    <Tabs.Screen name="(settings)" options={{ title: 'Settings', tabBarIcon: ({ color, size }) => <Feather name="settings" color={color as string} size={size} /> }} />
   </Tabs>;
 }

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dose Tracker",
     "slug": "dosetracker",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "dosetracker",
@@ -10,6 +10,7 @@
     "ios": {
       "icon": "./assets/images/icon-ios.png",
       "bundleIdentifier": "com.vericodestudio.dosetracker",
+      "appleTeamId": "P3DGPMF7LD",
       "infoPlist": {
         "NSAlarmKitUsageDescription": "DoseTracker rings an alarm at your medication times until you stop it.",
         "ITSAppUsesNonExemptEncryption": false
@@ -30,7 +31,7 @@
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "package": "com.vericodestudio.dose_tracker",
-      "versionCode": 2,
+      "versionCode": 3,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",

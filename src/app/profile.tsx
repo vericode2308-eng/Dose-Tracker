@@ -1,7 +1,7 @@
 import { publicErrorMessage } from '@/features/security/errors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import { initializeProfiles, saveProfile } from '@/database';
 import { setProfileArchivedWithReminders } from '@/notificationManager';
 import { useProfiles } from '@/features/profiles/context';
@@ -44,8 +44,8 @@ const styles = useOnboardingStyles();
   const [moreColors, setMoreColors] = useState(false);
   const saving = useRef(false);
   const savedId = useRef(target?.id);
-  const nameInput = useRef<TextInput>(null);
-  const birthdayInput = useRef<TextInput>(null);
+  const nameInput = useRef<TextInputInstance>(null);
+  const birthdayInput = useRef<TextInputInstance>(null);
   const letters = initials(profile.name);
   async function proceed(skip = false) {
     if (saving.current || photoBusy) return;

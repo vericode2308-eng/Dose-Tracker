@@ -1,6 +1,6 @@
 # Dose Tracker
 
-Expo SDK 57 / React Native medication tracker. Android is the primary release target,
+Expo SDK 58 / React Native medication tracker. Android is the primary release target,
 with iOS and web support. Follow `AGENTS.md` before making changes.
 
 ## Develop

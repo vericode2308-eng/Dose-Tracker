@@ -1,5 +1,13 @@
 # Corrections log
 
+## 2026-10-31 — Expo SDK 58 upgrade, native folders regenerated, same signing identity
+
+- **Request:** Upgrade to SDK 58 including the native folders, keeping the same app signing so the release ships as an update on Play and the App Store; back up signing keys in `Keys for Google and Apple`.
+- **Implemented:** Expo 58.0.21 / React Native 0.88.1 / React 19.3.0 with all Expo packages aligned by `expo install --fix`. Bumped the local module's `expo.modules.notifications` pin to 58.1.7. Fixed SDK 58 type changes: async `FileHandle.readBytes` (awaited inside the existing try/finally), `TextInputInstance` refs, and the tab icon `ColorValue`. Retired both patches and both overrides: Router 58 no longer uses `query-string` or holds the unhandled-link state the lifecycle patch fixed, and `xcode@3` left the tree. The malformed-query regression now targets Router's own parser. Added `ios.appleTeamId` (`P3DGPMF7LD`) so regeneration keeps the team. Regenerated `android/` and `ios/` with `expo prebuild --clean`; pre-upgrade copies were kept outside the repository. Updated the stale signing-backup path in `docs/ANDROID_RELEASE_CHECKS.md`.
+- **Affected files:** `package.json`, `package-lock.json`, `app.json`, `modules/dose-alarm-access/android/build.gradle`, `src/features/onboarding/photos.ts`, `src/app/profile.tsx`, `src/features/navigation/AppTabs.web.tsx`, `tests/security.test.cjs`, removed `patches/*`, `AGENTS.md`, `README.md`, `ANDROID_GUIDEBOOK.md`, `docs/SECURITY_LESSONS.md`, `docs/SETTINGS_ARCHITECTURE.md`, `docs/ANDROID_RELEASE_CHECKS.md`, this log; ignored `android/`, `ios/`.
+- **Verification:** Lint, TypeScript, 152/152 tests, Expo Doctor 20/20, `npm ci --dry-run` accepts the lockfile, Android/iOS/web exports. Regenerated identity unchanged: `com.vericodestudio.dose_tracker` 1.0.1 / 2, iOS `com.vericodestudio.dosetracker`, team `P3DGPMF7LD`; AndroidManifest components and `res/` identical; `plugins/android-release.gradle` still applied. Android `assembleDebug` and iOS Release simulator build (unsigned) succeeded. Upload key backups are byte-identical to `~/.local/share/dosetracker/signing`; certificate `52:FB:0D:…:65:0E`. npm audit: 32 (3 high, 1 critical, all dev/build tooling) vs 36 (7 high, 1 critical) for the SDK 57 lockfile today. Not done: signed `bundleRelease` (needs upload credentials), the exact-artifact release checks, any device run, reminders/alarms under SDK 58.
+- **Status:** Source change on branch `upgrade/sdk-58`, not committed. No artifact built for upload.
+
 ## 2026-10-25 — Production AAB rebuild for a Play update (1.0.1 / code 2)
 
 - **Request:** Rebuild the production build for upload to Play as an update.

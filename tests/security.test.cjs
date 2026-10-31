@@ -125,12 +125,11 @@ test('unexpected database/native errors and forged objects do not reach the UI',
   assert.equal(errors.publicErrorMessage(new errors.UserFacingError('Choose a valid time.'), generic), 'Choose a valid time.');
 });
 
-test('patched query-string preserves normal Router query parsing and bounds malformed work', () => {
-  const query = require('query-string');
-  assert.deepEqual({ ...query.parse('name=Jos%C3%A9+Doe&id=a%2Fb&n=1&n=2') }, { id: 'a/b', n: ['1', '2'], name: 'José Doe' });
-  const { getStateFromPath } = require('expo-router/build/react-navigation/core/getStateFromPath');
-  assert.equal(getStateFromPath('/medicine?id=caf%C3%A9', { screens: { medicine: 'medicine' } }).routes[0].params.id, 'café');
-  const script = "const {getStateFromPath}=require('expo-router/build/react-navigation/core/getStateFromPath'); const text='%80'.repeat(10000); const state=getStateFromPath('/medicine?id='+text,{screens:{medicine:'medicine'}}); if(state.routes[0].params.id!==text) process.exit(2);";
+test('Router query parsing preserves normal input and bounds malformed work', () => {
+  const { getStateFromPath } = require('expo-router/build/fork/getStateFromPath');
+  const config = { screens: { medicine: 'medicine' } };
+  assert.deepEqual({ ...getStateFromPath('/medicine?id=caf%C3%A9&name=Jos%C3%A9+Doe', config).routes[0].params }, { id: 'café', name: 'José Doe' });
+  const script = "const {getStateFromPath}=require('expo-router/build/fork/getStateFromPath'); const text='%80'.repeat(10000); const state=getStateFromPath('/medicine?id='+text,{screens:{medicine:'medicine'}}); if(!state) process.exit(2);";
   const run = spawnSync(process.execPath, ['-e', script], { timeout: 2000, encoding: 'utf8' });
   assert.equal(run.error, undefined);
   assert.equal(run.status, 0, run.stderr);

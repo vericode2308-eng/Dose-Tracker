@@ -29,6 +29,8 @@ This is the implementation record for the security audit and the user's request 
 - Removed `expo-device` and `expo-web-browser`, which had no application imports or dependency/peer consumers in the reviewed graph. Kept `@expo/ui`, `expo-glass-effect` and `expo-symbols`, which Router declares as peers; retained platform/animation/font dependencies needed indirectly. An import search alone is not grounds for deleting a native dependency.
 - Completed the nine previously failed package metadata/download lookups. They resolved to the expected projects and established package usage. These checks reduce uncertainty about names/origins; they are not an exhaustive malware assessment.
 
+- **2026-10-31, SDK 58:** retired both patches and both overrides. Router 58 parses queries itself (no `query-string`/`decode-uri-component` in the tree) and no longer holds the unhandled-link state that the lifecycle patch fixed; `xcode@3` was replaced by `xcode@4`. The malformed-query regression now targets Router's own parser (10,000 malformed tokens parse in about 2 ms). The Xcode UUID-format regression still passes against `xcode@4`.
+
 The decoder and UUID fixes follow their published advisories: [decoder maintainer advisory](https://github.com/SamVerschueren/decode-uri-component/security/advisories/GHSA-vcc3-ghjq-m6fr), [UUID advisory](https://github.com/advisories/GHSA-w5hq-g745-h8pq). SDK APIs were checked against the [Expo SDK 57 reference](https://docs.expo.dev/versions/v57.0.0/), including [notifications](https://docs.expo.dev/versions/v57.0.0/sdk/notifications/), [image picker](https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/) and [filesystem](https://docs.expo.dev/versions/v57.0.0/sdk/filesystem/).
 
 ## Verification record

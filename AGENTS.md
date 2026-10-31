@@ -50,7 +50,8 @@ Docs: https://docs.expo.dev/eas/index.md
 
 - Preserve the security boundaries documented in [Security lessons](docs/SECURITY_LESSONS.md): notification actions must consult SecureStore inside the mutation queue, stricter privacy must clean presented notifications as well as future requests, and onboarding must migrate legacy profiles to SQLite before removing its AsyncStorage copy.
 - Expose only deliberately authored `UserFacingError` messages to screens; unexpected SQLite/native exceptions use generic messages. Keep profile image byte/dimension/header checks and preference-import size checks before application reads/copies.
-- Security dependency overrides and `patches/query-string+7.1.3.patch` are coupled. Keep the patched decoder's ESM default-export adapter until its CommonJS consumer is upgraded. Validate a clean install, malformed-query regression, all-platform bundles, and Expo Doctor before changing these pins; do not use `npm audit fix --force`.
+- SDK 58 retired the query-string/xcode overrides and both patches: Router parses queries without `query-string`, and `xcode@3` left the tree. Keep the malformed-query regression in `tests/security.test.cjs`. Before adding any override or patch, validate a clean `npm ci`, all-platform bundles and Expo Doctor; do not use `npm audit fix --force`.
+- `modules/dose-alarm-access/android/build.gradle` pins the exact `expo.modules.notifications` version. Bump it to the installed `expo-notifications` version on every SDK or patch upgrade, or the release build fails.
 
 - Keep `docs/CORRECTIONS_LOG.md` updated for each user-requested correction. Record the date, request, implemented behavior, affected files, status, and verification; distinguish source changes from device verification or release.
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.

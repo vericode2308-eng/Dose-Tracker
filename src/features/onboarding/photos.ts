@@ -8,7 +8,7 @@ async function inspectNativePhoto(uri: string) {
   const file = new File(uri);
   validatePhotoSize(file.size);
   const handle = file.open();
-  try { return { file, format: photoFormat(handle.readBytes(32)) }; }
+  try { return { file, format: photoFormat(await handle.readBytes(32)) }; }
   finally { handle.close(); }
 }
 
