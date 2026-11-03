@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { OnboardingProvider, useOnboarding } from '@/features/onboarding/context';
 import { NotificationLifecycle } from '@/features/notifications/NotificationLifecycle';
 import { initializeDatabase } from '@/database';
@@ -24,7 +25,8 @@ export const unstable_settings = { anchor: 'welcome' };
 
 function RootLayout() {
   // Theme preferences live in AsyncStorage, so the theme is available before SQLite opens.
-  return <ThemeProvider><ThemedStatusBar /><DatabaseGate /></ThemeProvider>;
+  // Swipeable rows (medicine list) need the gesture root above the navigator.
+  return <GestureHandlerRootView style={{ flex: 1 }}><ThemeProvider><ThemedStatusBar /><DatabaseGate /></ThemeProvider></GestureHandlerRootView>;
 }
 
 function DatabaseGate() {

@@ -260,3 +260,12 @@ test('root layout anchors first-run navigation on the welcome screen', () => {
   const source = fs.readFileSync('src/app/_layout.tsx', 'utf8');
   assert.match(source, /export const unstable_settings = \{ anchor: 'welcome' \}/);
 });
+
+// Medicines list rows swipe left to reveal Delete; deletion must go through the reminder-aware path and a confirmation.
+test('medicine list rows swipe to delete through the confirmed, reminder-aware path', () => {
+  const list = fs.readFileSync('src/features/medicines/MedicinesListScreen.tsx', 'utf8');
+  assert.match(list, /ReanimatedSwipeable/);
+  assert.match(list, /confirmDestructive\(/);
+  assert.match(list, /deleteMedicineWithReminders\(medicine\.id\)/);
+  assert.match(fs.readFileSync('src/app/_layout.tsx', 'utf8'), /<GestureHandlerRootView/);
+});
