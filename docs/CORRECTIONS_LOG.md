@@ -736,3 +736,15 @@ Record user-requested corrections here with the request date, affected screen, i
 - **Implemented:** `DismissKeyboard` now wraps only the fixed Add Medicine header and stepper (outside the ScrollView). Scroll content closes the keyboard through `keyboardShouldPersistTaps="handled"`, which already dismisses on a tap of any non-control. `onboarding/ui.tsx` (`Page`) no longer uses it. The regression test now fails if `DismissKeyboard` wraps a `ScrollView`.
 - **Files:** `src/features/ui/keyboard.tsx`, `src/features/onboarding/ui.tsx`, `src/features/medicines/AddMedicineScreen.tsx`, `tests/security.test.cjs`.
 - **Verification:** `tsc`, lint and 155 tests pass. iOS Simulator (iPhone 18 Pro, iOS 27): Add Profile scrolls to the Add Profile button; typing a name then tapping the "Add Profile" title closes the keyboard; Add Medicine scrolls to the Color & icon section and Add notes row, and tapping its header title closes the keyboard with Next fully above the keyboard. NOT verified: drag-to-dismiss, the other onboarding screens (Welcome, Ready, Notifications), the Sheet text fields, Android.
+
+## 2026-11-03 — Audit: first-run flow, History today marker, erase navigation
+
+- **Request:** Standing instruction to keep auditing (History, Medicine detail, onboarding); not user-reported.
+- **Findings and changes:**
+  - A cold start with onboarding incomplete opened the last step ("You're all set", step 3) instead of Welcome. Fixed with `unstable_settings = { anchor: 'welcome' }` in `src/app/_layout.tsx`; completed users still cold-start on Today.
+  - The first-run profile form was prefilled with the seeded "Me" name, so typing produced "MeRiya". It now starts blank when the profile is the untouched seed (`src/app/profile.tsx`). The Ready screen says "Your profile is saved" instead of "Me's profile".
+  - The notifications step said "Uses Android permissions" on iOS; the copy is now platform-specific (`src/app/notifications.tsx`).
+  - History calendar had no marker for today; today now has a ring and a "Today" accessibility label (`HistoryScreen.tsx`).
+  - Erase all data: a failure in the profile-photo cleanup (or its dynamic import) skipped `router.replace('/welcome')`, leaving the user on a stale screen with an error. Cleanup is now non-fatal; navigation always happens once the records are erased. Orphaned profile photos remain possible if cleanup throws.
+- **Verification:** `tsc`, lint and 156 tests pass. iOS Simulator (iPhone 18 Pro, iOS 27): after Erase all data and a cold start, Welcome → blank first-profile form → notifications → Ready ("Riya's profile") → Finish → Today; a second cold start lands on Today. History shows the ringed today. Log Refill's Save button sits above the number pad. NOT verified: the new notification copy on Android, the erase navigation without the dev-bundle error, Dynamic Type, smaller devices, Android.
+- **Test data:** Erase all data removed the simulator's earlier test medicines; the simulator now has profile "Riya" and no medicines.

@@ -253,3 +253,10 @@ test('form screens use the shared keyboard helpers', () => {
   assert.match(helper, /Dimensions\.get\('window'\)\.height - event\.endCoordinates\.screenY/);
   assert.match(helper, /visibleKeyboard - bottom/);
 });
+
+// Regression: with no matching "/" while onboarding is incomplete, SDK 58 opened the LAST onboarding screen
+// ("Ready", step 3) on a cold start, skipping Welcome, the profile and notification steps.
+test('root layout anchors first-run navigation on the welcome screen', () => {
+  const source = fs.readFileSync('src/app/_layout.tsx', 'utf8');
+  assert.match(source, /export const unstable_settings = \{ anchor: 'welcome' \}/);
+});

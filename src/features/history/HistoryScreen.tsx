@@ -102,6 +102,7 @@ function ProfileHistory() {
     } finally { setBusyUndo(false); }
   };
 
+  const currentDay = dateKey(new Date());
   return <><ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32 }}>
     <View className="mb-2"><ProfileSwitcherTrigger /></View>
     <View className="rounded-[24px] p-3" style={{ backgroundColor: colors.surface }}>
@@ -110,8 +111,8 @@ function ProfileHistory() {
       {Array.from({ length: 6 }, (_, week) => <View key={week} className="flex-row">{days.slice(week * 7, week * 7 + 7).map(day => {
         const key = dateKey(day); const dayRecords = filtered.filter(record => record.date === key);
         const marks = [...new Set(dayRecords.map(record => record.status))];
-        const selected = selectedDate === key;
-        return <Pressable key={key} accessibilityRole="button" accessibilityLabel={`${key}, ${dayRecords.length} records${marks.length ? `, ${marks.join(', ')}` : ''}`} accessibilityState={{ selected }} onPress={() => { setSelectedDate(key); if (day.getMonth() !== month.getMonth()) { setMonth(new Date(day.getFullYear(), day.getMonth(), 1)); setRange('This month'); } }} className="min-h-11 flex-1 items-center justify-center"><View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: selected ? colors.primary : 'transparent' }}><Text style={{ color: selected ? colors.onPrimary : day.getMonth() === month.getMonth() ? colors.ink : colors.secondary }}>{day.getDate()}</Text><View className="absolute bottom-0.5 flex-row gap-0.5">{marks.map(mark => <View key={mark} className="h-1 w-1 rounded-full" style={{ backgroundColor: COLORS[mark] }} />)}</View></View></Pressable>;
+        const selected = selectedDate === key; const isToday = key === currentDay;
+        return <Pressable key={key} accessibilityRole="button" accessibilityLabel={`${isToday ? 'Today, ' : ''}${key}, ${dayRecords.length} records${marks.length ? `, ${marks.join(', ')}` : ''}`} accessibilityState={{ selected }} onPress={() => { setSelectedDate(key); if (day.getMonth() !== month.getMonth()) { setMonth(new Date(day.getFullYear(), day.getMonth(), 1)); setRange('This month'); } }} className="min-h-11 flex-1 items-center justify-center"><View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: selected ? colors.primary : 'transparent', borderWidth: isToday && !selected ? 1.5 : 0, borderColor: colors.primary }}><Text style={{ fontWeight: isToday ? '700' : '400', color: selected ? colors.onPrimary : day.getMonth() === month.getMonth() ? colors.ink : colors.secondary }}>{day.getDate()}</Text><View className="absolute bottom-0.5 flex-row gap-0.5">{marks.map(mark => <View key={mark} className="h-1 w-1 rounded-full" style={{ backgroundColor: COLORS[mark] }} />)}</View></View></Pressable>;
       })}</View>)}
       <View className="mt-2 flex-row justify-around">{Object.entries(COLORS).map(([label, color]) => <View key={label} className="flex-row items-center gap-1"><View className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} /><Text className="text-xs" style={{ color: colors.secondary }}>{label}</Text></View>)}</View>
     </View>

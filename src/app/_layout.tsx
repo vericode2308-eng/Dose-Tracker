@@ -19,6 +19,9 @@ function ThemedStatusBar() {
   return <StatusBar style={isDark ? 'light' : 'dark'} />;
 }
 
+// First run: a cold start with no deep link must open the welcome screen, not the last onboarding step.
+export const unstable_settings = { anchor: 'welcome' };
+
 function RootLayout() {
   // Theme preferences live in AsyncStorage, so the theme is available before SQLite opens.
   return <ThemeProvider><ThemedStatusBar /><DatabaseGate /></ThemeProvider>;

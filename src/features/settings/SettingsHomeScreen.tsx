@@ -106,10 +106,13 @@ export default function SettingsHomeScreen() {
       await reset();
       setPrefs(DEFAULT_SETTINGS);
       if (Platform.OS !== 'web') {
-        const { Directory, File, Paths } = await import('expo-file-system');
-        for (const entry of new Directory(Paths.document).list()) {
-          if (entry instanceof File && /^profile-\d+\.(jpg|jpeg|png|webp|heic)$/i.test(entry.name)) entry.delete();
-        }
+        // The records are already gone; a failed photo cleanup must not strand the user off the welcome screen.
+        try {
+          const { Directory, File, Paths } = await import('expo-file-system');
+          for (const entry of new Directory(Paths.document).list()) {
+            if (entry instanceof File && /^profile-\d+\.(jpg|jpeg|png|webp|heic)$/i.test(entry.name)) entry.delete();
+          }
+        } catch { /* leftover photos are orphaned files, not health records */ }
       }
       setMenu(null);
       router.replace('/welcome');

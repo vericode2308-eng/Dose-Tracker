@@ -23,7 +23,9 @@ const styles = useOnboardingStyles();
   const creating = mode === 'create';
   const editing = !creating && (mode === 'edit' || data.completed);
   const target = creating ? null : profiles.find(p => p.id === (id || currentProfile?.id));
-  const [profile, setProfile] = useState({ ...(target || EMPTY_PROFILE), relationship: target?.relationship || '' });
+  // First run edits the seeded "Me" profile; start it blank so typing a name does not append to the placeholder.
+  const seeded = !creating && !editing && target?.id === 'profile-default' && target.name === 'Me' && !target.photoUri && !target.dateOfBirth && !target.notes;
+  const [profile, setProfile] = useState({ ...(target || EMPTY_PROFILE), name: seeded ? '' : (target || EMPTY_PROFILE).name, relationship: target?.relationship || '' });
   const [confirmArchive, setConfirmArchive] = useState(false);
   const goBack = () => router.canGoBack() ? router.back() : router.replace('/');
   async function archive() {

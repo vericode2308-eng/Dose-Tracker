@@ -33,7 +33,7 @@ export default function ReadyScreen() {
     <View className="items-center" style={{ paddingVertical: 20 }}>
       <Image source={require('../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 72, height: 72, marginBottom: 14 }} />
       <Text accessibilityRole="header" style={[styles.title, { textAlign: 'center', fontSize: 26, lineHeight: 32 }]}>{data.completed ? 'Your space, privately.' : 'You’re all set.'}</Text>
-      <Text style={[styles.subtitle, { textAlign: 'center', paddingHorizontal: 12, fontSize: 15, lineHeight: 20, marginTop: 4 }]}>{currentProfile ? `${currentProfile.name}’s profile is saved on this device.` : 'You can create your first profile whenever you’re ready.'}</Text>
+      <Text style={[styles.subtitle, { textAlign: 'center', paddingHorizontal: 12, fontSize: 15, lineHeight: 20, marginTop: 4 }]}>{currentProfile ? (currentProfile.name === 'Me' ? 'Your profile is saved on this device.' : `${currentProfile.name}’s profile is saved on this device.`) : 'You can create your first profile whenever you’re ready.'}</Text>
     </View>
     <View style={[styles.card, { gap: 12, paddingVertical: 14, paddingHorizontal: 14 }]}>
       <Feature icon="cloud-off" title="Private by design">Your profile stays on this device. No account or cloud connection is needed.</Feature>

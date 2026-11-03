@@ -49,7 +49,7 @@ export default function NotificationsScreen() {
     </View>
     <View style={[styles.card, { gap: 12, paddingVertical: 14, paddingHorizontal: 14 }]}>
       <Feature icon="bell" title="Reminders for scheduled doses">Delivery depends on your phone’s permissions and system settings.</Feature>
-      <Feature icon="settings" title="Uses Android permissions">Notifications require permission to send alerts. Exact alarms may be needed for precise timing.</Feature>
+      <Feature icon="settings" title={Platform.OS === 'android' ? 'Uses Android permissions' : 'Uses iPhone permissions'}>{Platform.OS === 'android' ? 'Notifications require permission to send alerts. Exact alarms may be needed for precise timing.' : 'Notifications require your permission to send alerts. You can change this later in Settings.'}</Feature>
       <Feature icon="shield" title="Tracking still works" green>If you don’t allow notifications, you can still track your medicines in the app.</Feature>
     </View>
     <ErrorMessage message={error} />
