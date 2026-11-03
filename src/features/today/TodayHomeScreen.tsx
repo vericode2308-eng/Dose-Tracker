@@ -211,7 +211,7 @@ function ProfileToday() {
       : { text: time(dose.scheduledAtMs), background: colors.fill, color: colors.secondaryLabel };
     const canLogEarly = !dose.status && !snoozed && !isDue && dose.date === data.today;
     return <Animated.View key={`${dose.id}:pending`} entering={listItemEntering} exiting={listItemExiting} layout={listItemLayout}>
-      <Card style={[{ gap: 12 }, outline]}>
+      <Card style={[{ gap: 10, paddingVertical: 12 }, outline]}>
         {isSelected && <AppText variant="footnote" weight="600" tone="accent">Opened from reminder · {dose.date}</AppText>}
         {(() => {
           const timePill = <View accessibilityLabel={snoozed ? `Snoozed until ${time(dose.snoozedUntilMs!)}` : `${isDue ? 'Due' : 'Scheduled'} at ${time(dose.scheduledAtMs)}`}
@@ -223,18 +223,18 @@ function ProfileToday() {
             <View style={{ flex: 1, minWidth: 0 }}>
               <AppText variant="headline">{dose.medicine.name}</AppText>
               {!!detail && <AppText variant="subhead" tone="secondary">{detail}</AppText>}
-              {stacked && timePill}
+              {canLogEarly && <AppText variant="footnote" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>Scheduled {relativeTime(dose.scheduledAtMs, data.now)}</AppText>}
+                    {stacked && timePill}
             </View>
             {!stacked && timePill}
           </View>;
         })()}
         {!!dose.medicine.instructions && <AppText variant="footnote" tone="secondary">{dose.medicine.instructions}</AppText>}
-        {canLogEarly && <AppText variant="footnote" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>Scheduled {relativeTime(dose.scheduledAtMs, data.now)}</AppText>}
         {canLogEarly && <View style={{ flexDirection: stacked ? 'column' : 'row', gap: 8 }}>
           {(['Taken', 'Skipped'] as const).map(action => {
             const label = action === 'Taken' ? 'Take early' : 'Skip';
             return <Button key={action} title={label} accessibilityLabel={`${label} ${dose.medicine.name}`} disabled={busyId !== null}
-              onPress={() => void act(dose, action)} variant={action === 'Taken' ? 'secondary' : 'plain'}
+              onPress={() => void act(dose, action)} size="sm" variant={action === 'Taken' ? 'secondary' : 'plain'}
               style={stacked ? undefined : { flex: action === 'Taken' ? 1.4 : 1, paddingHorizontal: 8 }} />;
           })}
         </View>}
@@ -242,7 +242,7 @@ function ProfileToday() {
           {(['Taken', 'Skipped', 'Snooze'] as const).map(action => {
             const label = action === 'Taken' ? 'Take' : action === 'Skipped' ? 'Skip' : action;
             return <Button key={action} title={label} accessibilityLabel={`${label} ${dose.medicine.name}`} disabled={busyId !== null}
-              onPress={() => void act(dose, action)} variant={action === 'Taken' ? 'primary' : action === 'Skipped' ? 'secondary' : 'plain'}
+              onPress={() => void act(dose, action)} size="sm" variant={action === 'Taken' ? 'primary' : action === 'Skipped' ? 'secondary' : 'plain'}
               style={stacked ? undefined : { flex: action === 'Taken' ? 1.4 : 1, paddingHorizontal: 8 }} />;
           })}
         </View>}
@@ -262,6 +262,11 @@ function ProfileToday() {
       status: dayStatus(doses), label: `${date === data.today ? 'Today, ' : ''}${day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}, ${date > data.today ? `${doses.length} scheduled` : summary}` };
   });
   const dayWord = viewingToday ? 'today' : 'this day';
+  // With nothing left today, say when the next dose is (a medicine added after its time has passed starts tomorrow).
+  const nextDate = viewingToday ? data.dates.find(date => date > data.today && (data.days[date] ?? []).length) : undefined;
+  const nextDose = nextDate ? data.days[nextDate][0] : undefined;
+  const tomorrowKey = dateKey(new Date(new Date(`${data.today}T12:00:00`).getTime() + 86400000));
+  const nextDoseText = nextDose ? `Your next dose is ${nextDate === tomorrowKey ? 'tomorrow' : nextDate} at ${new Date(nextDose.scheduledAtMs).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.` : undefined;
   // The native stack header carries the "Today" title and the screen's actions on one row.
   return <View style={{ flex: 1 }} collapsable={false}>
     <Stack.Toolbar placement="left">
@@ -296,7 +301,7 @@ function ProfileToday() {
             <Icon name="emptyDay" size={28} color={colors.accentText} />
           </View>
           <AppText variant="headline" style={{ textAlign: 'center' }}>No doses scheduled {dayWord}</AppText>
-          <AppText variant="subhead" tone="secondary" style={{ textAlign: 'center', maxWidth: 280 }}>{viewingToday ? 'Add a medicine and its dose times to start tracking.' : 'Pick another day, or add a medicine to schedule doses.'}</AppText>
+          <AppText variant="subhead" tone="secondary" style={{ textAlign: 'center', maxWidth: 280 }}>{viewingToday ? nextDoseText ?? 'Add a medicine and its dose times to start tracking.' : 'Pick another day, or add a medicine to schedule doses.'}</AppText>
           {viewingToday && <Button title="Add Medicine" icon="add" onPress={() => router.push('/add-medicine')} style={{ marginTop: 8 }} />}
         </Card>
         : <>

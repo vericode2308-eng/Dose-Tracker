@@ -866,3 +866,19 @@ test('fetchScheduledDosesForDates returns each requested day and validates its i
   await assert.rejects(h.db.fetchScheduledDosesForDates('2020-01-01'), /valid calendar date/);
   h.sql.close();
 });
+
+test('first eligible dose skips today when every dose time has already passed at creation', () => {
+  const { firstEligibleOccurrence } = compile('src/features/doses/occurrences.js', {});
+  const evening = new Date(2026, 10, 3, 19, 0).getTime();
+  const key = new Date(evening);
+  const today = `${key.getFullYear()}-11-03`;
+  const daily = { kind: 'daily', startDate: today };
+  const first = firstEligibleOccurrence(daily, [540], evening);
+  assert.equal(first.date, '2026-11-04');
+  assert.equal(new Date(first.scheduledAtMs).getHours(), 9);
+  assert.equal(firstEligibleOccurrence(daily, [540, 1260], evening).date, '2026-11-03');
+  assert.equal(firstEligibleOccurrence(daily, [1140], evening).date, '2026-11-03', 'saving during the minute keeps it eligible');
+  assert.equal(firstEligibleOccurrence({ kind: 'weekdays', startDate: today, weekdays: [5] }, [540], evening).date, '2026-11-06');
+  assert.equal(firstEligibleOccurrence({ kind: 'prn', startDate: today }, [], evening), null);
+  assert.equal(firstEligibleOccurrence({ kind: 'daily', startDate: today, endDate: today }, [540], evening), null);
+});

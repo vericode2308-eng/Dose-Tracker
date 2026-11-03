@@ -5,6 +5,7 @@ import { useTheme } from '@/features/theme/ThemeContext';
 import { AppText } from './AppText';
 import { GlassSheetSurface } from './GlassSheetSurface';
 import { IconButton } from './IconButton';
+import { keyboardScrollProps } from './keyboard';
 
 /**
  * Shared bottom sheet: grabber, title, close button, scrollable body. Liquid Glass on iOS 26+
@@ -27,7 +28,7 @@ export function Sheet({ visible, title, onClose, closeDisabled = false, children
           <AppText accessibilityRole="header" variant="title3" style={{ flex: 1 }}>{title}</AppText>
           <IconButton icon="close" accessibilityLabel="Close" filled disabled={closeDisabled} onPress={close} color={colors.secondaryLabel} />
         </View>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 20, gap: 12 }}>
+        <ScrollView {...keyboardScrollProps} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 20, gap: 12 }}>
           {children}
         </ScrollView>
       </GlassSheetSurface>

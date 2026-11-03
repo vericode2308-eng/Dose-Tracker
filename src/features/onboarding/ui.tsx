@@ -1,10 +1,11 @@
 import Feather from '@expo/vector-icons/Feather';
 import { useRouter } from 'expo-router';
 import { type ComponentProps, type ReactNode, useMemo } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { useTheme } from '@/features/theme/ThemeContext';
+import { KeyboardAvoider, keyboardScrollProps } from '@/features/ui/keyboard';
 
 type IconName = ComponentProps<typeof Feather>['name'];
 export function Icon({ name, size = 22, color }: { name: IconName; size?: number; color?: string }) {
@@ -16,10 +17,10 @@ export function Page({ children, footer, backgroundColor, scrollable = true }: {
   const { colors } = useTheme();
   backgroundColor ??= colors.background;
   return <SafeAreaView className="flex-1" style={{ backgroundColor }} edges={['top', 'bottom', 'left', 'right']}>
-    <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={{ flex: 1 }} scrollEnabled={scrollable} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.page, !scrollable && { flex: 1, justifyContent: 'space-between', paddingBottom: 4 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
+    <KeyboardAvoider>
+      <ScrollView style={{ flex: 1 }} scrollEnabled={scrollable} {...keyboardScrollProps} contentContainerStyle={[styles.page, !scrollable && { flex: 1, justifyContent: 'space-between', paddingBottom: 4 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
       {footer && <View style={{ width: '100%', maxWidth: 430, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, backgroundColor }}>{footer}</View>}
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   </SafeAreaView>;
 }
 

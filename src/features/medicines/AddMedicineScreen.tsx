@@ -1,20 +1,23 @@
 import { publicErrorMessage } from '@/features/security/errors';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router, useNavigation } from 'expo-router';
+import { router } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
-import { Alert, BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, BackHandler, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { switchStyle } from '@/features/ui/switchStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfiles } from '@/features/profiles/context';
 import { useMedicines } from './context';
 import { addMedicine, fetchMedicineDetails, type RecurringPattern, type StoredMedicine, type StoredSchedule } from '@/database';
 import { parseReminderTime, scheduleMedicineReminders, editMedicineWithReminders } from '@/notificationManager';
+import { dateKey, firstEligibleOccurrence } from '@/features/doses/occurrences';
 import { MEDICINE_COLORS as COLORS, chooseMedicineColor } from './colors';
 import { MedicineDetailsForm } from './MedicineDetailsForm';
 import { DatePickerField, TimePickerField } from '@/features/ui/DateTimePickers';
 import { hapticSelection, hapticSuccess } from '@/features/ui/haptics';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { InlineMessage } from '@/features/ui/InlineMessage';
+import { DismissKeyboard, KeyboardAvoider, keyboardScrollProps } from '@/features/ui/keyboard';
 
 const STEPS = ['Details', 'Schedule', 'Stock', 'Review'];
 const FREQUENCIES = [
@@ -28,6 +31,7 @@ const FREQUENCIES = [
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const formatTime = (minute: number) => `${Math.floor(minute / 60) % 12 || 12}:${String(minute % 60).padStart(2, '0')} ${minute < 720 ? 'AM' : 'PM'}`;
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const nowMs = () => Date.now();
 const isPositiveNumber = (value: string) => /^\d+(?:\.\d+)?$/.test(value.trim()) && Number(value) > 0;
 const isWholeNumber = (value: string) => /^\d+$/.test(value.trim()) && Number.isSafeInteger(Number(value));
 function parseDate(value: string): Date | null {
@@ -78,8 +82,10 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
   const { currentProfile: selectedProfile, profiles } = useProfiles();
   const [currentProfile] = useState(initialMedicine ? profiles.find(p => p.id === initialMedicine.profileId) : selectedProfile);
   const saving = useRef(false);
-  const confirmedExit = useRef(false);
-  const navigation = useNavigation();
+  // Set once the medicine is written, so a repeated Save tap (or a slow dismiss) can never insert it again.
+  const persisted = useRef(false);
+  // Prevention must be off before the screen navigates away; see usePreventRemove below.
+  const [leaving, setLeaving] = useState(false);
   const [savingNow, setSavingNow] = useState(false);
   const [saved, setSaved] = useState(false);
   const [step, setStep] = useState(0);
@@ -128,6 +134,19 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
     const key = nextDoseKey.current++;
     setAdditionalDoses(doses => [...doses, { key, time, amount }]);
   }
+  // A dose time that has already passed today is not offered, so say when the first dose really is.
+  function deferredFirstDose() {
+    if (editing || startDate > today() || frequency === 'As needed') return null;
+    const kind: RecurringPattern['kind'] = frequency === 'Every day' ? 'daily' : frequency === 'Selected weekdays' ? 'weekdays' : frequency === 'Every N days' ? 'day_interval' : 'hour_interval';
+    const minutes = [startTime, ...additionalDoses.map(d => d.time)].filter(time => /^(0?[1-9]|1[0-2]):[0-5]\d (AM|PM)$/.test(time)).map(parseReminderTime);
+    if (!minutes.length || (kind === 'weekdays' && !weekdays.length) || ((kind === 'day_interval' || kind === 'hour_interval') && !(Number(interval) >= 1))) return null;
+    const pattern: RecurringPattern = { kind, startDate, ...(kind === 'weekdays' ? { weekdays: weekdays.map(day => WEEKDAYS.indexOf(day)) } : {}), ...(kind === 'day_interval' || kind === 'hour_interval' ? { interval: Number(interval) } : {}) };
+    const first = firstEligibleOccurrence(pattern, minutes, nowMs(), 60);
+    if (!first || first.date === today()) return null;
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    const at = new Date(first.scheduledAtMs);
+    return `First dose ${first.date === dateKey(tomorrow) ? 'tomorrow' : first.date} at ${formatTime(at.getHours() * 60 + at.getMinutes())}`;
+  }
   const durationLabel = durationType === 'For a number of days' ? `For ${duration} days` : durationType === 'End date' ? `Until ${endDate}` : 'Ongoing';
   function next() {
     if (step === 0 && !name.trim()) { setError('Enter a medicine name.'); return; }
@@ -150,7 +169,7 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
     setError(''); setStep(value => Math.min(value + 1, 3));
   }
   async function save() {
-    if (saving.current) return;
+    if (saving.current || persisted.current) return;
     saving.current = true;
     setSavingNow(true);
     setError('');
@@ -178,19 +197,19 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
       if (initialMedicine && initialSchedule) {
         const result = await editMedicineWithReminders(initialMedicine.id, { ...input, additionalSchedules, scheduleId: initialSchedule.id, expectedStockRemaining: initialMedicine.stockRemaining });
         savedId = initialMedicine.id;
+        persisted.current = true;
         void hapticSuccess();
         if (result.issues.length || (wantsReminder && (!result.allowed || (Platform.OS === 'android' && result.exact !== true)))) {
           setError(`Changes saved. ${result.issues.join(' ') || result.message}`);
           setSaved(true);
         } else {
-          confirmedExit.current = true;
-          if (router.canGoBack()) router.back();
-          else router.replace('/medicines');
+          exit();
         }
         return;
       }
       const result = await addMedicine({ ...input, additionalSchedules });
       savedId = result.medicineId;
+      persisted.current = true;
       void hapticSuccess();
       const stored = await fetchMedicineDetails(result.medicineId);
       if (!stored) throw new Error('Saved medicine could not be reopened.');
@@ -199,8 +218,7 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
         setError(`Medicine saved. ${reminders.issues.join(' ') || reminders.message}`);
         setSaved(true);
       } else {
-        confirmedExit.current = true;
-        leave();
+        exit();
       }
     } catch (error) {
       if (savedId) {
@@ -208,28 +226,45 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
           setError('Medicine saved. Reminder setup failed. Open Reminder status in Settings to retry.');
           setSaved(true);
         } else {
-          confirmedExit.current = true;
-          leave();
+          exit();
         }
       } else setError(publicErrorMessage(error, 'The medicine could not be saved. Check the values and try again.'));
     } finally { saving.current = false; setSavingNow(false); }
   }
-  // Back to wherever the sheet was opened from (Today, Medicines or a medicine).
-  const leave = () => { if (router.canGoBack()) router.back(); else router.replace('/medicines'); };
-  const close = useCallback(() => {
-    if (saving.current) return;
-    if (router.canGoBack()) router.back();
-    else router.replace('/medicines');
-  }, []);
   const draft = JSON.stringify({ name, strength, strengthUnit, form, doseUnit, purpose, instructions, notes, color,
     frequency, interval, weekdays, startDate, startTime, additionalDoses, reminderEnabled, amount, durationType, duration, endDate, trackStock, stock, threshold });
   const [initialDraft] = useState(draft);
   const hasUnsavedChanges = !saved && draft !== initialDraft;
+  // usePreventRemove also blocks the iOS sheet swipe-down, which a beforeRemove listener cannot. To continue a blocked
+  // action, turn prevention off in the same handler (`leaving`) and call repeat().
+  const disablePrevention = usePreventRemove(hasUnsavedChanges && !leaving, ({ repeat }) => {
+    if (saving.current) return;
+    if (Platform.OS === 'web') {
+      if (window.confirm('Discard your unsaved medicine changes?')) { setLeaving(true); repeat(); }
+      return;
+    }
+    Alert.alert('Discard changes?', 'You have unsaved changes. Are you sure you want to leave?', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => { setLeaving(true); repeat(); } },
+    ]);
+  });
+  // Back to wherever the sheet was opened from (Today, Medicines or a medicine). Prevention has to be switched off
+  // before navigating: React Navigation 8 re-blocks the action while it is still on.
+  const exit = useCallback(() => {
+    setLeaving(true);
+    disablePrevention();
+    if (router.canGoBack()) router.back();
+    else router.replace('/medicines');
+  }, [disablePrevention]);
+  const close = useCallback(() => {
+    if (saving.current) return;
+    exit();
+  }, [exit]);
   const handleExit = useCallback(() => {
     if (saving.current) return;
     if (hasUnsavedChanges) {
       if (Platform.OS === 'web') {
-        if (window.confirm('Discard your unsaved medicine changes?')) { confirmedExit.current = true; close(); }
+        if (window.confirm('Discard your unsaved medicine changes?')) { close(); }
         return;
       }
       Alert.alert(
@@ -237,7 +272,7 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
         'You have unsaved changes. Are you sure you want to leave?',
         [
           { text: 'Keep editing', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => { confirmedExit.current = true; close(); } },
+          { text: 'Discard', style: 'destructive', onPress: () => { close(); } },
         ]
       );
     } else {
@@ -275,25 +310,13 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
     return () => subscription.remove();
   }, [step, hasUnsavedChanges, handleExit]);
 
-  // usePreventRemove also blocks the iOS sheet swipe-down, which a beforeRemove listener cannot.
-  usePreventRemove(hasUnsavedChanges, ({ data }) => {
-    if (saving.current) return;
-    if (confirmedExit.current) { navigation.dispatch(data.action); return; }
-    if (Platform.OS === 'web') {
-      if (window.confirm('Discard your unsaved medicine changes?')) { confirmedExit.current = true; navigation.dispatch(data.action); }
-      return;
-    }
-    Alert.alert('Discard changes?', 'You have unsaved changes. Are you sure you want to leave?', [
-      { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: () => { confirmedExit.current = true; navigation.dispatch(data.action); } },
-    ]);
-  });
-
   return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
+    <DismissKeyboard>
     <View className="flex-row items-center justify-between px-4 pt-1"><Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={back} className="h-11 w-11 items-center justify-center"><Feather name="arrow-left" size={25} color={colors.ink} /></Pressable><Text className="text-[20px] font-semibold" style={{ color: colors.ink }}>{editing ? 'Edit Medicine' : 'Add Medicine'}</Text><Pressable accessibilityRole="button" accessibilityLabel={editing ? "Close edit medicine" : "Close add medicine"} onPress={handleExit} className="h-11 w-11 items-center justify-center"><Feather name="x" size={25} color={colors.ink} /></Pressable></View>
     <View className="flex-row px-5 pb-4 pt-3"><View pointerEvents="none" className="absolute left-[16%] right-[16%] top-[28px] h-[1px]" style={{ backgroundColor: colors.border }} />{STEPS.map((label, index) => <View key={label} className="flex-1 items-center"><View className="z-10 h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: index <= step ? colors.primary : colors.pill }}>{index < step ? <Feather name="check" size={19} color={colors.onPrimary} /> : <Text className="text-[16px] font-semibold" style={{ color: index === step ? colors.onPrimary : colors.secondary }}>{index + 1}</Text>}</View><Text className={`mt-1 text-[12px] ${index === step ? 'font-semibold' : ''}`} style={{ color: index === step ? colors.ink : colors.secondary }}>{label}</Text></View>)}</View>
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <ScrollView key={step} style={{ flex: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}>
+    </DismissKeyboard>
+    <KeyboardAvoider>
+      <ScrollView key={step} style={{ flex: 1 }} {...keyboardScrollProps} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}>
         <Text accessibilityRole="header" className="mt-2 text-[27px] font-bold tracking-[-0.6px]" style={{ color: colors.ink }}>{['Medicine details', 'When do you take it?', 'Set stock (optional)', 'Review and save'][step]}</Text><Text className="mb-3 mt-1 text-[16px]" style={{ color: colors.secondary }}>{['Tell us about your medicine.', 'Choose your usual dose times.', 'Track how much you have at home.', editing ? 'Check your changes before saving this medicine.' : 'Check your details before adding this medicine.'][step]}</Text>
         {step < 3 && <Text className="mb-3 text-[13px]" style={{ color: colors.secondary }}>* Required</Text>}
         {step === 0 && <MedicineDetailsForm name={name} setName={setName} strength={strength} setStrength={setStrength} strengthUnit={strengthUnit} setStrengthUnit={setStrengthUnit} form={form} setForm={(value) => { setForm(value); setDoseUnit(value); }} doseUnit={doseUnit} setDoseUnit={setDoseUnit} purpose={purpose} setPurpose={setPurpose} instructions={instructions} setInstructions={setInstructions} notes={notes} setNotes={setNotes} color={color} setColor={setColor} />}
@@ -309,8 +332,8 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
             </View>)}
             {multipleTimesSupported && <Pressable accessibilityRole="button" accessibilityLabel="Add another dose time (optional)" onPress={addDoseTime} className="min-h-12 flex-row items-center justify-center gap-2 rounded-xl border" style={{ borderColor: colors.accent }}><Feather name="plus" size={20} color={colors.accent} /><Text style={{ color: colors.accentText }}>Add another dose time (optional)</Text></Pressable>}
           </View>
-          {frequency !== 'As needed' && <View className="mb-3 flex-row items-center gap-3 rounded-[22px] border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><View className="flex-1"><Text className="text-base font-semibold" style={{ color: colors.ink }}>Remind me</Text><Text className="mt-1 text-sm" style={{ color: colors.secondary }}>{reminderExplanation}</Text></View><Switch accessibilityLabel="Remind me" value={wantsReminder} disabled={!reminderSupported} onValueChange={setReminderEnabled} trackColor={{ true: colors.accent }} /></View>}
-          <Text className="mb-2 text-sm" style={{ color: colors.secondary }}>{schedule} · {durationLabel}{startDate === today() ? ' · Starts today' : ` · Starts ${startDate}`}</Text>
+          {frequency !== 'As needed' && <View className="mb-3 flex-row items-center gap-3 rounded-[22px] border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><View className="flex-1"><Text className="text-base font-semibold" style={{ color: colors.ink }}>Remind me</Text><Text className="mt-1 text-sm" style={{ color: colors.secondary }}>{reminderExplanation}</Text></View><Switch style={switchStyle} accessibilityLabel="Remind me" value={wantsReminder} disabled={!reminderSupported} onValueChange={setReminderEnabled} trackColor={{ true: colors.accent }} /></View>}
+          <Text className="mb-2 text-sm" style={{ color: colors.secondary }}>{schedule} · {durationLabel}{deferredFirstDose() ? ` · ${deferredFirstDose()}` : startDate === today() ? ' · Starts today' : ` · Starts ${startDate}`}</Text>
           <Pressable accessibilityRole="button" accessibilityState={{ expanded: moreOptions }} onPress={() => setMoreOptions(value => !value)} className="min-h-12 flex-row items-center justify-between"><Text style={{ color: colors.accentText }}>{moreOptions ? 'Hide schedule options' : 'More schedule options'}</Text><Feather name={moreOptions ? 'chevron-up' : 'chevron-down'} size={20} color={colors.accent} /></Pressable>
           {moreOptions && <View className="rounded-[22px] border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
             <Text className="mb-2 font-semibold" style={{ color: colors.ink }}>How often? *</Text>
@@ -324,8 +347,8 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
             {durationType === 'End date' && <DatePickerField required label="End date" value={endDate} onChange={setEndDate} placeholder="YYYY-MM-DD" title="End Date" minDate={startDate} />}
           </View>}
         </>}
-        {step === 2 && <View className="rounded-[24px] border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><View className="mb-4 flex-row items-center gap-3"><View className="flex-1"><Text className="text-[17px] font-semibold " style={{ color: colors.ink }}>Track stock for this medicine</Text><Text className="mt-1 text-[13px] " style={{ color: colors.secondary }}>See in-app warnings when recorded stock is low.</Text></View><Switch accessibilityLabel="Track stock" value={trackStock} onValueChange={setTrackStock} trackColor={{ true: colors.accent }} /></View>{trackStock && <>{editing && doseUnit !== initialMedicine?.doseUnit && <Text className="mb-3 text-sm" style={{ color: colors.secondary }}>Dose unit changed. Check the stock quantity and warning level in the new unit before saving.</Text>}<InlineMessage tone="info" message={`Stock uses the same unit as your dose amount (${plural}).`} /><View className="mt-5"><Field required label={`Current quantity (${plural})`} value={stock} onChangeText={setStock} keyboardType="decimal-pad" placeholder="e.g. 21" /><Field required label={`Low-stock threshold (${plural})`} value={threshold} onChangeText={setThreshold} keyboardType="decimal-pad" placeholder="e.g. 6" /><Text className="text-[13px] leading-5 " style={{ color: colors.secondary }}>We’ll warn you when your stock reaches this number or below.</Text></View></>}</View>}
-        {step === 3 && <View className="rounded-[24px] border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><View className="mb-4 flex-row items-center gap-4"><View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: color.value }}><MaterialCommunityIcons name="pill" size={36} color="white" /></View><View className="min-w-0 flex-1"><Text className="text-[21px] font-semibold " style={{ color: colors.ink }}>{name.trim()}</Text><Text className="text-[14px] " style={{ color: colors.secondary }}>{[strengthText, unit].filter(Boolean).join(' ')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Edit medicine details" disabled={savingNow || saved} onPress={() => setStep(0)} className="min-h-10 flex-row items-center gap-2 rounded-xl border px-3" style={{ borderColor: colors.border }}><Feather name="edit-2" size={16} color={colors.ink} /><Text style={{ color: colors.ink }}>Edit</Text></Pressable></View><ReviewRow icon="user" label="Person" value={currentProfile?.name || 'Me'} /><ReviewRow icon="circle" label="Form" value={form} /><ReviewRow icon="activity" label="Strength" value={strengthText || 'Not specified'} /><ReviewRow icon="plus-circle" label="Dose amount" value={[`${frequency === 'As needed' ? 'As needed' : startTime}: ${amount} ${Number(amount) === 1 ? unit : plural}`, ...additionalDoses.map(d => `${d.time}: ${d.amount} ${Number(d.amount) === 1 ? unit : plural}`)].join("\n")} /><ReviewRow icon="clock" label="Schedule" value={schedule} sub={frequency === 'As needed' ? undefined : `Starting ${startDate}, ${[startTime, ...additionalDoses.map(d => d.time)].join(", ")}`} /><ReviewRow icon="calendar" label="Course duration" value={durationLabel} /><ReviewRow icon="bell" label="Reminders" value={wantsReminder ? "On" : "Off"} sub={wantsReminder ? "Device notifications requested" : "Dose tracking only"} />{!!purpose.trim() && <ReviewRow icon="list" label="Purpose" value={purpose.trim()} />}{!!instructions.trim() && <ReviewRow icon="file-text" label="Instructions" value={instructions.trim()} />}<ReviewRow icon="archive" label="Stock tracking" value={trackStock ? 'On' : 'Off'} sub={trackStock ? `${stock} ${plural} available · warning at ${threshold}` : undefined} />{!!notes.trim() && <ReviewRow icon="file-text" label="Notes" value={notes.trim()} />}</View>}
+        {step === 2 && <View className="rounded-[24px] border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><View className="mb-4 flex-row items-center gap-3"><View className="flex-1"><Text className="text-[17px] font-semibold " style={{ color: colors.ink }}>Track stock for this medicine</Text><Text className="mt-1 text-[13px] " style={{ color: colors.secondary }}>See in-app warnings when recorded stock is low.</Text></View><Switch style={switchStyle} accessibilityLabel="Track stock" value={trackStock} onValueChange={setTrackStock} trackColor={{ true: colors.accent }} /></View>{trackStock && <>{editing && doseUnit !== initialMedicine?.doseUnit && <Text className="mb-3 text-sm" style={{ color: colors.secondary }}>Dose unit changed. Check the stock quantity and warning level in the new unit before saving.</Text>}<InlineMessage tone="info" message={`Stock uses the same unit as your dose amount (${plural}).`} /><View className="mt-5"><Field required label={`Current quantity (${plural})`} value={stock} onChangeText={setStock} keyboardType="decimal-pad" placeholder="e.g. 21" /><Field required label={`Low-stock threshold (${plural})`} value={threshold} onChangeText={setThreshold} keyboardType="decimal-pad" placeholder="e.g. 6" /><Text className="text-[13px] leading-5 " style={{ color: colors.secondary }}>We’ll warn you when your stock reaches this number or below.</Text></View></>}</View>}
+        {step === 3 && <View className="rounded-[24px] border p-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}><View className="mb-4 flex-row items-center gap-4"><View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: color.value }}><MaterialCommunityIcons name="pill" size={36} color="white" /></View><View className="min-w-0 flex-1"><Text className="text-[21px] font-semibold " style={{ color: colors.ink }}>{name.trim()}</Text><Text className="text-[14px] " style={{ color: colors.secondary }}>{[strengthText, unit].filter(Boolean).join(' ')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Edit medicine details" disabled={savingNow || saved} onPress={() => setStep(0)} className="min-h-10 flex-row items-center gap-2 rounded-xl border px-3" style={{ borderColor: colors.border }}><Feather name="edit-2" size={16} color={colors.ink} /><Text style={{ color: colors.ink }}>Edit</Text></Pressable></View><ReviewRow icon="user" label="Person" value={currentProfile?.name || 'Me'} /><ReviewRow icon="circle" label="Form" value={form} /><ReviewRow icon="activity" label="Strength" value={strengthText || 'Not specified'} /><ReviewRow icon="plus-circle" label="Dose amount" value={[`${frequency === 'As needed' ? 'As needed' : startTime}: ${amount} ${Number(amount) === 1 ? unit : plural}`, ...additionalDoses.map(d => `${d.time}: ${d.amount} ${Number(d.amount) === 1 ? unit : plural}`)].join("\n")} /><ReviewRow icon="clock" label="Schedule" value={schedule} sub={frequency === 'As needed' ? undefined : deferredFirstDose() ?? `Starting ${startDate}, ${[startTime, ...additionalDoses.map(d => d.time)].join(", ")}`} /><ReviewRow icon="calendar" label="Course duration" value={durationLabel} /><ReviewRow icon="bell" label="Reminders" value={wantsReminder ? "On" : "Off"} sub={wantsReminder ? "Device notifications requested" : "Dose tracking only"} />{!!purpose.trim() && <ReviewRow icon="list" label="Purpose" value={purpose.trim()} />}{!!instructions.trim() && <ReviewRow icon="file-text" label="Instructions" value={instructions.trim()} />}<ReviewRow icon="archive" label="Stock tracking" value={trackStock ? 'On' : 'Off'} sub={trackStock ? `${stock} ${plural} available · warning at ${threshold}` : undefined} />{!!notes.trim() && <ReviewRow icon="file-text" label="Notes" value={notes.trim()} />}</View>}
         {!!error && <Text accessibilityRole="alert" className="mt-3 text-[14px]" style={{ color: colors.dangerText }}>{error}</Text>}
       </ScrollView>
       <View style={{ borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 }}>
@@ -334,6 +357,6 @@ function MedicineForm({ initialMedicine, initialSchedule }: MedicineFormProps) {
           <Pressable accessibilityRole="button" disabled={savingNow} onPress={saved ? close : step === 3 ? () => void save() : next} className="min-h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-full" style={{ backgroundColor: colors.primary }}><Text className="text-[16px] font-semibold" style={{ color: colors.onPrimary }}>{saved ? 'Done' : savingNow ? 'Saving…' : step === 3 ? (editing ? 'Save changes' : 'Save Medicine') : 'Next'}</Text><Feather name={step === 3 ? 'check' : 'arrow-right'} size={20} color={colors.onPrimary} /></Pressable>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   </SafeAreaView>;
 }

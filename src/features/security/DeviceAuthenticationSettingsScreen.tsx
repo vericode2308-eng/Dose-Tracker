@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, Switch, View } from 'react-native';
+import { switchStyle } from '@/features/ui/switchStyle';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { AppText } from '@/features/ui/AppText';
 import { Card } from '@/features/ui/Card';
@@ -63,7 +64,7 @@ export default function DeviceAuthenticationSettingsScreen() {
           <AppText variant="body">App lock</AppText>
           <AppText variant="footnote" tone="secondary">{enabled ? 'On' : 'Off'}</AppText>
         </View>
-        <Switch accessibilityLabel="Enable app lock" accessibilityState={{ disabled: busy || !support?.available }} value={enabled} disabled={busy || !support?.available}
+        <Switch style={switchStyle} accessibilityLabel="Enable app lock" accessibilityState={{ disabled: busy || !support?.available }} value={enabled} disabled={busy || !support?.available}
           onValueChange={value => void change(value)} trackColor={{ false: colors.fill, true: colors.accent }} ios_backgroundColor={colors.fill} />
       </Card>
       {support && !support.available && <InlineMessage tone="warning" message="Set up a PIN, pattern, passcode, or biometric unlock in your phone’s settings before enabling app lock." />}

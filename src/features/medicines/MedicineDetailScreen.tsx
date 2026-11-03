@@ -2,6 +2,7 @@ import { publicErrorMessage } from '@/features/security/errors';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
+import { switchStyle } from '@/features/ui/switchStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMedicines, type Medicine } from './context';
 import { fetchHistoryByMonth } from '@/database';
@@ -203,7 +204,7 @@ export default function MedicineDetailScreen() {
           <Row icon="clock" label={`${time} · ${s.doseAmount} ${medicine.doseAmount?.split(' ').slice(1).join(' ') || medicine.form}`}
             detail={`${frequency} · From ${formatDateKey(s.pattern.startDate)}${s.pattern.endDate ? ` until ${formatDateKey(s.pattern.endDate)}` : ' · Ongoing'}`} />
           <Row icon="bell" label="Dose reminder" detail={supported ? undefined : 'Tracking only: this schedule does not support reminders yet.'} last>
-            <Switch accessibilityLabel={`Dose ${index + 1} reminder, ${time}`} value={s.reminderEnabled} disabled={!supported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value, s.id)} {...switchColors} />
+            <Switch style={switchStyle} accessibilityLabel={`Dose ${index + 1} reminder, ${time}`} value={s.reminderEnabled} disabled={!supported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value, s.id)} {...switchColors} />
           </Row>
         </GroupCard>;
       }) : <GroupCard>
@@ -213,7 +214,7 @@ export default function MedicineDetailScreen() {
         <Row icon="duration" label={medicine.duration?.replace(/\d{4}-\d{2}-\d{2}/, formatDateKey) ?? 'No end date'} last={!medicine.scheduleId} />
         {!!medicine.scheduleId && <Row icon="bell" label="Dose reminders" last
           detail={medicine.reminderSupported ? 'Tracking works with reminders off.' : 'Available for ongoing daily or weekday schedules starting today.'}>
-          <Switch accessibilityLabel="Dose reminders" value={!!medicine.reminderEnabled} disabled={!medicine.reminderSupported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value)} {...switchColors} />
+          <Switch style={switchStyle} accessibilityLabel="Dose reminders" value={!!medicine.reminderEnabled} disabled={!medicine.reminderSupported || medicine.status !== 'Active'} onValueChange={value => void toggleReminder(value)} {...switchColors} />
         </Row>}
       </GroupCard>}
 

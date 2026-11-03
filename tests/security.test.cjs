@@ -221,3 +221,35 @@ test('valid preferences import excludes injected security and health fields', as
   const { backup } = backupHarness('web', { file: { size: content.length, text: async () => content } });
   assert.deepEqual(await backup.importPreferences(), DEFAULT_SETTINGS);
 });
+
+// Regression: after a successful save the Add/Edit Medicine sheet stayed open, and every further tap on
+// "Save Medicine" inserted the same medicine again. usePreventRemove re-blocks a navigation while prevention is
+// on, so the exit must switch prevention off first, and a persisted medicine must never be written twice.
+test('Add/Edit Medicine sheet turns prevention off before leaving and never saves twice', () => {
+  const source = fs.readFileSync('src/features/medicines/AddMedicineScreen.tsx', 'utf8');
+  assert.match(source, /const disablePrevention = usePreventRemove\(hasUnsavedChanges && !leaving/);
+  assert.match(source, /setLeaving\(true\);\s*disablePrevention\(\);\s*if \(router\.canGoBack\(\)\)/);
+  assert.match(source, /if \(saving\.current \|\| persisted\.current\) return;/);
+  assert.equal((source.match(/persisted\.current = true;/g) || []).length, 2, 'both the add and edit paths mark the save as persisted');
+  assert.doesNotMatch(source, /navigation\.dispatch\(data\.action\)/, 'the removed-API replay must not come back');
+});
+
+// Regression: inside the Add Medicine sheet the stock KeyboardAvoidingView lifted the footer too little (a sheet's
+// offset from the top of the display is applied by UIKit, invisible to layout), so Next/Save sat behind the
+// keyboard, and tapping the header did not close it. Forms must use the shared keyboard helpers instead.
+test('form screens use the shared keyboard helpers', () => {
+  for (const path of ['src/features/medicines/AddMedicineScreen.tsx', 'src/features/onboarding/ui.tsx']) {
+    const source = fs.readFileSync(path, 'utf8');
+    assert.match(source, /<KeyboardAvoider>/, `${path} lifts its footer with KeyboardAvoider`);
+    // DismissKeyboard is a Pressable: wrapping a ScrollView in it stops the content scrolling on iOS (Profile and
+    // Add Medicine could not reach their Save button). Scroll views dismiss on their own via keyboardScrollProps.
+    assert.doesNotMatch(source, /<DismissKeyboard[^>]*>(?:(?!<\/DismissKeyboard>)[\s\S])*<ScrollView/, `${path} must not wrap a ScrollView in DismissKeyboard`);
+    assert.match(source, /\{\.\.\.keyboardScrollProps\}/, `${path} dismisses the keyboard while scrolling`);
+    assert.doesNotMatch(source, /<KeyboardAvoidingView/, `${path} must not use the stock KeyboardAvoidingView`);
+  }
+  assert.match(fs.readFileSync('src/features/medicines/AddMedicineScreen.tsx', 'utf8'), /<DismissKeyboard>/, 'the fixed Add Medicine header closes the keyboard on a tap');
+  const helper = fs.readFileSync('src/features/ui/keyboard.tsx', 'utf8');
+  assert.match(helper, /keyboardShouldPersistTaps: 'handled'/);
+  assert.match(helper, /Dimensions\.get\('window'\)\.height - event\.endCoordinates\.screenY/);
+  assert.match(helper, /visibleKeyboard - bottom/);
+});

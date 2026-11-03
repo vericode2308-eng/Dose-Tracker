@@ -3,6 +3,7 @@ import { SegmentedControl } from '@expo/ui/community/segmented-control';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Image, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
+import { switchStyle } from '@/features/ui/switchStyle';
 import Animated from 'react-native-reanimated';
 import { reconcileReminders, eraseMedicineDataWithReminders } from '@/notificationManager';
 import { openLegalUrl, PRIVACY_URL, TERMS_URL } from '@/constants/legal';
@@ -129,9 +130,9 @@ export default function SettingsHomeScreen() {
   const privacyLabel = prefs.notificationPrivacy === 'show' ? 'Show content' : prefs.notificationPrivacy === 'hide' ? 'Hide details' : 'No info';
   const themeIndex = (['system', 'light', 'dark'] as const).indexOf(prefs.theme);
 
-  return <View style={{ flex: 1, backgroundColor: colors.background }} collapsable={false}>
-    <ScreenTitle title="Settings" />
-    <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}
+  // The ScrollView must be the screen's first child so the native stack can apply header insets; ScreenTitle renders no view.
+  return <>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} style={{ backgroundColor: colors.background }}
       contentContainerStyle={{ width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32, gap: 24 }}>
       <ListSection>
         <PressableScale accessibilityRole="button" accessibilityLabel={`${profile?.name || 'Me'}, active profile`} accessibilityHint="Switch, add, or manage profiles"
@@ -156,7 +157,7 @@ export default function SettingsHomeScreen() {
       </ListSection>
 
       <ListSection title="Reminders" footer="Reminders are local notifications. Dose tracking works with reminders off.">
-        <ListRow icon="bell" title="Reminders" last={!prefs.remindersEnabled} trailing={<Switch accessibilityLabel="Reminders enabled" value={prefs.remindersEnabled} disabled={!loaded || busy}
+        <ListRow icon="bell" title="Reminders" last={!prefs.remindersEnabled} trailing={<Switch style={switchStyle} accessibilityLabel="Reminders enabled" value={prefs.remindersEnabled} disabled={!loaded || busy}
           onValueChange={(remindersEnabled) => void update({ remindersEnabled })} trackColor={{ false: colors.fill, true: colors.accent }} ios_backgroundColor={colors.fill} />} />
         {prefs.remindersEnabled && <>
           <ListRow icon="snooze" title="Default snooze" trailing={<Host matchContents>
@@ -187,6 +188,7 @@ export default function SettingsHomeScreen() {
         <ListRow icon="terms" title="Terms of Service" accessory="external" accessibilityHint="Opens in your browser" last onPress={() => openLegalUrl(TERMS_URL)} />
       </ListSection>
     </ScrollView>
+    <ScreenTitle title="Settings" />
 
     {message ? <BottomOverlay><Animated.View entering={toastEntering} exiting={toastExiting} style={{ marginHorizontal: 16, marginBottom: 12 }}>
       <Pressable accessibilityRole="button" accessibilityLabel={`${message} Dismiss.`} onPress={() => setMessage('')}
@@ -203,5 +205,5 @@ export default function SettingsHomeScreen() {
       {menu === 'about' && <><Image source={require('../../../assets/images/brand-mark.png')} accessibilityLabel="DoseTracker app icon" style={{ width: 72, height: 72, alignSelf: 'center' }} />
         <AppText variant="callout" tone="secondary">DoseTracker 1.0.0 stores your profile, preferences, medicines, and dose records on this device. No account, cloud sync, or remote diagnostics are used. Online help and legal pages require a connection. Ongoing daily and weekday reminders are supported. Course boundaries and interval reminders are still in development. Android notification sound and vibration follow your system channel settings. DoseTracker is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice, diagnosis, or treatment.</AppText></>}
     </Sheet>
-  </View>;
+  </>;
 }

@@ -87,11 +87,12 @@ export default function MedicinesListScreen() {
       ListHeaderComponent={<View style={{ gap: 12, marginBottom: 12 }}>
         {!!error && <InlineMessage tone="danger" message={error} actionTitle="Retry" onAction={refresh} />}
         <ProfileSwitcherTrigger />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {/* Bleeds to the screen edges so a clipped chip reads as scrollable; the first chip still aligns with the 16pt gutter. */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -16 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>
           {FILTERS.map(value => {
             const selected = filter === value;
             return <PressableScale key={value} accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={`${value}, ${count(value)}`}
-              onPress={() => setFilter(value)} style={{ minHeight: 36, paddingHorizontal: 14, borderRadius: 18, justifyContent: 'center',
+              hitSlop={{ top: 4, bottom: 4 }} onPress={() => setFilter(value)} style={{ minHeight: 36, paddingHorizontal: 14, borderRadius: 18, justifyContent: 'center',
                 backgroundColor: selected ? colors.primary : colors.fill }}>
               <AppText variant="subhead" weight={selected ? '600' : '400'} style={{ color: selected ? colors.onPrimary : colors.label, fontVariant: ['tabular-nums'] }}>
                 {value} {count(value)}

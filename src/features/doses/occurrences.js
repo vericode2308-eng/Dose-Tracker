@@ -37,3 +37,26 @@ export function occurrencesOnDate(schedule, date) {
 export function isEligibleOccurrence(createdAtMs, scheduledAtMs) {
   return createdAtMs == null || scheduledAtMs >= Math.floor(createdAtMs / 60000) * 60000;
 }
+
+/**
+ * The first dose a schedule created at `createdAtMs` will actually produce, as { date, scheduledAtMs }, or null.
+ * Applies the same creation cutoff as Today, so "Starts today" can be told apart from "first dose tomorrow".
+ */
+export function firstEligibleOccurrence(pattern, timeLocalMinutes, createdAtMs, maxDays = 400) {
+  if (pattern.kind === 'prn') return null;
+  const first = new Date(`${pattern.startDate}T12:00:00`);
+  const today = new Date(createdAtMs); today.setHours(12, 0, 0, 0);
+  if (first < today) first.setTime(today.getTime());
+  let best = null;
+  const day = first;
+  for (let count = 0; count < maxDays && !best; day.setDate(day.getDate() + 1), count++) {
+    const date = dateKey(day);
+    if (pattern.endDate && date > pattern.endDate) break;
+    for (const minute of timeLocalMinutes) {
+      for (const at of occurrencesOnDate({ pattern, timeLocalMinute: minute }, date)) {
+        if (isEligibleOccurrence(createdAtMs, at) && (!best || at < best.scheduledAtMs)) best = { date, scheduledAtMs: at };
+      }
+    }
+  }
+  return best;
+}

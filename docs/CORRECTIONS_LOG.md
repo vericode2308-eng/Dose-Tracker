@@ -1,5 +1,13 @@
 # Corrections log
 
+## 2026-10-31 — Remove stale App Store and version claims from the studio-hosted landing/legal pages
+
+- **Request:** Check https://vericodestudio.com/products/dose-tracker/ and its privacy/terms pages for stale information and amend the website source as needed. Owner confirmed there is no iOS App Store link and that Sentry stays removed from the policy.
+- **Implemented (website repo `VeriCode Website`, `app-sites/sources/dose-tracker/`, re-imported to `public/products/dose-tracker/`):** Landing meta, hero note, iOS platform card and download banner no longer claim App Store availability (Apple lookup for `com.vericodestudio.dosetracker` returns no listing); they restore the 25 Oct "no public iOS download link yet" wording. Terms store sentence fixed in HTML and Markdown mirror. Privacy/terms now say version 1.0.2 (matches `app.json` and Google Play) and are dated October 31, 2026, because their text changed that day.
+- **Affected files:** website `app-sites/sources/dose-tracker/{index,privacy,terms}.html`, `legal/PRIVACY_POLICY.md`, `legal/TERMS_OF_SERVICE.md`, matching `public/products/dose-tracker/` copies, `brand-kit/apps/dose-tracker/RECORD.md`; this log.
+- **Verification:** Website `import:apps`, `check:apps`, `check` (132 files), `build`, brand-record validator passed.
+- **Status:** Source change only. Not deployed or live-verified. This repo's `landing/` and `legal/` copies still hold the older 25 Oct text (incl. the earlier-Android Sentry section); the website's vendored copy is now the published source.
+
 ## 2026-10-31 — Expo SDK 58 upgrade, native folders regenerated, same signing identity
 
 - **Request:** Upgrade to SDK 58 including the native folders, keeping the same app signing so the release ships as an update on Play and the App Store; back up signing keys in `Keys for Google and Apple`.
@@ -668,3 +676,63 @@ Record user-requested corrections here with the request date, affected screen, i
 - **Status:** Source changed, not released. Play Console / App Store Connect fields must be updated by hand.
 
 - **Follow-up (2026-10-31):** Support, marketing and data-deletion URLs in `STORE_SUBMISSION_PACK.md`, `MEDIA/playstore_assets/LISTING.md` and `docs/GOOGLE_PLAY_POLICY_AUDIT.md` moved to `vericodestudio.com/products/dose-tracker/{,support/,delete-data/}` (all HTTP 200). Historical deployment logs keep the old domain on purpose.
+
+## 2026-11-03 — Settings/History: scroll overlap fix, header kept in the header row
+
+- **Request:** Fix the Settings scrolling/header overlap near the iOS status bar (broader UI/native-quality audit requested). Follow-up: "Settings text is way below" after a native large title was tried.
+- **Root cause:** Settings and History wrapped their `ScrollView` in a `View` with a sibling `ScreenTitle`, so the native stack never applied header insets to the scroll view. The inline title also floated over a transparent header, so scrolling rows drew through the title text.
+- **Tried and rejected:** A native collapsing large title worked (collapse/expand verified) but leaves an empty navigation-bar row, putting the title about 60pt below the status bar; this contradicts the 2026-10-25 request for the title in the header row with content right under the status bar.
+- **Implemented:** `ScrollView` is the screen's first child on both screens (overlays/sheets are siblings in a fragment; `ScreenTitle` renders no view and sits after it). `ScreenTitle` keeps the left-aligned inline title but now makes the header opaque (`headerTransparent: false`, theme background), so rows clip under the header instead of through the title. History's gutter is set via `contentContainerStyle` (16pt, 560pt max width) like Settings and Today; the NativeWind `contentContainerClassName` rendered about 2pt narrower. `AppTabs` imports `expo-router/native-tabs`; `unstable-native-tabs` is deprecated in SDK 58 and re-exports the same component.
+- **Affected files:** `src/features/settings/SettingsHomeScreen.tsx`, `src/features/history/HistoryScreen.tsx`, `src/features/ui/ScreenTitle.tsx`, `src/features/navigation/AppTabs.tsx`.
+- **Verification:** TypeScript, lint and 152 tests pass. Verified in the iOS Simulator (iPhone 18 Pro, iOS 27, dev build via `expo run:ios`): title sits under the status bar on Settings and History, scrolled Settings rows clip cleanly under the header (the overlap reproduced before the opaque header and is gone after), last footer text clears the tab bar, light and dark. NOT verified: Android header/edge-to-edge, History scrolling with real records, large-text sizes, smaller devices, iPad.
+- **Status:** Source changes, uncommitted. Rest of the audit (other screens, accessibility, device matrix, Android) not yet done.
+
+## 2026-11-03 — Add/Edit Medicine: sheet did not close after Save, and Save could insert duplicates
+
+- **Request:** "The bottom sheet opening when adding a medicine does not close after the final review"; then "the med is getting saved the number of times you press Save Medicine".
+- **Root cause:** The screen replayed a blocked exit with `navigation.dispatch(data.action)` while `usePreventRemove` was still active. In Expo Router 58 (React Navigation 8) a dispatched action is blocked again while prevention is on, so the exit was swallowed and the sheet stayed open. The medicine was already saved, so each further Save tap inserted it again.
+- **Implemented:** `AddMedicineScreen` now uses the hook's own mechanism: prevention is `hasUnsavedChanges && !leaving`, a successful save (or Discard) sets `leaving`, calls the returned `disablePrevention()` and then navigates; Discard uses the callback's `repeat()`. A `persisted` ref makes `save()` a no-op once the medicine is written, so Save can never insert twice. Replaced the removed `confirmedExit` flag. Same code path serves Edit Medicine.
+- **Also changed:** The Medicines filter chip row now bleeds to the screen edges (`MedicinesListScreen.tsx`).
+- **Affected files:** `src/features/medicines/AddMedicineScreen.tsx`, `src/features/medicines/MedicinesListScreen.tsx`, `tests/security.test.cjs` (new source-level regression test).
+- **Verification:** TypeScript, lint and 153 tests pass. Verified in the iOS Simulator (iPhone 18 Pro, iOS 27): before the fix the sheet stayed open and the row count rose with every tap (reproduced 3 rows from 3 taps); after the fix one Save tap writes exactly one row and the sheet dismisses to Today, and X then Discard closes the sheet and saves nothing. NOT verified: Edit Medicine on a device, the "reminder permission denied" branch (sheet intentionally stays open with a message), swipe-down dismissal, Android.
+- **Status:** Source change, uncommitted. The simulator still holds the test medicines created while reproducing (Amoxicillin x3, Closetest); they are test data on the simulator only.
+
+## 2026-11-03 — Keyboard: Next/Save hidden behind it, and no easy way to close it
+
+- **Request:** "Tapping outside a text field doesn't close the keyboard, and the keyboard covers the Next button while you type. Resolve this; find a smoother way to get rid of the keyboard when not required."
+- **Root cause:** (1) React Native's `KeyboardAvoidingView` works out the overlap from its position inside its parent, but the Add Medicine sheet's offset from the top of the display (about 107pt) is applied by UIKit and invisible to layout, so the footer was lifted too little and its buttons stayed behind the keyboard. Two earlier attempts (a negative offset for the safe-area padding, then `measureInWindow`) failed for the same reason. (2) Only blank space inside the scroll area dismissed the keyboard; the header, step indicator and margins did nothing.
+- **Implemented:** New `src/features/ui/keyboard.tsx`: `KeyboardAvoider` (iOS lifts by the visible keyboard height minus the home-indicator padding, animated with the keyboard; Android keeps the stock view), `DismissKeyboard` (a tap on anything that is not a control closes the keyboard; hidden from screen readers) and `keyboardScrollProps` (drag the content to dismiss, interactive on iOS). Applied to Add/Edit Medicine, the shared onboarding `Page` (Profile) and the shared `Sheet` scroll view.
+- **Affected files:** `src/features/ui/keyboard.tsx` (new), `src/features/medicines/AddMedicineScreen.tsx`, `src/features/onboarding/ui.tsx`, `src/features/ui/Sheet.tsx`, `tests/security.test.cjs`.
+- **Verification:** TypeScript, lint and 154 tests pass. Verified in the iOS Simulator (iPhone 18 Pro, iOS 27): before, the Next button was behind the keyboard; after, it sits fully above it, and tapping the header title closes the keyboard and returns the footer. NOT verified: drag-to-dismiss (the test swipe started on the header, so it was inconclusive), the Profile screen and the Sheet text field (Log Refill) with the keyboard, landscape, Android (keeps the stock behavior; edge-to-edge keyboard resizing is untested), hardware keyboards.
+- **Status:** Source change, uncommitted.
+
+
+## 2026-11-03 — Add Medicine: "Starts today" when the first dose is tomorrow
+
+- **Request:** A daily 9:00 AM medicine added in the evening said "Starts today" in Add Medicine, but Today showed "No doses scheduled today". Resolve the mismatch.
+- **Decision:** Kept the 2026-09-29 (#011) rule that doses before a schedule's creation minute are not offered, not counted in progress and not auto-marked Missed. The wording was fixed instead, as chosen by the user over showing the earlier dose.
+- **Implemented:** `firstEligibleOccurrence` in `occurrences.js` applies the same creation cutoff as Today. The Add Medicine Schedule step and Review step now say "First dose tomorrow at 9:00 AM" (or the date) when every dose time today has passed, and keep "Starts today" when a later time is still ahead. The Today empty state now says "Your next dose is tomorrow at 9:00 AM." from the week window instead of the generic prompt. Edit Medicine and as-needed schedules are unchanged.
+- **Files:** `src/features/doses/occurrences.js` and `.d.ts`, `src/features/medicines/AddMedicineScreen.tsx`, `src/features/today/TodayHomeScreen.tsx`, `tests/database.test.cjs`.
+- **Verification:** 155 tests pass (new test covers daily, two times, saving in the dose minute, weekdays, as-needed, past end date), `tsc` and lint clean. In the iOS Simulator at 7:34 PM: a 9:00 AM daily medicine showed "First dose tomorrow at 9:00 AM" on the Schedule step, saved once, and Today showed "Your next dose is tomorrow at 9:00 AM." A 9:00 PM medicine added at 7:35 PM appeared on Today under Upcoming and counted as 0 of 1. Review step wording was changed after the first run and not re-viewed on device. Not checked on Android.
+
+## 2026-11-03 — Today: shorter pending dose cards
+
+- **Request:** The medicine card on Today is too tall; with more than two medicines the screen scrolls a long way.
+- **Implemented:** Pending dose cards moved the "Scheduled in …" line up under the dose amount (no separate row), use the 44pt `sm` buttons (still the iOS minimum touch target; Android keeps 48dp), and have tighter vertical padding and gap. A not-yet-due card went from about 166pt to about 139pt on an iPhone 18 Pro. Logged doses were already compact rows and are unchanged. Colors, radii, labels and actions are unchanged.
+- **Files:** `src/features/today/TodayHomeScreen.tsx`.
+- **Verification:** `tsc` and lint clean; viewed on the iOS Simulator with one Upcoming dose. Not checked with several doses, large text sizes or Android; the "Due now" card (three buttons) was not re-viewed.
+
+## 2026-11-03 — Audit: switches sat high in their rows (iOS)
+
+- **Request:** Standing instruction to keep auditing; found during the Settings sub-screen pass (not a user-reported bug).
+- **Finding:** On iOS the native `Switch` sat at the top of its row instead of centring against two-line text, even with `alignItems: 'center'` on the row (Sound & Vibration: Ring repeatedly, Vibration; App Lock). The Vibration row's text block also had no `flex-1`, so long text would not wrap before the switch.
+- **Implemented:** New `src/features/ui/switchStyle.ts` (`alignSelf: 'center'`) applied to every `<Switch>`; the Vibration row text block is `flex-1` with `gap-3`/`py-3`.
+- **Files:** `src/features/ui/switchStyle.ts` (new), `ReminderSoundScreen.tsx`, `DeviceAuthenticationSettingsScreen.tsx`, `SettingsHomeScreen.tsx`, `AddMedicineScreen.tsx`, `MedicineDetailScreen.tsx`.
+- **Verification:** `tsc` and lint clean. Viewed in the iOS Simulator before and after on Sound & Vibration and App Lock (switch now centred on the row). NOT viewed: Settings home (already centred), the Add Medicine "Remind me"/"Track stock" rows, the Medicine detail reminder rows, Android.
+
+## 2026-11-03 — Audit: Profile and Add Medicine screens did not scroll (regression from the keyboard fix)
+
+- **Finding:** The earlier keyboard fix wrapped the whole screen in `DismissKeyboard`, a full-screen `Pressable`. On iOS that Pressable claimed the touch, so the Add Profile form (and the Add Medicine and onboarding forms that share it) would not scroll and the Add Profile button below the fold was unreachable. Reproduced in the iOS Simulator with two slow drags; scrolling worked as soon as the Pressable was replaced with a plain View.
+- **Implemented:** `DismissKeyboard` now wraps only the fixed Add Medicine header and stepper (outside the ScrollView). Scroll content closes the keyboard through `keyboardShouldPersistTaps="handled"`, which already dismisses on a tap of any non-control. `onboarding/ui.tsx` (`Page`) no longer uses it. The regression test now fails if `DismissKeyboard` wraps a `ScrollView`.
+- **Files:** `src/features/ui/keyboard.tsx`, `src/features/onboarding/ui.tsx`, `src/features/medicines/AddMedicineScreen.tsx`, `tests/security.test.cjs`.
+- **Verification:** `tsc`, lint and 155 tests pass. iOS Simulator (iPhone 18 Pro, iOS 27): Add Profile scrolls to the Add Profile button; typing a name then tapping the "Add Profile" title closes the keyboard; Add Medicine scrolls to the Color & icon section and Add notes row, and tapping its header title closes the keyboard with Next fully above the keyboard. NOT verified: drag-to-dismiss, the other onboarding screens (Welcome, Ready, Notifications), the Sheet text fields, Android.

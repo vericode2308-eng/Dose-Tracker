@@ -1,8 +1,7 @@
 import { Platform } from 'react-native';
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/native-tabs';
 import { useTheme } from '@/features/theme/ThemeContext';
 
-// SDK 57 import path; SDK 58 renames it to 'expo-router/native-tabs'.
 export function AppTabs() {
   const { colors } = useTheme();
   return <NativeTabs

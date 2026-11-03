@@ -102,7 +102,7 @@ function ProfileHistory() {
     } finally { setBusyUndo(false); }
   };
 
-  return <View style={{ flex: 1 }} collapsable={false}><ScreenTitle title="History" /><ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="px-4 pb-8 pt-1">
+  return <><ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32 }}>
     <View className="mb-2"><ProfileSwitcherTrigger /></View>
     <View className="rounded-[24px] p-3" style={{ backgroundColor: colors.surface }}>
       <View className="mb-2 flex-row items-center justify-between"><Pressable accessibilityRole="button" accessibilityLabel="Previous month" onPress={() => changeMonth(-1)} className="h-11 w-11 items-center justify-center"><Feather name="chevron-left" size={23} color={colors.ink} /></Pressable><Text className="text-base font-semibold" style={{ color: colors.ink }}>{title}</Text><Pressable accessibilityRole="button" accessibilityLabel="Next month" onPress={() => changeMonth(1)} className="h-11 w-11 items-center justify-center"><Feather name="chevron-right" size={23} color={colors.ink} /></Pressable></View>
@@ -128,6 +128,7 @@ function ProfileHistory() {
     <View className="mb-2 mt-4 flex-row items-center justify-between"><Text accessibilityRole="header" className="text-xl font-semibold" style={{ color: colors.ink }}>Records · {displayed.length}</Text><Pressable accessibilityRole="button" onPress={() => router.navigate('/')} className="min-h-11 justify-center"><Text className="font-medium" style={{ color: colors.accentText }}>Log a dose</Text></Pressable></View>
     <View className="overflow-hidden rounded-[22px]" style={{ backgroundColor: colors.surface }}>{loading ? <Text className="p-5" style={{ color: colors.secondary }}>Loading history…</Text> : displayed.map(record => <Pressable key={record.id} accessibilityRole="button" accessibilityLabel={`${record.medicineName}, ${record.status}, ${record.date}`} onPress={() => openRecord(record)} className="min-h-20 flex-row items-center gap-3 border-b p-3" style={{ borderBottomColor: colors.border }}><View className="h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: COLORS[record.status] }}><Feather name={record.status === 'Taken' ? 'check' : 'minus'} size={20} color="white" /></View><View className="flex-1"><Text className="text-base font-semibold" style={{ color: colors.ink }}>{record.medicineName}</Text><Text className="mt-1 text-sm" style={{ color: colors.secondary }}>{record.date} · {record.status}{record.actualTakenAtMs ? ` at ${time(record.actualTakenAtMs)}` : ''}</Text><Text className="mt-1 text-xs" style={{ color: colors.secondary }}>{record.doseAmount} {record.doseUnit || record.dosageForm}{record.scheduledAtMs ? ` · Planned ${time(record.scheduledAtMs)}` : ''}</Text></View><Feather name="chevron-right" size={18} color={colors.ink} /></Pressable>)}{!loading && !displayed.length && <Text className="p-6 text-center" style={{ color: colors.secondary }}>No matching dose records.</Text>}</View>
   </ScrollView>
+  <ScreenTitle title="History" />
   <Modal visible={sheet !== null} transparent animationType="slide" onRequestClose={close}><View className="flex-1 justify-end bg-black/30"><GlassSheetSurface edges={['bottom']} className="max-h-[80%] w-full max-w-[440px] self-center overflow-hidden rounded-t-[28px]" tint={colors.background}><ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ padding: 20 }}><View className="mb-3 flex-row items-start gap-3"><Text className="min-w-0 flex-1 pt-2 text-xl font-semibold leading-7" style={{ color: colors.ink }}>{sheet?.medicineName}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={close} className="h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: colors.surface }}><Feather name="x" size={24} color={colors.ink} /></Pressable></View>
     {sheet && (
       <View className="gap-3 rounded-2xl p-5" style={{ backgroundColor: colors.surface }}>
@@ -171,5 +172,5 @@ function ProfileHistory() {
         />
       </View>
     )}
-  </ScrollView></GlassSheetSurface></View></Modal></View>;
+  </ScrollView></GlassSheetSurface></View></Modal></>;
 }
