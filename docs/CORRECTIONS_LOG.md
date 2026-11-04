@@ -762,3 +762,18 @@ Record user-requested corrections here with the request date, affected screen, i
 - **Implemented:** New config plugin sets `SWIFT_ENABLE_EXPLICIT_MODULES = NO` on the Pods project in the generated Podfile, so it survives `expo prebuild`. Remove it once an Expo/Xcode update fixes the error.
 - **Files:** `plugins/withIosNoExplicitSwiftModules.cjs`, `app.json`.
 - **Verification:** The same setting added by hand to `ios/Podfile` made the iOS Simulator build succeed. Then `expo prebuild --platform ios --clean` regenerated a Podfile containing the plugin's block, and the build succeeded and launched to Today on iPhone 18 Pro (iOS 27). `pod install` needs `LANG=en_US.UTF-8` in this shell. Not verified: Android, a release/archive build.
+
+## 2026-11-04 — Dev warning toast over Add Medicine (Reanimated inline-style check)
+
+- **Request:** While recording a launch video, the warning toast at the bottom of the screen must not appear in screenshots.
+- **Cause:** Reanimated's Babel plugin flags any `x.value` read inside an inline `style={{…}}` as a possible shared-value misuse. The medicine colour swatch (`color.value`, a plain palette hex string) triggered "It looks like you might be using shared value's .value inside reanimated inline style" whenever Add Medicine opened.
+- **Implemented:** The hex is read into a local (`swatch` in the colour picker, `colorHex` on the Review card) before the style object. No behaviour change. The other toast seen in this session ("Failed to find parent screen controller from RNSScreenContentWrapper", react-native-screens, native) was not fixed; it appeared once and was dismissed.
+- **Files:** `src/features/medicines/MedicineDetailsForm.tsx`, `src/features/medicines/AddMedicineScreen.tsx`.
+- **Verification:** Lint and `tsc` pass. iOS Simulator (iPhone 18 Pro, iOS 27, dev build): after a reload, Add Medicine opened with no toast across four medicine additions. Not verified: Android, release build.
+
+## 2026-11-04 — Play Store screenshots: Android phone frame looked cheap
+
+- **Request:** Make creative Play Store (Android-only) screenshots; the Android phone frame looked cheap, with the camera at the top edge, and should look like a current flagship.
+- **Implemented:** A separate Play Store copy of the screenshot editor (the Apple editor is unchanged). The Android frame was redrawn with slim, even bezels, a centred punch-hole camera inside the display, a titanium rail, side buttons and a glass sheen. Devices are front-on (no tilt). Eight 1080×1920 screenshots and a 1024×500 feature graphic were exported. They use the 4 Nov iOS captures, with the iOS status bar and home indicator masked out. A dev-only `/api/save-export` route saves export zips to `exports/`.
+- **Files:** `MEDIA/playstore_assets/play-screenshot-editor/` (frame in `src/components/editor/device-frames.tsx`, deck in `app-store-screenshots.json`), output in `MEDIA/playstore_assets/screenshots-2026-11-04-v3/`, `.claude/launch.json`.
+- **Status:** Source/media change only. Not uploaded to Play Console. The screen content is still iOS captures (iOS-style controls), not native Android captures.

@@ -66,9 +66,11 @@ export function MedicineDetailsForm(p: Props) {
       <View accessibilityRole="radiogroup" accessibilityLabel="Medicine color" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
         {(MEDICINE_COLORS.some(c => c.value.toLowerCase() === p.color.value.toLowerCase()) ? MEDICINE_COLORS : [...MEDICINE_COLORS, p.color]).map(color => {
           const selected = color.value.toLowerCase() === p.color.value.toLowerCase();
+          // Read outside the inline style: Reanimated's Babel plugin flags any `.value` there as a shared value.
+          const swatch = color.value;
           return <PressableScale key={color.value} accessibilityRole="radio" accessibilityLabel={`${color.name} medicine color`} accessibilityState={{ checked: selected }} onPress={() => p.setColor(color)}
             style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, borderWidth: 2, borderColor: selected ? colors.ink : 'transparent' }}>
-            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: color.value, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: swatch, alignItems: 'center', justifyContent: 'center' }}>
               {selected && <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}><Feather name="check" size={16} color={colors.onPrimary} /></View>}
             </View>
           </PressableScale>;

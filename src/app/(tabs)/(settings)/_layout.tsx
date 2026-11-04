@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { useStackScreenOptions } from '@/features/ui/navigation';
 
 // A link straight to a sub-screen (e.g. /reminder-status) still has Settings to go back to.
-export const unstable_settings = { initialRouteName: 'settings' };
+export const unstable_settings = { anchor: 'settings' };
 
 export default function SettingsLayout() {
   const screenOptions = useStackScreenOptions();

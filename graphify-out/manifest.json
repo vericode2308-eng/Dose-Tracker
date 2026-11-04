@@ -24,9 +24,9 @@
     "semantic_hash": ""
   },
   "app.json": {
-    "mtime": 1793426916.9266512,
-    "seen": 1793427583.3152041,
-    "ast_hash": "69ea36e367d0526f40428c56e3c123a4",
+    "mtime": 1793513654.9197075,
+    "seen": 1793713231.988647,
+    "ast_hash": "d6531f541c3f7316ddd0746cb9b87894",
     "semantic_hash": ""
   },
   "babel.config.js": {
@@ -342,9 +342,9 @@
     "semantic_hash": ""
   },
   "src/app/_layout.tsx": {
-    "mtime": 1792945095.2661912,
-    "seen": 1793425965.899782,
-    "ast_hash": "1ca7ddaa931f0d1e9977fbc531a00d98",
+    "mtime": 1793717971.0289598,
+    "seen": 1793718091.067559,
+    "ast_hash": "3199b3a317c5464a2f504cdddb132fbf",
     "semantic_hash": ""
   },
   "src/app/add-medicine.tsx": {
@@ -360,27 +360,27 @@
     "semantic_hash": ""
   },
   "src/app/notifications.tsx": {
-    "mtime": 1792478129.185068,
-    "seen": 1793425965.899783,
-    "ast_hash": "44faa51aa56b39674ee2bc3374e7aa8b",
+    "mtime": 1793716872.628701,
+    "seen": 1793716924.045599,
+    "ast_hash": "32b692215ae184cc575a904ab300c70d",
     "semantic_hash": ""
   },
   "src/app/profile.tsx": {
-    "mtime": 1793426916.9295602,
-    "seen": 1793427583.315243,
-    "ast_hash": "bd42992c669ae23799ec267ed70fac32",
+    "mtime": 1793716799.1852026,
+    "seen": 1793716924.0456,
+    "ast_hash": "7fb6add8cf77e32398b5d8f0ce4ea14e",
     "semantic_hash": ""
   },
   "src/app/ready.tsx": {
-    "mtime": 1792693835.1904168,
-    "seen": 1793425965.8997838,
-    "ast_hash": "d6ca788c5409b83ef0be612286f7fd2b",
+    "mtime": 1793716872.6290464,
+    "seen": 1793716924.0456011,
+    "ast_hash": "942c30522c7c4078e31d1713edd2f74e",
     "semantic_hash": ""
   },
   "src/app/welcome.tsx": {
-    "mtime": 1792945095.2684639,
-    "seen": 1793425965.8997838,
-    "ast_hash": "a01253ef716e538cc222459214890d2e",
+    "mtime": 1793431536.5134041,
+    "seen": 1793713231.988686,
+    "ast_hash": "66848a521dd792622ae58b9c596506b3",
     "semantic_hash": ""
   },
   "src/database.d.ts": {
@@ -396,15 +396,15 @@
     "semantic_hash": ""
   },
   "src/features/doses/occurrences.d.ts": {
-    "mtime": 1790696551.314043,
-    "seen": 1793425965.899786,
-    "ast_hash": "1067ef70c3afb0c085a816c3eb817f5c",
+    "mtime": 1793714564.5307565,
+    "seen": 1793714729.2552488,
+    "ast_hash": "1e4d7744f77823786ed0e36d0d3cee14",
     "semantic_hash": ""
   },
   "src/features/doses/occurrences.js": {
-    "mtime": 1790696551.3138123,
-    "seen": 1793425965.899786,
-    "ast_hash": "b61e8020f701d000395538d5bcce5d7d",
+    "mtime": 1793714617.348365,
+    "seen": 1793714729.25525,
+    "ast_hash": "3cdbde2ee856f68d53d3ada7d3fbbe9d",
     "semantic_hash": ""
   },
   "src/features/doses/useLocalQuery.ts": {
@@ -414,15 +414,15 @@
     "semantic_hash": ""
   },
   "src/features/history/HistoryScreen.tsx": {
-    "mtime": 1792945095.2703865,
-    "seen": 1793425965.899787,
-    "ast_hash": "c8e31e2eb20bc235ae36795c5109832d",
+    "mtime": 1793716581.7611432,
+    "seen": 1793716924.0456052,
+    "ast_hash": "6f0ee193022b055fcbd57eeb23f999c0",
     "semantic_hash": ""
   },
   "src/features/medicines/AddMedicineScreen.tsx": {
-    "mtime": 1792945095.270994,
-    "seen": 1793425965.899787,
-    "ast_hash": "a99095741308708ffcb48da8b1befa9d",
+    "mtime": 1793715340.7760746,
+    "seen": 1793715449.6005492,
+    "ast_hash": "2d6d94ee56ec9f480baba2ee9ce56c31",
     "semantic_hash": ""
   },
   "src/features/medicines/EditMedicineScreen.tsx": {
@@ -432,9 +432,9 @@
     "semantic_hash": ""
   },
   "src/features/medicines/MedicineDetailScreen.tsx": {
-    "mtime": 1792945095.272568,
-    "seen": 1793425965.8997881,
-    "ast_hash": "4bc6395e87ff620db24b91c53f01f829",
+    "mtime": 1793715201.0829353,
+    "seen": 1793715449.600551,
+    "ast_hash": "044043ad279e8d9d1c9b2cd5dc9fad86",
     "semantic_hash": ""
   },
   "src/features/medicines/MedicineDetailsForm.tsx": {
@@ -444,9 +444,9 @@
     "semantic_hash": ""
   },
   "src/features/medicines/MedicinesListScreen.tsx": {
-    "mtime": 1792945095.2731936,
-    "seen": 1793425965.899789,
-    "ast_hash": "80fb847ea95bd35255f4218359acf667",
+    "mtime": 1793718108.939343,
+    "seen": 1793718153.197716,
+    "ast_hash": "bf8c5f4c5bef7fb7ba9ad0d0b155b5dd",
     "semantic_hash": ""
   },
   "src/features/medicines/colors.ts": {
@@ -462,9 +462,9 @@
     "semantic_hash": ""
   },
   "src/features/navigation/AppTabs.tsx": {
-    "mtime": 1792945095.2735183,
-    "seen": 1793425965.899791,
-    "ast_hash": "1d9ec9dffa51bb185d4a20d03276dade",
+    "mtime": 1793712450.7710824,
+    "seen": 1793713231.988697,
+    "ast_hash": "63f086eac15ef3bf66ef6b93279d4db6",
     "semantic_hash": ""
   },
   "src/features/navigation/AppTabs.web.tsx": {
@@ -528,9 +528,9 @@
     "semantic_hash": ""
   },
   "src/features/onboarding/ui.tsx": {
-    "mtime": 1792945095.2756581,
-    "seen": 1793425965.899796,
-    "ast_hash": "10f280df5cdfcc412841215eb9dc694e",
+    "mtime": 1793715340.776425,
+    "seen": 1793715449.6005602,
+    "ast_hash": "fc6a11ce56357f05c0f2824d49a72eae",
     "semantic_hash": ""
   },
   "src/features/profiles/ProfileSwitcher.tsx": {
@@ -552,9 +552,9 @@
     "semantic_hash": ""
   },
   "src/features/security/DeviceAuthenticationSettingsScreen.tsx": {
-    "mtime": 1792945095.2776363,
-    "seen": 1793425965.899797,
-    "ast_hash": "52ce921320c09f5789e4e545ef3ece2d",
+    "mtime": 1793715201.0830374,
+    "seen": 1793715449.600563,
+    "ast_hash": "f1e3d5ffc53a58a7f3b49dba091982bd",
     "semantic_hash": ""
   },
   "src/features/security/LockScreen.tsx": {
@@ -594,9 +594,9 @@
     "semantic_hash": ""
   },
   "src/features/settings/ReminderSoundScreen.tsx": {
-    "mtime": 1792945095.278558,
-    "seen": 1793425965.899801,
-    "ast_hash": "0acc25dc26609b5760fea0dcac5d8b19",
+    "mtime": 1793715201.0832949,
+    "seen": 1793715449.600567,
+    "ast_hash": "0142c96941aa442f1fde2c61f70c3fe6",
     "semantic_hash": ""
   },
   "src/features/settings/ReminderStatusScreen.tsx": {
@@ -606,9 +606,9 @@
     "semantic_hash": ""
   },
   "src/features/settings/SettingsHomeScreen.tsx": {
-    "mtime": 1792945095.2800987,
-    "seen": 1793425965.899801,
-    "ast_hash": "fa6816e3317927fce7ac72b3365259af",
+    "mtime": 1793716690.632017,
+    "seen": 1793716924.045625,
+    "ast_hash": "5e695d3c60b81910ab12f6d955219ef8",
     "semantic_hash": ""
   },
   "src/features/settings/backup.ts": {
@@ -636,9 +636,9 @@
     "semantic_hash": ""
   },
   "src/features/today/TodayHomeScreen.tsx": {
-    "mtime": 1792945095.2807593,
-    "seen": 1793425965.8998039,
-    "ast_hash": "3adabc9f57f2d056a9ca7cc7b729d05c",
+    "mtime": 1793714838.2237866,
+    "seen": 1793714860.160165,
+    "ast_hash": "f8002e8841aef171feb3477c6ed4c0ab",
     "semantic_hash": ""
   },
   "src/features/today/WeekStrip.tsx": {
@@ -737,16 +737,10 @@
     "ast_hash": "fffd1d3c5cc4d14fee3a8ac5e49dd0e3",
     "semantic_hash": ""
   },
-  "src/features/ui/ScreenTitle.tsx": {
-    "mtime": 1792945095.286155,
-    "seen": 1793425965.899811,
-    "ast_hash": "2c38df0000df7b58f91dd4ca8cb41b94",
-    "semantic_hash": ""
-  },
   "src/features/ui/Sheet.tsx": {
-    "mtime": 1792945095.2863507,
-    "seen": 1793425965.899812,
-    "ast_hash": "2b2557a424feb7d3e9667dd840285aa0",
+    "mtime": 1793714066.653777,
+    "seen": 1793714296.644259,
+    "ast_hash": "bde0fb013aa5a711af9cfdb44b6e8b79",
     "semantic_hash": ""
   },
   "src/features/ui/UndoSnackbar.tsx": {
@@ -816,9 +810,9 @@
     "semantic_hash": ""
   },
   "tests/database.test.cjs": {
-    "mtime": 1792945095.2887897,
-    "seen": 1793425965.899817,
-    "ast_hash": "71ab525c0525d1f5009c723173bd74cc",
+    "mtime": 1793714611.4108682,
+    "seen": 1793714729.255293,
+    "ast_hash": "8d2b5dae613276dc8f06c5bd0b0e7db4",
     "semantic_hash": ""
   },
   "tests/notificationManager.test.cjs": {
@@ -828,9 +822,9 @@
     "semantic_hash": ""
   },
   "tests/security.test.cjs": {
-    "mtime": 1793426916.9303443,
-    "seen": 1793427583.315295,
-    "ast_hash": "18ec41fb58c354e6aa1f9cb4fa772f18",
+    "mtime": 1793718082.1426845,
+    "seen": 1793718091.06761,
+    "ast_hash": "eadc66f8145dc5bbc97f8e9cf17a8fe8",
     "semantic_hash": ""
   },
   "tests/settings-ringing.test.cjs": {
@@ -894,9 +888,9 @@
     "semantic_hash": ""
   },
   "STORE_SUBMISSION_PACK.md": {
-    "mtime": 1792950540.9901786,
-    "seen": 1793425965.8998232,
-    "ast_hash": "2054bca68c88a815a9817ecbb80f9e7c",
+    "mtime": 1793431983.8357232,
+    "seen": 1793713231.988739,
+    "ast_hash": "fb0c369917fc89d2230515e4685d5afd",
     "semantic_hash": ""
   },
   "assets/onboarding/README.md": {
@@ -912,9 +906,9 @@
     "semantic_hash": ""
   },
   "docs/CORRECTIONS_LOG.md": {
-    "mtime": 1793427578.861262,
-    "seen": 1793427583.3153028,
-    "ast_hash": "daf83819c2ea02157cd559460bfc4d7a",
+    "mtime": 1793718144.3906395,
+    "seen": 1793718153.1977658,
+    "ast_hash": "62f5c2ed182766f63a60db1435f9c449",
     "semantic_hash": ""
   },
   "docs/DESIGN_SYSTEM.md": {
@@ -924,9 +918,9 @@
     "semantic_hash": ""
   },
   "docs/GOOGLE_PLAY_POLICY_AUDIT.md": {
-    "mtime": 1792950541.0427082,
-    "seen": 1793425965.8998249,
-    "ast_hash": "1ef65d4ee5dfb5086b99d885e077f20e",
+    "mtime": 1793431983.8369012,
+    "seen": 1793713231.9887419,
+    "ast_hash": "b8e85f6b545f6613af3f739ef2f71d63",
     "semantic_hash": ""
   },
   "docs/SECURITY_AUDIT.md": {
@@ -942,9 +936,9 @@
     "semantic_hash": ""
   },
   "docs/SETTINGS_ARCHITECTURE.md": {
-    "mtime": 1793426916.9273956,
-    "seen": 1793427583.315306,
-    "ast_hash": "3cc5c9a4c7ca98916b60c4d9f0afd564",
+    "mtime": 1793431983.8375933,
+    "seen": 1793713231.988744,
+    "ast_hash": "c85adb182d3dc689775a9c1832319dbe",
     "semantic_hash": ""
   },
   "docs/integration-verification.md": {
@@ -1221,6 +1215,36 @@
     "mtime": 1790409891.5624068,
     "seen": 1793425965.899848,
     "ast_hash": "caa144ec05b106546b58d7455358a339",
+    "semantic_hash": ""
+  },
+  "src/constants/legal.ts": {
+    "mtime": 1793431536.4341881,
+    "seen": 1793713231.9886878,
+    "ast_hash": "2fef0b312012fecadaeac031e9a27440",
+    "semantic_hash": ""
+  },
+  "src/features/ui/ScreenTitle.tsx": {
+    "mtime": 1793713277.0024548,
+    "seen": 1793713321.468064,
+    "ast_hash": "011e39f36e0471b5ab3d99509e9f6c0c",
+    "semantic_hash": ""
+  },
+  "src/features/ui/keyboard.tsx": {
+    "mtime": 1793715340.7765412,
+    "seen": 1793715449.600585,
+    "ast_hash": "7e6a4adcdaab67cda5e8113bd3789a07",
+    "semantic_hash": ""
+  },
+  "src/features/ui/switchStyle.ts": {
+    "mtime": 1793715201.0534062,
+    "seen": 1793715449.600587,
+    "ast_hash": "f3a6951bb0c2c5e54b0d442aa8ce9a97",
+    "semantic_hash": ""
+  },
+  "docs/UI_UX_AUDIT_REPORT.md": {
+    "mtime": 1793717007.8319635,
+    "seen": 1793718091.067622,
+    "ast_hash": "0729cd85fb2952142671c57a33937232",
     "semantic_hash": ""
   },
   "package-lock.json": {
