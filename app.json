@@ -48,6 +48,7 @@
       "expo-router",
       "./plugins/withIosLocalNotificationsOnly.cjs",
       "./plugins/withIosSceneLifecycle.cjs",
+      "./plugins/withIosNoExplicitSwiftModules.cjs",
       [
         "expo-notifications",
         {
