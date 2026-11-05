@@ -75,3 +75,23 @@ build/
 .gradle/
 graphify-out/.pending_changes
 graphify-out/.rebuild.lock
+
+# Store screenshots, videos and design exports live in MEDIA/ (local only). Lowercase entry covers case-sensitive checkouts.
+/media/
+/screenshots/
+*.mp4
+*.mov
+*.webm
+*.mkv
+
+# graphify: keep graph.json, GRAPH_REPORT.md and manifest.json; the rest is regenerable cache or temp state
+graphify-out/cache/
+graphify-out/.graphify_*
+graphify-out/graph.html
+graphify-out/*.nudges
+
+# Tool backups and local scratch
+*.graphify-bak
+.claude/settings.local.json
+*.log
+!docs/**/*.log
