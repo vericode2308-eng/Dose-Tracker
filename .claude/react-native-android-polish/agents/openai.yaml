@@ -1,0 +1,4 @@
+interface:
+  display_name: "React Native Android Polish"
+  short_description: "Polish Android native UI while preserving iOS"
+  default_prompt: "Use $react-native-android-polish to audit this app and plan Android UI refinement while preserving iOS."
