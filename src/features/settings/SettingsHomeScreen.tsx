@@ -1,8 +1,9 @@
 import { Host, Picker } from '@expo/ui';
-import { SegmentedControl } from '@expo/ui/community/segmented-control';
+import { AppSegmentedControl as SegmentedControl } from '@/features/ui/AppSegmentedControl';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, View } from 'react-native';
+import { AppSwitch as Switch } from '@/features/ui/AppSwitch';
 import { switchStyle } from '@/features/ui/switchStyle';
 import Animated from 'react-native-reanimated';
 import { reconcileReminders, eraseMedicineDataWithReminders } from '@/notificationManager';
@@ -23,6 +24,7 @@ import { Button } from '@/features/ui/Button';
 import { confirmDestructive } from '@/features/ui/confirm';
 import { toastEntering, toastExiting } from '@/features/ui/motion';
 import { ListRow, ListSection } from '@/features/ui/GroupedList';
+import { ActionMenu } from '@/features/ui/ActionMenu';
 import { Icon } from '@/features/ui/Icon';
 import { PressableScale } from '@/features/ui/PressableScale';
 import { Sheet } from '@/features/ui/Sheet';
@@ -154,7 +156,7 @@ export default function SettingsHomeScreen() {
 
       <ListSection title="Appearance">
         <View style={{ padding: 12 }}>
-          <SegmentedControl values={['System', 'Light', 'Dark']} selectedIndex={Math.max(0, themeIndex)} enabled={loaded && !busy}
+          <SegmentedControl values={['System', 'Light', 'Dark']} accessibilityLabel="Appearance" selectedIndex={Math.max(0, themeIndex)} enabled={loaded && !busy}
             onChange={event => { const theme = (['system', 'light', 'dark'] as const)[event.nativeEvent.selectedSegmentIndex]; if (theme && theme !== prefs.theme) void update({ theme }); }} />
         </View>
       </ListSection>
@@ -163,12 +165,21 @@ export default function SettingsHomeScreen() {
         <ListRow icon="bell" title="Reminders" last={!prefs.remindersEnabled} trailing={<Switch style={switchStyle} accessibilityLabel="Reminders enabled" value={prefs.remindersEnabled} disabled={!loaded || busy}
           onValueChange={(remindersEnabled) => void update({ remindersEnabled })} trackColor={{ false: colors.fill, true: colors.accent }} ios_backgroundColor={colors.fill} />} />
         {prefs.remindersEnabled && <>
-          <ListRow icon="snooze" title="Default snooze" trailing={<Host matchContents>
-            <Picker selectedValue={prefs.snoozeMinutes} enabled={loaded && !busy} appearance="menu"
-              onValueChange={(minutes) => void update({ snoozeMinutes: minutes as SettingsPreferences['snoozeMinutes'] })}>
-              {([5, 10, 15, 30] as const).map(minutes => <Picker.Item key={minutes} label={`${minutes} min`} value={minutes} />)}
-            </Picker>
-          </Host>} />
+          {Platform.OS === 'android'
+            ? <ListRow icon="snooze" title="Default snooze" trailing={<ActionMenu title="Default snooze" accessibilityLabel={`Default snooze, ${prefs.snoozeMinutes} minutes. Opens menu.`}
+              items={([5, 10, 15, 30] as const).map(minutes => ({ id: String(minutes), title: `${minutes} minutes`, checked: minutes === prefs.snoozeMinutes }))}
+              onSelect={id => { if (loaded && !busy) void update({ snoozeMinutes: Number(id) as SettingsPreferences['snoozeMinutes'] }); }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 48, paddingLeft: 12 }}>
+                <AppText variant="body" tone="secondary">{prefs.snoozeMinutes} min</AppText>
+                <Icon name="chevronDown" size={16} color={colors.tertiaryLabel} weight="semibold" />
+              </View>
+            </ActionMenu>} />
+            : <ListRow icon="snooze" title="Default snooze" trailing={<Host matchContents>
+              <Picker selectedValue={prefs.snoozeMinutes} enabled={loaded && !busy} appearance="menu"
+                onValueChange={(minutes) => void update({ snoozeMinutes: minutes as SettingsPreferences['snoozeMinutes'] })}>
+                {([5, 10, 15, 30] as const).map(minutes => <Picker.Item key={minutes} label={`${minutes} min`} value={minutes} />)}
+              </Picker>
+            </Host>} />}
           <ListRow icon="privacyEye" title="Notification privacy" value={privacyLabel} disabled={busy || !loaded} onPress={() => router.push('/notification-privacy')} />
           <ListRow icon="sound" title="Sound & vibration" value={prefs.reminderSound === 'silent' && !prefs.vibrationEnabled ? 'Off' : 'On'} disabled={busy || !loaded} onPress={() => router.push('/reminder-sound')} />
           <ListRow icon="status" title="Reminder status" subtitle="Send a test, fix delays, open system settings" last disabled={busy || !loaded} onPress={() => router.push('/reminder-status')} />

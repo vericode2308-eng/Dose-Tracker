@@ -1,7 +1,8 @@
 import { publicErrorMessage } from '@/features/security/errors';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { AppSwitch as Switch } from '@/features/ui/AppSwitch';
 import { switchStyle } from '@/features/ui/switchStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMedicines, type Medicine } from './context';

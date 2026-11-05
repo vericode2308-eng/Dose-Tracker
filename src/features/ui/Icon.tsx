@@ -37,6 +37,7 @@ const ICONS = {
   warning: { sf: 'exclamationmark.triangle.fill', feather: 'alert-triangle' },
   info: { sf: 'info.circle.fill', feather: 'info' },
   chevronRight: { sf: 'chevron.forward', feather: 'chevron-right' },
+  chevronDown: { sf: 'chevron.down', feather: 'chevron-down' },
   arrowRight: { sf: 'arrow.forward', feather: 'arrow-right' },
   history: { sf: 'clock.arrow.circlepath', feather: 'clock' },
   bell: { sf: 'bell', feather: 'bell' },

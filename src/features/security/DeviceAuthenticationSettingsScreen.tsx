@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, ScrollView, Switch, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
+import { AppSwitch as Switch } from '@/features/ui/AppSwitch';
 import { switchStyle } from '@/features/ui/switchStyle';
 import { useTheme } from '@/features/theme/ThemeContext';
 import { AppText } from '@/features/ui/AppText';

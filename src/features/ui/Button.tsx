@@ -42,7 +42,7 @@ export function Button({ title, onPress, variant = 'primary', size = 'md', icon,
   // The destructive fill keeps white text in both themes (4.8:1 on danger red).
   const textColor = variant === 'destructive' ? '#FFFFFF' : foreground;
   return <PressableScale accessibilityRole="button" accessibilityState={{ disabled: inactive, busy: loading }}
-    {...accessibility} disabled={inactive} onPress={onPress}
+    {...accessibility} disabled={inactive} onPress={onPress} rippleColor={/^#[0-9a-f]{6}$/i.test(textColor) ? `${textColor}29` : undefined}
     style={[{
       minHeight: metrics.height,
       paddingHorizontal: metrics.paddingHorizontal,

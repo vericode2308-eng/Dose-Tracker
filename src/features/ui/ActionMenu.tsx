@@ -1,6 +1,6 @@
 import { MenuView, type MenuAction } from '@expo/ui/community/menu';
 import type { ReactNode } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 import type { SymbolViewProps } from 'expo-symbols';
 import { useTheme } from '@/features/theme/ThemeContext';
 
@@ -20,8 +20,8 @@ export type ActionMenuItem = {
  * Native pop-up menu (SwiftUI Menu on iOS, Compose DropdownMenu on Android) opened by tapping
  * the trigger. The trigger must be a plain view: the native menu owns the tap.
  */
-export function ActionMenu({ title, items, onSelect, accessibilityLabel, children }: {
-  title?: string; items: ActionMenuItem[]; onSelect: (id: string) => void; accessibilityLabel: string; children: ReactNode;
+export function ActionMenu({ title, items, onSelect, accessibilityLabel, style, children }: {
+  style?: StyleProp<ViewStyle>; title?: string; items: ActionMenuItem[]; onSelect: (id: string) => void; accessibilityLabel: string; children: ReactNode;
 }) {
   const { isDark } = useTheme();
   const actions: MenuAction[] = items.map(item => ({
@@ -31,8 +31,8 @@ export function ActionMenu({ title, items, onSelect, accessibilityLabel, childre
     state: item.checked === undefined ? undefined : item.checked ? 'on' : 'off',
     attributes: item.destructive ? { destructive: true } : undefined,
   }));
-  return <MenuView title={title} actions={actions} colorScheme={isDark ? 'dark' : 'light'}
+  return <MenuView title={title} actions={actions} style={style} colorScheme={isDark ? 'dark' : 'light'}
     onPressAction={event => onSelect(event.nativeEvent.event)}>
-    <View accessible accessibilityRole="button" accessibilityLabel={accessibilityLabel}>{children}</View>
+    <View accessible accessibilityRole="button" accessibilityLabel={accessibilityLabel} style={style}>{children}</View>
   </MenuView>;
 }

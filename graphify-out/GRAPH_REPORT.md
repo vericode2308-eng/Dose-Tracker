@@ -1,17 +1,17 @@
-# Graph Report - DoseTrackerApp  (2026-11-03)
+# Graph Report - DoseTrackerApp  (2026-11-05)
 
 ## Corpus Check
-- 180 files · ~157,355 words
+- 191 files · ~166,097 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 48 file(s) not represented in the graph (top: .log 35, (none) 4, .xml 4)
+- Unclassified: 47 file(s) not represented in the graph (top: .log 35, (none) 4, .xml 4)
 
 ## Summary
-- 1483 nodes · 3347 edges · 113 communities (68 shown, 45 thin omitted)
+- 1546 nodes · 3433 edges · 110 communities (69 shown, 41 thin omitted)
 - Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 133 edges (avg confidence: 0.94)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f0c3a438`
+- Built from commit: `2df1075d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -24,7 +24,7 @@
 - layout_issues
 - DoseTracker Android guidebook
 - database.js
-- DoseTracker Settings and Android reminder architecture
+- Existing Expo / React Native App: Premium Android Polish Prompt
 - expo
 - TodayHomeScreen.tsx
 - Existing Expo / React Native App: Android to iOS Planning Prompt
@@ -53,7 +53,7 @@
 - 6. Checklist Summary
 - DoseAlarmAccessModule.kt
 - SETTINGS_ARCHITECTURE.md
-- Icon
+- react-native
 - AlarmAccessReceiver.kt
 - RingingCheck
 - settings-ringing.test.cjs
@@ -68,7 +68,7 @@
 - AGENTS.md
 - SQLite screen integration
 - Local profiles — implementation and verification
-- Google Play policy audit — 2026-09-29
+- useTheme
 - reproduce.cjs
 - Security corrections and lessons — 2026-10-01
 - eslint.config.js
@@ -80,11 +80,11 @@
 - Delete DoseTracker Data
 - 6. Screen definitions and target additions
 - 8. Implementation sequence
-- SETTINGS_ARCHITECTURE.md
+- 2026-10-02/README.md
 - Local medication reminders
-- app/_layout.tsx
+- AppLock.tsx
 - 7. Privacy, export, and restoration
-- DoseTracker local Android release checks
+- DoseTracker security audit — 2026-10-01
 - expo-image@~58.0.18
 - make_feature_graphic.swift
 - main
@@ -94,27 +94,24 @@
 - Terms decisions requiring owner and counsel confirmation
 - DoseTracker Terms: code evidence inventory
 - expo-linking@~58.0.15
-- expo-screen-capture
+- 4. Prioritized Remediation Plan
 - CLAUDE.md
 - 2026-10-02 — Tape Mark Calculator tab guidebook follow-up
 - nativewind-env.d.ts
-- expo-secure-store
-- Tape Mark calculator: reclaim space after entry — 2 October 2026
+- interface
+- tailwind.config.js
 - expo-status-bar
-- expo-task-manager
+- auto-commit.sh
 - expo-build-properties@~58.0.11
-- DoseTracker design system
-- expo-haptics
-- Findings requiring correction
-- react-native-gesture-handler@~3.3.0
-- expo-asset@~58.0.19
-- expo-crypto
-- expo-font@~58.0.11
+- expo-constants@~58.0.14
+- expo-local-authentication
+- expo-sqlite
+- react-dom@19.3.0
+- react-native-screens@~4.30.0
+- react-native-web@^0.21.4
 - expo-document-picker
-- react-native-worklets@0.13.0
-- expo-sharing
+- expo-file-system
 - expo-system-ui
-- @react-native-community/datetimepicker
 - errors.d.ts
 - SecurityManager.d.ts
 - DATABASE_NAME
@@ -126,105 +123,105 @@
 - expo-image-picker
 
 ## God Nodes (most connected - your core abstractions)
-1. `useTheme()` - 102 edges
-2. `Corrections log` - 81 edges
-3. `react-native` - 58 edges
+1. `useTheme()` - 108 edges
+2. `Corrections log` - 84 edges
+3. `react-native` - 61 edges
 4. `UserFacingError` - 40 edges
 5. `react` - 38 edges
 6. `AppText()` - 35 edges
 7. `MedicineForm()` - 34 edges
-8. `MedicineDetailScreen()` - 32 edges
-9. `SettingsHomeScreen()` - 32 edges
+8. `SettingsHomeScreen()` - 33 edges
+9. `MedicineDetailScreen()` - 32 edges
 10. `expo-router` - 31 edges
 
 ## Surprising Connections (you probably didn't know these)
-- ``suppression_periods`` --references--> `archive()`  [INFERRED]
-  PLAN.md → src/app/profile.tsx
 - `2026-10-25 — Today: week strip and taking upcoming doses early` --references--> `fetchScheduledDosesForDates()`  [INFERRED]
   docs/CORRECTIONS_LOG.md → src/database.js
+- `2026-11-03 — Add Medicine: "Starts today" when the first dose is tomorrow` --references--> `firstEligibleOccurrence()`  [INFERRED]
+  docs/CORRECTIONS_LOG.md → src/features/doses/occurrences.js
 - `2. Build layouts around the usable mobile viewport` --references--> `NotificationLifecycle()`  [INFERRED]
   ANDROID_GUIDEBOOK.md → src/features/notifications/NotificationLifecycle.tsx
+- `Header and appearance` --references--> `ProfilesProvider()`  [INFERRED]
+  docs/SETTINGS_ARCHITECTURE.md → src/features/profiles/context.tsx
 - `Additional hardening completed` --references--> `publicErrorMessage()`  [INFERRED]
   docs/SECURITY_LESSONS.md → src/features/security/errors.js
-- `Senior UX & Engineering Scorecard` --references--> `SettingsHomeScreen()`  [INFERRED]
-  ux_qa_audit_report.md → src/features/settings/SettingsHomeScreen.tsx
 
 ## Import Cycles
 - None detected.
 
-## Communities (113 total, 45 thin omitted)
+## Communities (110 total, 41 thin omitted)
 
 ### Community 0 - "notificationManager.js"
 Cohesion: 0.06
-Nodes (90): Reminders, Scheduling and timing flow, 🟡 P1-4: Android Notifications Lack Interactive Quick-Action Buttons, expo-file-system, expo-notifications, @expo/vector-icons, fetchAllMedicines(), fetchPendingSnoozes() (+82 more)
+Nodes (87): Reminders, Scheduling and timing flow, 🟡 P1-4: Android Notifications Lack Interactive Quick-Action Buttons, expo-notifications, fetchAllMedicines(), fetchMedicineDetails(), fetchPendingSnoozes(), medicineFromRow() (+79 more)
 
 ### Community 1 - "profile.tsx"
-Cohesion: 0.06
-Nodes (71): Onboarding artwork, 2026-10-20 — Onboarding follows dark mode (invisible diagnostics toggle labels), 2026-11-03 — Audit: Profile and Add Medicine screens did not scroll (regression from the keyboard fix), 2026-11-03 — Keyboard: Next/Save hidden behind it, and no easy way to close it, 1. Executive summary, 2. Root causes, 3. Native UI improvements, 4. Screen-by-screen QA (iOS Simulator) (+63 more)
+Cohesion: 0.07
+Nodes (63): Onboarding artwork, 2026-10-20 — Onboarding follows dark mode (invisible diagnostics toggle labels), 2026-11-03 — Audit: Profile and Add Medicine screens did not scroll (regression from the keyboard fix), 2026-11-03 — Keyboard: Next/Save hidden behind it, and no easy way to close it, 1. Executive summary, 2. Root causes, 3. Native UI improvements, 4. Screen-by-screen QA (iOS Simulator) (+55 more)
 
 ### Community 2 - "Corrections log"
 Cohesion: 0.03
-Nodes (68): 2026-09-29 — 001: Make medicine strength optional, 2026-09-29 — 002: Sharpen the opening logo, 2026-09-29 — 003: Mark required details with an asterisk, 2026-09-29 — 004: Full medicine editing, 2026-09-29 — 005: Hide medicine-screen tabs and preserve the selected-tab pill, 2026-09-29 — 005: Multiple daily doses and reminder restrictions (investigation), 2026-09-29 — 006: Simple multiple-dose entry and default reminders, 2026-09-29 — 007: Make additional dose entry clearly optional (+60 more)
+Nodes (72): 2026-09-29 — 001: Make medicine strength optional, 2026-09-29 — 002: Sharpen the opening logo, 2026-09-29 — 003: Mark required details with an asterisk, 2026-09-29 — 004: Full medicine editing, 2026-09-29 — 005: Hide medicine-screen tabs and preserve the selected-tab pill, 2026-09-29 — 005: Multiple daily doses and reminder restrictions (investigation), 2026-09-29 — 006: Simple multiple-dose entry and default reminders, 2026-09-29 — 007: Make additional dose entry clearly optional (+64 more)
 
 ### Community 3 - "react"
-Cohesion: 0.18
-Nodes (13): expo-symbols, LockScreen(), ActionMenuItem, SFSymbol, ActionMenu(), AppText(), Button(), ButtonSize (+5 more)
+Cohesion: 0.30
+Nodes (8): expo-symbols, react, ActionMenuItem, SFSymbol, ActionMenu(), GlassSheetSurface(), useReduceTransparency(), Sheet()
 
 ### Community 4 - "AddMedicineScreen.tsx"
-Cohesion: 0.06
-Nodes (43): 2026-11-03 — Add/Edit Medicine: sheet did not close after Save, and Save could insert duplicates, react-native-svg@15.16.0, react-native-svg, fetchMedicineDetails(), medicineFromRow(), scheduleFromRow(), AddMedicineScreen(), Field() (+35 more)
+Cohesion: 0.08
+Nodes (40): 2026-11-03 — Add/Edit Medicine: sheet did not close after Save, and Save could insert duplicates, 🔵 P2-1: Missing Tactile/Haptic Feedback on User Actions, react-native-svg@15.16.0, react-native-svg, AddMedicineScreen(), Field(), formatTime(), FREQUENCIES (+32 more)
 
 ### Community 5 - "layout_issues"
 Cohesion: 0.07
 Nodes (13): 2026-10-31 — Remove stale App Store and version claims from the studio-hosted landing/legal pages, check_apk(), headers(), layout_issues(), build(), capsule(), fn(), font() (+5 more)
 
 ### Community 6 - "DoseTracker Android guidebook"
-Cohesion: 0.17
-Nodes (12): 1. Start with the actual Expo version and app architecture, 2. Build layouts around the usable mobile viewport, 3. Make forms safe to leave and easy to correct, 4. Separate dose tracking from reminder intent, 5. Respect Android notification behavior, 6. Keep history and stock exact, 7. Polish should support clarity, 8. Verification before calling an issue resolved (+4 more)
+Cohesion: 0.05
+Nodes (40): 1. Start with the actual Expo version and app architecture, 2. Build layouts around the usable mobile viewport, 4. Separate dose tracking from reminder intent, 5. Respect Android notification behavior, 6. Keep history and stock exact, 7. Polish should support clarity, 8. Verification before calling an issue resolved, 9. Maintain an honest issue log (+32 more)
 
 ### Community 7 - "database.js"
 Cohesion: 0.14
-Nodes (53): 2026-11-03 — Add Medicine: "Starts today" when the first dose is tomorrow, Connected screens, addMedicine(), changed(), changeDoseWithUndo(), clearDatabase(), DATABASE_NAME, deleteMedicine() (+45 more)
+Nodes (52): Connected screens, addMedicine(), changed(), changeDoseWithUndo(), clearDatabase(), DATABASE_NAME, deleteMedicine(), doseChangeSnapshot() (+44 more)
 
-### Community 8 - "DoseTracker Settings and Android reminder architecture"
-Cohesion: 0.33
-Nodes (6): DoseTracker Settings and Android reminder architecture, Gaps and polish priorities, Optional diagnostics (removed 2026-10-23), Security remediation (2026-10-01), Storage map, Verification
+### Community 8 - "Existing Expo / React Native App: Premium Android Polish Prompt"
+Cohesion: 0.05
+Nodes (37): 10. Implementation milestones after approval, 11. Definition of done and final handoff, 12. Final audit cautions, 1. Scope and non-negotiable safeguards, 2. App brief and working rules, 3. Phase 1 — Repository audit and real baselines, 4. Native-first hybrid architecture, 5. Material 3 Expressive visual direction (+29 more)
 
 ### Community 9 - "expo"
 Cohesion: 0.05
 Nodes (37): backgroundColor, foregroundImage, adaptiveIcon, allowBackup, blockedPermissions, package, permissions, predictiveBackGestureEnabled (+29 more)
 
 ### Community 10 - "TodayHomeScreen.tsx"
-Cohesion: 0.12
-Nodes (18): 🔴 P0-2: Broken Dark Mode System Architecture & Misleading Appearance Radio Icons, AnimatedCircle, dayStatus(), parseDateKey(), ProfileToday(), card(), ProgressRing(), relativeTime() (+10 more)
+Cohesion: 0.11
+Nodes (22): react-native-reanimated, AnimatedCircle, dayStatus(), parseDateKey(), ProfileToday(), card(), ProgressRing(), relativeTime() (+14 more)
 
 ### Community 11 - "Existing Expo / React Native App: Android to iOS Planning Prompt"
 Cohesion: 0.05
 Nodes (36): 10. Select useful Apple integrations, 11. Storage, backup, and moving data between platforms, 12. Links, sharing, files, and external services, 13. Localization and regional behavior, 14. Privacy and SDK audit, 15. Accounts, payments, ads, and review rules—only if applicable, 16. iOS builds, signing, and App Store preparation, 17. Verification and acceptance criteria (+28 more)
 
 ### Community 12 - "SettingsHomeScreen.tsx"
-Cohesion: 0.18
-Nodes (17): react, react-native, react-native-reanimated, openLegalUrl(), PRIVACY_URL, TERMS_URL, clearAuthEnabled(), SettingsHomeScreen() (+9 more)
+Cohesion: 0.14
+Nodes (15): 2026-10-31 — Point legal links at the VeriCode studio website, Navigation, openLegalUrl(), PRIVACY_URL, TERMS_URL, useAppLock(), DeviceAuthenticationSettingsScreen(), checkSupport() (+7 more)
 
 ### Community 13 - "DoseAlarmAccessModule.swift"
 Cohesion: 0.11
 Nodes (11): AlarmKit, AppIntents, CryptoKit, ExpoModulesCore, DoseAlarmAccessModule, DoseAlarmMetadata, DoseAlarmRequest, DoseAlarms (+3 more)
 
 ### Community 14 - "ThemeContext.tsx"
-Cohesion: 0.11
-Nodes (20): useAppLock(), DeviceAuthenticationSettingsScreen(), checkSupport(), DARK, LIGHT, SemanticColors, ThemeColors, ThemeContext (+12 more)
+Cohesion: 0.13
+Nodes (16): DARK, LIGHT, SemanticColors, ThemeColors, ThemeContext, ThemeContextType, ThemeMode, TextTone (+8 more)
 
 ### Community 15 - "MedicineDetailScreen.tsx"
-Cohesion: 0.13
-Nodes (32): 2026-10-25 — Premium iOS design system, dark-mode fixes and native motion (Phases 1–2), Components, Navigation, useLocalQuery(), Medicine, dayLabel(), GroupCard(), MedicineDetailScreen() (+24 more)
+Cohesion: 0.12
+Nodes (32): 2026-10-25 — Premium iOS design system, dark-mode fixes and native motion (Phases 1–2), Components, Medicine, MedicinesContext, MedicinesContextValue, MedicinesProvider(), todayKey(), useMedicines() (+24 more)
 
 ### Community 16 - "package.json"
-Cohesion: 0.09
-Nodes (23): expo-constants@~58.0.14, expo-glass-effect@~58.0.5, expo-splash-screen@~58.0.12, @react-native-async-storage/async-storage@2.2.0, react-native-screens@~4.30.0, react-native-web@^0.21.4, tailwindcss@^3.4.17, devDependencies (+15 more)
+Cohesion: 0.08
+Nodes (25): expo-audio@~58.0.10, expo-font@~58.0.11, expo-screen-capture@~58.0.6, expo-task-manager@~58.0.12, @react-native-async-storage/async-storage@2.2.0, react-native-gesture-handler@~3.3.0, react-native-worklets@0.13.0, tailwindcss@^3.4.17 (+17 more)
 
 ### Community 17 - "useTheme"
-Cohesion: 0.10
-Nodes (29): 2026-10-22 — iOS migration: swipe-back guard, EAS iOS profile, Liquid Glass sheets, native context menu, react-native-safe-area-context, FilterMenu(), HistoryScreen(), pickerTime(), ProfileHistory(), Sheet, Status (+21 more)
+Cohesion: 0.12
+Nodes (23): @expo/vector-icons, subscribeToDatabaseChanges(), useLocalQuery(), FilterMenu(), HistoryScreen(), pickerTime(), ProfileHistory(), Sheet (+15 more)
 
 ### Community 18 - "3. Field-by-field answer tables"
 Cohesion: 0.08
@@ -239,8 +236,8 @@ Cohesion: 0.09
 Nodes (22): activation_command, activation_command_timeout, added_modes, default_modes, encoding, excluded_tools, fixed_tools, ignore_all_files_in_gitignore (+14 more)
 
 ### Community 21 - "dependencies"
-Cohesion: 0.10
-Nodes (20): dependencies, expo-audio@~58.0.10, expo-file-system@~58.0.13, expo-local-authentication@~58.0.2, expo-notifications@~58.1.7, expo-router@~58.0.28, expo-sqlite@~58.0.14, expo-symbols@~58.0.4 (+12 more)
+Cohesion: 0.09
+Nodes (23): dependencies, expo-asset@~58.0.19, expo-crypto@~58.0.7, expo-glass-effect@~58.0.5, expo-haptics@~58.0.7, expo-notifications@~58.1.7, expo-router@~58.0.28, expo-secure-store@~58.0.2 (+15 more)
 
 ### Community 22 - "database.test.cjs"
 Cohesion: 0.12
@@ -252,7 +249,7 @@ Nodes (17): DoseAction, DoseChangeInput, DoseChangeReceipt, DoseReference, Histo
 
 ### Community 24 - "4. Target SQLite database design"
 Cohesion: 0.12
-Nodes (16): 4. Target SQLite database design, `dose_occurrences`, `dose_records`, `inventory_epochs`, `inventory_movements`, `medicines`, `notification_jobs`, `profiles` (+8 more)
+Nodes (17): 4. Target SQLite database design, `dose_occurrences`, `dose_records`, `inventory_epochs`, `inventory_movements`, `medicines`, `notification_jobs`, `profiles` (+9 more)
 
 ### Community 25 - "security.test.cjs"
 Cohesion: 0.15
@@ -275,8 +272,8 @@ Cohesion: 0.22
 Nodes (3): Repeating reminder sound (2026-10-02), DoseNotificationsService, RingingPresentationDelegate
 
 ### Community 30 - "expo"
-Cohesion: 0.14
-Nodes (10): config, { getDefaultConfig }, { withNativeWind }, expo@^58.0.21, nativewind@4.2.7, { withAppBuildGradle, withGradleProperties }, { withEntitlementsPlist }, { withAppDelegate, withInfoPlist } (+2 more)
+Cohesion: 0.12
+Nodes (11): config, { getDefaultConfig }, { withNativeWind }, expo@^58.0.21, nativewind@4.2.7, { withAppBuildGradle, withGradleProperties }, { withEntitlementsPlist }, { withPodfile } (+3 more)
 
 ### Community 31 - "build-brand-assets.cjs"
 Cohesion: 0.19
@@ -291,16 +288,16 @@ Cohesion: 0.18
 Nodes (10): add(), background, destination, fs, input, neutral(), path, { PNG } (+2 more)
 
 ### Community 35 - "6. Checklist Summary"
-Cohesion: 0.08
-Nodes (24): 1. Security Posture Rating, 2. Critical And High Findings, 3. Quick Wins, 4. Prioritized Remediation Plan, 5. What's Already Done Right, 6. Checklist Summary, Compact verdicts, DoseTracker security audit — 2026-10-01 (+16 more)
+Cohesion: 0.18
+Nodes (11): 6. Checklist Summary, Compact verdicts, Reproduction and release follow-up, Section 1 — Environment Variables And Secret Management, Section 2 — Database Security, Section 3 — Authentication And Session Management, Section 4 — Server-Side Validation, Section 5 — Dependency And Package Security (+3 more)
 
 ### Community 37 - "SETTINGS_ARCHITECTURE.md"
-Cohesion: 0.50
+Cohesion: 0.33
 Nodes (4): Develop, Dose Tracker, Media and documentation, Verify
 
-### Community 38 - "Icon"
-Cohesion: 0.27
-Nodes (10): 2026-10-25 — Native controls: menus, date pickers, grouped Settings (Phase 5), Architecture: which tool for what, IconTile(), ListRow(), ListSection(), Fallback, Icon(), IconName (+2 more)
+### Community 38 - "react-native"
+Cohesion: 0.17
+Nodes (18): react-native, ButtonSize, ButtonVariant, SIZES, VARIANTS, IconTile(), ListRow(), Fallback (+10 more)
 
 ### Community 41 - "settings-ringing.test.cjs"
 Cohesion: 0.22
@@ -331,7 +328,7 @@ Cohesion: 0.25
 Nodes (7): expo/tsconfig.base, compilerOptions, paths, strict, extends, include, @/assets/*
 
 ### Community 50 - "AGENTS.md"
-Cohesion: 0.29
+Cohesion: 0.20
 Nodes (6): Building with EAS, Commands, Current DoseTracker architecture, Expo has changed — do not trust your training data, Navigation & Routing, Rules
 
 ### Community 51 - "SQLite screen integration"
@@ -342,9 +339,9 @@ Nodes (6): Automated verification, Browser workflow verified on 2026-09-26, Full
 Cohesion: 0.29
 Nodes (6): Automated verification, Correction: keep all other active profiles visible, Implemented, In-app browser verification, Inline dashboard header refinement, Local profiles — implementation and verification
 
-### Community 53 - "Google Play policy audit — 2026-09-29"
-Cohesion: 0.20
-Nodes (7): Correction update — 2026-09-29, Current release/legal update — 2026-10-03, Google Play policy audit — 2026-09-29, Original audit validation, Practices that appear aligned, Release requirements not verifiable from this repository, Verification after corrections
+### Community 53 - "useTheme"
+Cohesion: 0.15
+Nodes (20): 🔴 P0-2: Broken Dark Mode System Architecture & Misleading Appearance Radio Icons, @expo/ui, DatabaseGate(), RootLayout(), RootNavigator(), ThemedStatusBar(), unstable_settings, Row() (+12 more)
 
 ### Community 54 - "reproduce.cjs"
 Cohesion: 0.29
@@ -367,12 +364,12 @@ Cohesion: 0.29
 Nodes (7): 9. Validation and acceptance criteria, Database and mutation tests, Notification tests, Recurrence tests, Required completion checks, UI and privacy tests, Validation performed so far
 
 ### Community 59 - "DateTimePickers.tsx"
-Cohesion: 0.07
-Nodes (37): Detailed Issue Logs & Actions Taken, DoseTracker App — Remediation Issues & Resolution Log, Independent verification update — 2026-09-27, Issue Registry, 🔴 P0-1: Catastrophic Button Viewport Overflow in Add Medicine Review Step, 🔴 P0-3: Android Hardware/Gesture Back Navigation Drops Entered Medicine Data, 🟡 P1-2: Manual Text Entry for Dates and Times Lacks Native Pickers, 🟡 P1-3: "Optional" Stock Step Fails Validation by Default (+29 more)
+Cohesion: 0.06
+Nodes (49): 3. Make forms safe to leave and easy to correct, 2026-10-25 — Native controls: menus, date pickers, grouped Settings (Phase 5), Architecture: which tool for what, Color roles, DoseTracker design system, Motion rules (from the expo-animation skill), Text styles, Where things live (+41 more)
 
 ### Community 60 - "expo-router"
-Cohesion: 0.22
-Nodes (9): expo-router, HistoryLayout(), TabsLayout(), SettingsLayout(), unstable_settings, TodayLayout(), AppTabs(), isIOS26 (+1 more)
+Cohesion: 0.10
+Nodes (13): 2026-10-25 — Native navigation: native tabs, native headers, Add/Edit sheets (Phase 4), expo-router, HistoryLayout(), TabsLayout(), SettingsLayout(), unstable_settings, TodayLayout(), AppTabs() (+5 more)
 
 ### Community 61 - "Delete DoseTracker Data"
 Cohesion: 0.33
@@ -390,61 +387,65 @@ Nodes (6): 6. Screen definitions and target additions, Forms and secondary scree
 Cohesion: 0.33
 Nodes (6): 8. Implementation sequence, Phase 1 — Foundation and reminder feasibility, Phase 2 — Persistence and domain behavior, Phase 3 — Primary screens, Phase 4 — Reliability and privacy, Phase 5 — Release preparation
 
-### Community 65 - "SETTINGS_ARCHITECTURE.md"
-Cohesion: 0.22
+### Community 65 - "2026-10-02/README.md"
+Cohesion: 0.40
 Nodes (3): Android reminder emulator verification — 2026-10-02, Scope and limits, Android reminder presentation checks
 
 ### Community 66 - "Local medication reminders"
 Cohesion: 0.40
 Nodes (4): Android timing and builds, Implemented scope, Local medication reminders, Verification
 
-### Community 67 - "app/_layout.tsx"
-Cohesion: 0.13
-Nodes (22): 2026-10-25 — Native navigation: native tabs, native headers, Add/Edit sheets (Phase 4), Every Settings item, Header and appearance, Privacy, data, and about, DatabaseGate(), RootLayout(), RootNavigator(), ThemedStatusBar() (+14 more)
+### Community 67 - "AppLock.tsx"
+Cohesion: 0.14
+Nodes (17): DoseTracker Settings and Android reminder architecture, Every Settings item, Gaps and polish priorities, Header and appearance, Optional diagnostics (removed 2026-10-23), Privacy, data, and about, Security remediation (2026-10-01), Storage map (+9 more)
 
 ### Community 68 - "7. Privacy, export, and restoration"
 Cohesion: 0.40
 Nodes (5): 7. Privacy, export, and restoration, CSV export, Full backup format, Privacy, Restore sequence
 
-### Community 69 - "DoseTracker local Android release checks"
-Cohesion: 0.20
-Nodes (10): After approval: build and validate the exact artifact, Dependency audit limitation, DoseTracker local Android release checks, Earlier package artifact results — 2026-10-03, Fresh package rebuild — 2026-10-03, Initial preparation record (historical), Official technical references, Preparation evidence (+2 more)
+### Community 69 - "DoseTracker security audit — 2026-10-01"
+Cohesion: 0.29
+Nodes (7): 1. Security Posture Rating, 2. Critical And High Findings, 3. Quick Wins, 5. What's Already Done Right, DoseTracker security audit — 2026-10-01, Executed verification, Scope, architecture, and evidence limits
 
 ### Community 72 - "main"
 Cohesion: 0.67
 Nodes (3): 2026-09-30 — Publish website and privacy updates, 2026-10-23 — Remove Sentry disclosures, iOS icon, App Store pack refresh, main()
 
-### Community 85 - "Tape Mark calculator: reclaim space after entry — 2 October 2026"
-Cohesion: 0.29
-Nodes (7): Follow-up: Calculator tab returns to entry — 2 October 2026, Follow-up: units explained and History verified — 2 October 2026, Layout and accessibility lessons, Problem and accepted interaction, State, asynchronous work and regression lessons, Tape Mark calculator: reclaim space after entry — 2 October 2026, Verification and evidence boundaries
-
-### Community 89 - "DoseTracker design system"
+### Community 79 - "4. Prioritized Remediation Plan"
 Cohesion: 0.33
-Nodes (5): Color roles, DoseTracker design system, Motion rules (from the expo-animation skill), Text styles, Where things live
+Nodes (6): 4. Prioritized Remediation Plan, Finding #1 — Incomplete environment-file ignore rules, Finding #2 — Notification actions bypass the optional app lock, Finding #3 — Malformed deep-link queries reach a vulnerable decoder, Finding #4 — Tightening notification privacy leaves old content visible, Finding #5 — Onboarding retains a stale duplicate of profile information
 
-### Community 91 - "Findings requiring correction"
+### Community 83 - "interface"
 Cohesion: 0.40
-Nodes (5): 1. High — remote diagnostics contradict privacy promises, 2. High — privacy notice is incomplete, 3. Medium — absolute reminder and stock claims, 4. Medium — unnecessary permissions appear in generated configuration, Findings requiring correction
+Nodes (4): interface, default_prompt, display_name, short_description
+
+### Community 85 - "tailwind.config.js"
+Cohesion: 0.50
+Nodes (3): fontSize, px(), theme
+
+### Community 98 - "expo-file-system"
+Cohesion: 0.33
+Nodes (6): expo-file-system@~58.0.13, expo-sharing@~58.0.21, expo-file-system, expo-sharing, exportPreferences(), exportBackup()
 
 ## Knowledge Gaps
 - **14 isolated node(s):** `CryptoKit`, `ExpoModulesCore`, `AlarmKit`, `AppIntents`, `SwiftUI` (+9 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 684 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **45 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 725 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **41 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Corrections log` connect `Corrections log` to `SETTINGS_ARCHITECTURE.md`, `profile.tsx`, `app/_layout.tsx`, `AddMedicineScreen.tsx`, `layout_issues`, `Icon`, `database.js`, `main`, `MedicineDetailScreen.tsx`, `useTheme`, `2026-10-02 — Tape Mark Calculator tab guidebook follow-up`?**
-  _High betweenness centrality (0.132) - this node is a cross-community bridge._
+- **Why does `Corrections log` connect `Corrections log` to `profile.tsx`, `AddMedicineScreen.tsx`, `SETTINGS_ARCHITECTURE.md`, `layout_issues`, `main`, `SettingsHomeScreen.tsx`, `MedicineDetailScreen.tsx`, `2026-10-02 — Tape Mark Calculator tab guidebook follow-up`, `DateTimePickers.tsx`, `expo-router`?**
+  _High betweenness centrality (0.148) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `useTheme()` (e.g. with `2026-10-20 — Onboarding follows dark mode (invisible diagnostics toggle labels)` and `🔴 P0-2: Broken Dark Mode System Architecture & Misleading Appearance Radio Icons`) actually correct?**
   _`useTheme()` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `CryptoKit`, `ExpoModulesCore`, `AlarmKit` to the rest of the system?**
   _14 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `notificationManager.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.05695644507141598 - nodes in this community are weakly interconnected._
-- **Why does `Scheduling and timing flow` connect `notificationManager.js` to `DoseTracker Settings and Android reminder architecture`, `AlarmAccessReceiver.kt`?**
-  _High betweenness centrality (0.101) - this node is a cross-community bridge._
+  _Cohesion score 0.06053683609366076 - nodes in this community are weakly interconnected._
+- **Why does `useTheme()` connect `useTheme` to `notificationManager.js`, `profile.tsx`, `react`, `AddMedicineScreen.tsx`, `react-native`, `TodayHomeScreen.tsx`, `SettingsHomeScreen.tsx`, `ThemeContext.tsx`, `MedicineDetailScreen.tsx`, `useTheme`, `DoseTracker — Senior Android Developer & UX/QA Audit Report`, `DateTimePickers.tsx`, `expo-router`?**
+  _High betweenness centrality (0.090) - this node is a cross-community bridge._
 - **Should `profile.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.058363858363858365 - nodes in this community are weakly interconnected._
-- **Why does `useTheme()` connect `useTheme` to `notificationManager.js`, `profile.tsx`, `app/_layout.tsx`, `AddMedicineScreen.tsx`, `react`, `Icon`, `TodayHomeScreen.tsx`, `SettingsHomeScreen.tsx`, `ThemeContext.tsx`, `MedicineDetailScreen.tsx`, `DoseTracker — Senior Android Developer & UX/QA Audit Report`, `DateTimePickers.tsx`, `expo-router`?**
-  _High betweenness centrality (0.098) - this node is a cross-community bridge._
+  _Cohesion score 0.07025316455696203 - nodes in this community are weakly interconnected._
+- **Why does `Scheduling and timing flow` connect `notificationManager.js` to `AppLock.tsx`, `AlarmAccessReceiver.kt`?**
+  _High betweenness centrality (0.077) - this node is a cross-community bridge._
